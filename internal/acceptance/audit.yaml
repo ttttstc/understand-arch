@@ -1,13 +1,14 @@
 mode: audit
-canonical_source: internal/acceptance/audit.yaml
 purpose: "Produce a decision-ready architecture health assessment."
+
 structural_gate:
   required: true
   must_have:
-    - "risk register exists and passes schema"
-    - "audit report exists under audits/{date}/"
-    - "remediation roadmap exists under audits/{date}/"
-    - "org-conformance section is present or explicitly degraded because KB is not configured"
+    - "agent/证据/风险与技术债台账.yaml exists and passes schema"
+    - "user/审计/{date}-体检.md exists"
+    - "user/审计/{date}-体检.md contains a 改造路线图 section"
+    - "org-conformance section is present in 体检.md or explicitly degraded because KB is not configured"
+
 semantic_gate:
   threshold: "all"
   allows_degraded: false
@@ -22,6 +23,7 @@ semantic_gate:
       asks: "Can decision makers see what to do next, in what order, and why?"
     - id: non-recommendations
       asks: "Does the report say which tempting fixes are not recommended?"
+
 retry_policy:
   max_retries: 2
   on_failure: "retry arch-review or arch-pack with failed checklist items"

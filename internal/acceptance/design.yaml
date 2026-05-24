@@ -1,40 +1,37 @@
 mode: design
-canonical_source: internal/acceptance/design.yaml
 purpose: "Turn a change request into an evidence-backed design package."
+
 structural_gate:
   required: true
   must_have:
-    - "frame.yaml or evidence/项目总览.yaml exists and passes schema"
-    - "影响面.yaml exists and passes internal/schemas/影响面.schema.json"
-    - "options.md exists with the 4 required tradeoff columns"
-    - "影响面清单.md exists"
-    - "模块依赖变化.md exists"
-    - "数据模型变更.md exists"
-    - "回滚方案.md exists"
-    - "ADR-NNN-*.md exists with 7 required sections"
-    - "design-doc.md exists"
-    - "实施方案.md exists with 17 required chapters"
-    - "arch-review.md exists"
+    - "agent/证据/项目总览.yaml exists and passes schema"
+    - "agent/证据/影响面-{change}.yaml exists and passes internal/schemas/影响面.schema.json"
+    - "user/设计变更/{change}/设计文档.md exists and contains: 背景与诉求 / 影响面摘要 / 方案权衡(≥2 options + 4 列矩阵) / 回滚方案"
+    - "user/设计变更/{change}/实施方案.md exists with 17 required chapters"
+    - "user/设计变更/{change}/评审报告.md exists"
+    - "user/决策史/ADR-NNN-*.md exists with 7 required sections (Context / Decision / Consequences / Rejected Alternatives / Compliance / Implementation Plan Reference / Fitness Spec)"
+
 semantic_gate:
   threshold: "all"
   allows_degraded: false
   questions:
     - id: prd-clarity
-      asks: "Did frame resolve or explicitly block all critical PRD ambiguities?"
+      asks: "Did arch-frame resolve or explicitly block all critical PRD ambiguities?"
     - id: impact-completeness
-      asks: "Are all 7 impact dimensions covered, including no-impact reasons?"
+      asks: "Are all 7 impact dimensions covered in 影响面.yaml, including no-impact reasons?"
     - id: option-tradeoff
-      asks: "Does every option cover impact, dependency changes, data changes, and rollback?"
+      asks: "Does every option cover impact / dependency changes / data changes / rollback?"
     - id: selected-decision
-      asks: "Is the selected option recorded before ADR generation?"
+      asks: "Is the selected option recorded in 设计文档.md before ADR generation?"
     - id: rollback-realism
-      asks: "Can rollback be followed without inventing missing steps?"
+      asks: "Can rollback in 设计文档.md be followed without inventing missing steps?"
     - id: implementation-readiness
-      asks: "Can engineers start from the 17-chapter implementation plan?"
+      asks: "Can engineers start from the 17-chapter 实施方案.md?"
     - id: org-conformance
-      asks: "Are KB violations marked and escalated?"
+      asks: "Are KB violations marked in 评审报告.md and escalated?"
     - id: evidence-closure
-      asks: "Does every major assertion cite YAML or source evidence?"
+      asks: "Does every major assertion in 设计文档.md cite YAML or source evidence?"
+
 retry_policy:
   max_retries: 2
   on_failure: "retry failed owning skill; third failure requires user judgment"

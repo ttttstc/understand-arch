@@ -223,45 +223,75 @@
 
 ---
 
-## 6. `arch/{project}/` 目录与生命周期
+## 6. `arch/{项目名}/` 目录与生命周期
+
+**两个顶层 bucket,边界清晰**:`agent/` = 引擎契约(人不需要看),`user/` = 给人看的全部交付件。
 
 ```
-arch/{project-name}/
-├── state.yaml                     workflow 状态机 + baseline commits + overrides + integrity history
-├── evidence/                      ★ 智能体证据包(5 yaml,mutable,可重生成)
-├── wiki/                          ★ 人类知识库(6 页,mutable)
-│   ├── 首页.md
-│   ├── 01-系统全景.md
-│   ├── 02-现状架构.md
-│   ├── 03-关键业务链路.md
-│   ├── 04-风险与技术债.md
-│   └── 05-决策与待办.md
-├── diagrams/                      Mermaid 源 + 可选 SVG/PNG
-├── adr/                           ★ append-only,架构决策史
-├── design-docs/{change-name}/     ★ append-only,每次 design 一份
-│   ├── frame.yaml
-│   ├── 影响面.yaml
-│   ├── options.md
-│   ├── 4 强制 md(影响面清单 / 模块依赖变化 / 数据模型变更 / 回滚方案)
-│   ├── ADR-NNN-xxx.md             (同步进 ../adr/)
-│   ├── design-doc.md              RFC 级
-│   ├── 实施方案.md                SE 细化设计,研发可开工(17 章)
-│   └── eval-strategy.md           (AI 域 phase 产出)
-├── audits/{date}/                 ★ append-only,每次 audit 一份
-├── briefs/{audience}-{date}/      ★ append-only,每次汇报一份
-├── overrides/                     人工覆盖审计记录
-├── PM问题清单.md                  (HARD GATE 时产出,等用户/PM 答)
-└── .metrics.jsonl                 v1.0 必埋点(每个 skill 跑完 append 一行)
+arch/{项目名}/
+│
+├── agent/                            🤖 引擎契约,人不需要看
+│   ├── 状态.yaml                     workflow 状态机 + baseline_commits + overrides 索引 + integrity history
+│   ├── 证据/                         5+1 yaml 事实源(LLM 回链用)
+│   │   ├── 项目总览.yaml             arch-frame 产
+│   │   ├── 仓库与组件清单.yaml       arch-analyze 产
+│   │   ├── 依赖与链路图谱.yaml       arch-analyze 产
+│   │   ├── 风险与技术债台账.yaml     arch-analyze 产
+│   │   ├── 决策与证据索引.yaml       arch-adr / arch-frame 产
+│   │   └── 影响面-{change}.yaml      (design 模式时每次变更一份)
+│   ├── 覆盖记录/                     人工 acceptance override 审计(append-only)
+│   │   └── OVR-NNN-{topic}.yaml
+│   ├── PM问题清单.md                 (HARD GATE 时产出,等用户/PM 答;清单本质是引擎状态)
+│   └── 指标.jsonl                    每个 skill 跑完 append 一行(Premise 2 验证依赖)
+│
+└── user/                             ★ 给人看的全部在这里
+    ├── README.md                     ★ 入口:健康度 + 当前 workflow 状态 + 全部产物导航
+    │
+    ├── 知识库/                       (mutable,持续更新,7 页)
+    │   ├── 首页.md
+    │   ├── 01-系统全景.md            仓库 + 组件 + ownership + 业务能力地图 + 演进史
+    │   ├── 02-现状架构.md            Container + Deployment + 协议矩阵 + 边界
+    │   ├── 03-关键业务链路.md        3-5 详细 flow + 数据资产清单
+    │   ├── 04-质量与风险.md          NFR 当前水位 + 风险 + 技术债 + 漂移
+    │   ├── 05-决策与待办.md          ADR 时间线 + 待答问题 + 治理
+    │   └── 06-能力雷达.md            业务能力矩阵 + 技术能力评分 + 演进规划
+    │
+    ├── 架构图/                       (mutable,Mermaid 源 + 可选 SVG/PNG)
+    │   └── *.mmd
+    │
+    ├── 决策史/                       (append-only,ADR 国际通用术语保留)
+    │   └── ADR-NNN-xxx.md
+    │
+    ├── 设计变更/                     (append-only,每次 design 一目录,3 文件)
+    │   └── {change}/
+    │       ├── 设计文档.md           合并:变更请求 + 影响面摘要 + 方案权衡 + 回滚方案
+    │       ├── 实施方案.md           SE 细化设计 17 章
+    │       └── 评审报告.md           workflow-end self review
+    │
+    ├── 审计/                         (append-only,扁平,date+topic 区分文件)
+    │   ├── {date}-体检.md            audit mode 产
+    │   ├── {date}-评审-{topic}.md    /arch-review --mode=doc 单独调用产
+    │   └── {date}-PR评审-{pr-id}.md  /arch-review --mode=code 产
+    │
+    └── 汇报/                         (append-only,单文件 + audience-stamped)
+        └── {date}-{audience}.md
 ```
 
-`.metrics.jsonl` 字段:`ts / skill / mode / inputs_summary / outputs_paths / duration_s / token_estimate / overrides_used / verify_passed`。**Premise 2 验证依赖此**,v1.0 必埋。
+### 设计原则
+
+- **agent/ 与 user/ 严格分**:agent/ 是机器契约 + 结构化事实,人极少需要直接读;user/ 是人类可读交付件,从 README.md 开始即可
+- **文件数最小化**:每个 change 收敛到 3 文件(原 10);每次审计 1 文件;每份汇报 1 文件
+- **产物中文化**:agent/ 内已是 5+1 yaml 中文名;user/ 内全部交付件中文名;ADR 国际通用保留;Mermaid 文件名英文(文件名是 ID-like)
+- **append-only 标识更显式**:决策史 / 设计变更 / 审计 / 汇报 全部 append-only,人为不允许改
+
+`agent/指标.jsonl` 字段:`ts / skill / mode / inputs_summary / outputs_paths / duration_s / token_estimate / overrides_used / verify_passed`。**Premise 2 验证依赖此**,v1.0 必埋。
 
 ### 生命周期管理
 
-- **首次运行**:建工作目录 + 跑 mode pipeline + 落产物
+- **首次运行**:建工作目录(从 `arch/_template/` copy)+ 跑 mode pipeline + 落产物
 - **二次运行**:
-  - `integrity check`:state.yaml + 文件完整性
-  - 缺失自动恢复:`evidence/wiki/diagrams` 派生产物静默重建;`ADR/design-docs` 缺失停止,要求 git restore
+  - `integrity check`:`agent/状态.yaml` + 文件完整性
+  - 缺失自动恢复:`agent/证据/`、`user/知识库/`、`user/架构图/` 派生产物静默重建;`user/决策史/`、`user/设计变更/`、`user/审计/`、`user/汇报/` 缺失停止,要求 git restore(append-only 不允许悄悄消失)
   - `prereq check`:audit 无 baseline → 默认自动接 onboard
   - manifest commit hash 漂移检测 → 提示是否刷新 baseline
 - **过期检测**:产物 frontmatter 记录 `baseline_commits`,与当前对比

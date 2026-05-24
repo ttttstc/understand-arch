@@ -1,13 +1,14 @@
 mode: brief
-canonical_source: internal/acceptance/brief.yaml
 purpose: "Repackage existing architecture evidence for a specific audience."
+
 structural_gate:
   required: true
   must_have:
-    - "briefs/{audience}-{date}/ exists"
-    - "management summary is one page or less when audience=management"
-    - "every claim links to an upstream source artifact"
-    - "generated_at and source package are recorded"
+    - "user/汇报/{date}-{audience}.md exists (single file, no nested directory)"
+    - "when audience=management, file is one page or less"
+    - "every claim links to an upstream artifact in user/ or agent/证据/"
+    - "frontmatter records generated_at + source_package (path to audit / wiki snapshot used)"
+
 semantic_gate:
   threshold: "all"
   allows_degraded: false
@@ -20,6 +21,7 @@ semantic_gate:
       asks: "Is the ask, risk, or takeaway explicit?"
     - id: evidence-traceability
       asks: "Can every important number or conclusion be traced back?"
+
 retry_policy:
   max_retries: 2
   on_failure: "retry arch-pack with verifier notes"
