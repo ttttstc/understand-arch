@@ -141,7 +141,7 @@ workflow 收到 `frame readiness=blocked` →
 
 ## 11. 企业 KB 加载
 
-启动时调 `arch-frame` 加载 `~/.ni-arch-kb/`(或 `<org>/.arch-kb/`)。
+启动时调 `arch-frame` 加载 `~/.understand-arch/kb/`(或 `<org>/.arch-kb/`)。
 
 加载分级行为:
 - 目录不存在 → `degrade-with-warning`,标 `org_constraints: not_configured`

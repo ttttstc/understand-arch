@@ -5,13 +5,13 @@
     "email": "423310463@qq.com"
   },
   "metadata": {
-    "description": "面向高级软件架构师的 evidence-driven workflow skill suite。Governance-first(治理优先),brownfield 主战场,只产描述类交付件(ADR / 设计文档 / 17 章实施方案 / Mermaid 图 / 5+1 yaml 证据资产),不生成业务代码。",
+    "description": "给软件架构师的 Claude Code 工作流套件。接手新系统 / 现状审计 / 根据 PRD 设计架构 / 准备汇报。产架构知识库 + ADR + 设计文档 + 17 章实施方案 + 架构图(Mermaid / SVG)。只产架构描述类产物,不生成业务代码。",
     "version": "0.2.0-skeleton"
   },
   "plugins": [
     {
       "name": "understand-arch",
-      "description": "架构师工作流套件:onboard / audit / design / brief 4 mode + 9 atomic skill + 1 编排 skill + 5+1 yaml 证据契约 + PRD HARD GATE + Goal-driven 验收 loop + 反合理化清单 + 企业 KB 加载。v0.2.0 = 10 skill 骨架全部写完,完整实现见 docs/spec-v1.0.md。",
+      "description": "架构师工作流:onboard(接手新系统)/ audit(现状审计)/ design(根据 PRD 设计)/ brief(准备汇报)四个场景。10 个 skill 可组合使用。产架构知识库 + 决策记录 + 设计文档 + 实施方案 + 架构图。",
       "source": "./",
       "strict": false,
       "skills": [

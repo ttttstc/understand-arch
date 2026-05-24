@@ -22,11 +22,11 @@
 
 | 文件 | 验证什么 yaml | 加载方 |
 |---|---|---|
-| `banned-patterns.schema.json` | `~/.ni-arch-kb/banned-patterns.yaml` | `arch-frame` |
-| `compliance-redlines.schema.json` | `~/.ni-arch-kb/compliance-redlines.yaml` | `arch-frame` |
-| `network-boundaries.schema.json` | `~/.ni-arch-kb/network-boundaries.yaml` | `arch-frame` |
-| `naming-conventions.schema.json` | `~/.ni-arch-kb/naming-conventions.yaml` | `arch-frame` |
-| `tech-radar.schema.json` | `~/.ni-arch-kb/tech-radar.yaml` | `arch-frame` |
+| `banned-patterns.schema.json` | `~/.understand-arch/kb/banned-patterns.yaml` | `arch-frame` |
+| `compliance-redlines.schema.json` | `~/.understand-arch/kb/compliance-redlines.yaml` | `arch-frame` |
+| `network-boundaries.schema.json` | `~/.understand-arch/kb/network-boundaries.yaml` | `arch-frame` |
+| `naming-conventions.schema.json` | `~/.understand-arch/kb/naming-conventions.yaml` | `arch-frame` |
+| `tech-radar.schema.json` | `~/.understand-arch/kb/tech-radar.yaml` | `arch-frame` |
 
 ## v1.1: External baseline source
 

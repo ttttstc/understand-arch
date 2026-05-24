@@ -1,90 +1,175 @@
 # understand-arch
 
-> Evidence-driven workflow skill suite for senior software architects.
-> **Governance-first. Brownfield-native. Description-only output.**
+> A workflow skill suite for software architects — Claude Code plugin.
 
 [中文](./README.zh.md) | [Spec](./docs/spec-v1.0.md) | [Contributing](./CONTRIBUTING.md)
 
-**Status: v0.2.0 (full skeleton).** All 10 skill skeletons written + design spec complete. Full implementation pending — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the build order.
+**Currently supports: Claude Code.**
 
 ---
 
 ## What it does
 
-A Claude Code plugin with **9 atomic skills + 1 workflow orchestrator** that produces:
+Productizes 4 daily architect activities:
 
-- **5+1 YAML evidence assets** — project overview, repo inventory, dependency graph, risk ledger, decision index; + org-scoped enterprise KB
-- **6-page Wiki** — human navigation layer over the evidence
-- **ADRs** — append-only architecture decision history
-- **Design docs + 17-chapter SE implementation plans** — research-ready, dev-actionable
-- **Diagrams** — Mermaid (default) + optional fireworks-tech-graph backend
-- **Architecture review reports** — doc mode + code drift mode
+### Onboard an unfamiliar system
 
-**All outputs are descriptive.** No code generation, no IaC, no DDL, no scaffolds. Use Cline / aider / your IaC tool for implementation.
+```
+You say:  "帮我接手 ./order-system" / "take over this system"
+You get:
+  - 5 structured YAML evidence files (repos / dependencies / risks / decisions / overview)
+  - 6-page Wiki (start from index, target 60–90 min to understand)
+  - C4 current-state architecture diagrams (Mermaid + optional SVG/PNG)
+```
+
+### Audit current state
+
+```
+You say:  "审视一下 order-system" / "audit this system"
+You get:
+  - Risk ledger sorted by severity
+  - Technical debt list with blast radius
+  - Refactoring roadmap (short / mid / long term)
+```
+
+### Design from PRD
+
+```
+You say:  "根据 ./prd.md 设计架构" / "design architecture from this PRD"
+You get:
+  - 2–3 candidate options with tradeoff matrix (impact / dependencies / data model / rollback)
+  - ADR (architecture decision record)
+  - Full RFC design document
+  - 17-chapter SE implementation plan (dev-actionable)
+  - Target architecture diagrams
+```
+
+**If the PRD is ambiguous**, the workflow automatically halts and produces `PM问题清单.md` for you to confirm with PM before continuing.
+
+### Prepare presentation
+
+```
+You say:  "给 CTO 出一份汇报" / "prepare a brief for CTO"
+You get:
+  - Audience-tailored deliverable (HTML / PPT / markdown)
+  - Management summary (≤1 page, decisions linked to evidence)
+```
 
 ---
 
-## 4 Workflow Modes
+## Quick start
 
-| Trigger phrases | Mode | Use case |
-|---|---|---|
-| 接手 / 摸熟 / 全景 / overview / 这是个什么系统 | `onboard` | Take over an unfamiliar system, full survey |
-| 架构审计 / 体检 / 健康度 / 审视当前项目 / 审视架构 | `audit` | Health check + improvement roadmap |
-| 根据 PRD 设计 / 出 RFC / 出实施方案 / 迁移方案 | `design` | Design from change request, with PRD HARD GATE |
-| 准备汇报 / 给 CTO 一份 / 整理 PPT | `brief` | Audience-tailored deliverables |
-
-Atomic skills can also be invoked directly: `/arch-adr`, `/arch-diagram`, `/arch-analyze --depth=manifest`, etc.
-
----
-
-## How it differs from related tools
-
-| Tool | Focus | How this complements |
-|---|---|---|
-| [Understand-Anything](https://github.com/Lum1104/Understand-Anything) (22.7k⭐) | visualization-first (passive understanding) | governance-first (active production) |
-| [wshobson/agents](https://github.com/wshobson/agents) (35.8k⭐) | scattered role agents | unified workflow with state machine |
-| aider / Cline | code generation | architecture decisions + records (no code gen) |
-
-We **learn from these** (borrowed the 2-stage code analysis pattern, ADR format conventions, etc.) but **don't depend on them**. No required integrations.
-
----
-
-## Quick start (when v1.0 ships)
+### Install
 
 ```bash
-# Install
 /plugin marketplace add ttttstc/understand-arch
 /plugin install understand-arch
+```
 
-# Interactive mode picker
-/arch
+### Use
 
-# Or direct mode
+**Natural language** (recommended):
+
+| You say | Mode |
+|---|---|
+| 接手 / 摸熟 / 全景 / take over / overview | `onboard` |
+| 架构审计 / 体检 / 审视架构 / audit | `audit` |
+| 根据 PRD 设计 / 出 RFC / 出实施方案 / design | `design` |
+| 准备汇报 / 给 CTO 一份 / brief | `brief` |
+
+**Slash commands**:
+
+```bash
+/arch                          # Interactive mode picker
 /arch:onboard ./my-system
 /arch:audit
 /arch:design --prd=./prd.md
 /arch:brief --audience=cto
 ```
 
+**Single capabilities** (skip the full workflow):
+
+```bash
+/arch-adr                      # Write a single ADR
+/arch-diagram                  # Render one diagram
+/arch-analyze --depth=manifest # Survey one repo
+/arch-diff-judge               # Impact analysis only
+/arch-options                  # Evaluate candidate options
+/arch-review                   # Review a design doc / PR drift
+/arch-radar                    # Industry benchmark / tech selection
+```
+
 ---
 
-## Status & Roadmap
+## Where outputs live
 
-| Version | What's in it |
-|---|---|
-| **v0.2.0 (now)** | **All 10 skill skeletons written** + complete design spec + `arch-library/` + `internal/` MANIFESTs + Skill Regression Suite scaffold |
-| **v1.0 (target)** | All 9 skills fully implemented + `arch-library/` knowledge base seed + acceptance loop working + JSON schemas |
-| **v1.1** | Skill Regression Suite + ADR `fitness_spec` + `arch-knowledge` Tool Wrapper skill + multi-model review |
+Default: `arch/{project-name}/` under Claude Code's working directory.
 
-See [docs/spec-v1.0.md](./docs/spec-v1.0.md) for the full specification.
+```
+arch/my-system/
+├── evidence/         5 structured YAML files (fact source)
+├── wiki/             6 human-readable pages
+├── diagrams/         architecture diagrams
+├── adr/              decision records (append-only, never modified)
+├── design-docs/      one folder per design iteration
+├── audits/           one folder per audit
+└── briefs/           one folder per presentation
+```
+
+Configurable via `output_path`.
 
 ---
 
-## Documentation
+## Enterprise knowledge base (optional, recommended)
 
-- **[docs/spec-v1.0.md](./docs/spec-v1.0.md)** — Full v1.0 specification (canonical reference)
-- **[docs/office-hours-2026-05-24.md](./docs/office-hours-2026-05-24.md)** — Design diagnostic record (premises + 8 founder signals + YAML schema sketch)
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Build order + design principles (entry point for Codex / Claude / contributors)
+If your team has constraints (banned patterns / compliance redlines / naming conventions / network boundaries), place them under `~/.understand-arch/kb/`:
+
+```
+~/.understand-arch/kb/
+├── banned-patterns.yaml
+├── compliance-redlines.yaml
+├── network-boundaries.yaml
+├── naming-conventions.yaml
+└── tech-radar.yaml
+```
+
+The workflow auto-loads them and flags any violation when generating designs. **Skip configuration and it still works** (graceful degradation).
+
+---
+
+## Diagram rendering upgrade (optional)
+
+Default: Mermaid (text, rendered natively by GitHub / GitLab / VSCode).
+
+For publication-ready SVG/PNG, install [`fireworks-tech-graph`](https://github.com/yizhiyanhua-ai/fireworks-tech-graph):
+
+```bash
+/plugin install fireworks-tech-graph
+```
+
+The workflow will automatically use it. **Not installed → falls back to Mermaid.**
+
+---
+
+## Boundaries
+
+**Only produces architecture description artifacts**: `*.md` / `*.yaml` / `*.mmd` / `*.svg+png`.
+
+**Does NOT generate**: business source code / IaC scripts / DDL migration scripts / CI pipeline templates / service scaffolds. Architecture is cognition; implementation is for dedicated code-generation tools.
+
+---
+
+## Docs
+
+- [Full spec](./docs/spec-v1.0.md)
+- [Design diagnostic record](./docs/office-hours-2026-05-24.md)
+- [Contributing](./CONTRIBUTING.md)
+
+---
+
+## Status
+
+v0.2.0 (full skeleton). All 10 skill skeletons written; full implementation pending. See [CONTRIBUTING.md](./CONTRIBUTING.md) for build order.
 
 ---
 

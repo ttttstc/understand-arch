@@ -1,7 +1,7 @@
 ---
 name: arch-frame
 description: |
-  架构问题界定(forward-looking)。把变更诉求 / brief / PRD / user story 翻译成结构化的「项目总览」:业务目标、范围、非功能需求、约束、假设、验收标准。同时:① 加载企业知识库(`~/.ni-arch-kb/`)注入 `org_constraints`;② LLM 识别 `architecture_profile`(架构风格 / 主要关切 / 推荐 references / 推荐 phases);③ 在 design mode 下对 PRD 做 clarity 检测,命中 ≥3 个具体未答问题强制产 `PM问题清单.md` 暂停 workflow(HARD GATE)。
+  架构问题界定(forward-looking)。把变更诉求 / brief / PRD / user story 翻译成结构化的「项目总览」:业务目标、范围、非功能需求、约束、假设、验收标准。同时:① 加载企业知识库(`~/.understand-arch/kb/`)注入 `org_constraints`;② LLM 识别 `architecture_profile`(架构风格 / 主要关切 / 推荐 references / 推荐 phases);③ 在 design mode 下对 PRD 做 clarity 检测,命中 ≥3 个具体未答问题强制产 `PM问题清单.md` 暂停 workflow(HARD GATE)。
 
   触发词:界定一下 / 问题是什么 / 范围 / scope / 约束 / 质量属性 / NFR / 验收标准 / 框定 / 解析 PRD / 需求拆解
 
@@ -23,7 +23,7 @@ description: |
 
 - 变更诉求 / brief / PRD / user story / issue link / 文件路径
 - 用户对话回答
-- 企业 KB 路径(默认 `~/.ni-arch-kb/`,可由 workflow 传 `--kb-path`)
+- 企业 KB 路径(默认 `~/.understand-arch/kb/`,可由 workflow 传 `--kb-path`)
 - (可选)调用上下文(workflow mode:onboard/audit/design/brief —— 决定 frame 风格)
 
 ## 3. 输出
@@ -36,7 +36,7 @@ description: |
 
 ### 4.1 加载企业 KB(启动第一步)
 
-读 `~/.ni-arch-kb/` 下 5 个 yaml:
+读 `~/.understand-arch/kb/` 下 5 个 yaml:
 - `banned-patterns.yaml`
 - `compliance-redlines.yaml`
 - `network-boundaries.yaml`

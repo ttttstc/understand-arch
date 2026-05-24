@@ -38,7 +38,7 @@ mode_history:
 
 # ===== 企业 KB 加载状态(Gap A) =====
 kb_loaded:
-  source: path                              # ~/.ni-arch-kb/ 或 <org>/.arch-kb/
+  source: path                              # ~/.understand-arch/kb/ 或 <org>/.arch-kb/
   banned_patterns: loaded|not_loaded|not_configured
   compliance_redlines: loaded|not_loaded|not_configured
   network_boundaries: loaded|not_loaded|not_configured
@@ -124,7 +124,7 @@ phase: frame
 current_mode: onboard
 completed_phases: []
 baseline_commits: {}
-kb_loaded: {source: ~/.ni-arch-kb/, ...}
+kb_loaded: {source: ~/.understand-arch/kb/, ...}
 ```
 
 ### design HARD GATE 触发时

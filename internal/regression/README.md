@@ -49,7 +49,7 @@ expected_behavior:
   - parses PRD without HARD GATE
   - outputs architecture_profile with ≥3 references selected
 trace_assertion:
-  - reads ~/.ni-arch-kb/ files
+  - reads ~/.understand-arch/kb/ files
   - does NOT spawn subagent (frame is main-context)
   - writes 项目总览.yaml with all required fields
 result_assertion:

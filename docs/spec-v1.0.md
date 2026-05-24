@@ -110,7 +110,7 @@
 - **核心机制**:
   - **PRD HARD GATE**:命中 ≥3 个具体未答问题 → 产 `PM问题清单.md` → workflow 暂停在 `awaiting-pm-confirmation`,等用户填文件或对话回答
   - **architecture_profile**:LLM 从代码 + 描述自动识别架构风格 + 主要关切 + 推荐加载的 references + 推荐插入的 phase(`internal/phases/` 里选)
-  - **加载企业 KB**(Gap A 落地):从 `~/.ni-arch-kb/` 读 banned-patterns 等 → 塞进 `org_constraints`
+  - **加载企业 KB**(Gap A 落地):从 `~/.understand-arch/kb/` 读 banned-patterns 等 → 塞进 `org_constraints`
 
 ### 4.3 `arch-analyze` —— 全面分析架构现状(backward-looking)
 
@@ -204,7 +204,7 @@
 
 ### 5.2 Org-scoped(第 6 类,Gap A 落地)
 
-位置:`~/.ni-arch-kb/`(用户级)或 `<org>/.arch-kb/`(团队级)
+位置:`~/.understand-arch/kb/`(用户级)或 `<org>/.arch-kb/`(团队级)
 
 | Yaml | 内容 |
 |---|---|
@@ -412,7 +412,7 @@ PR review / 是不是偏离架构                 → /arch-review --mode=code
 1. **Research → Review → Revise → Publish**(GPT Researcher)→ `arch-radar` 递归研究
 2. **Plan → Act 分离**(aider / Cline)→ `arch-workflow` 编排 vs 原子 skill 执行
 3. **Role-specialized subagents**(Claude Code / OpenHands / Roo Code)→ heavy skill subagent 隔离
-4. **Trigger-based reusable micro-skills**(OpenHands microagents)→ 企业 KB(`~/.ni-arch-kb/`)的灵感来源
+4. **Trigger-based reusable micro-skills**(OpenHands microagents)→ 企业 KB(`~/.understand-arch/kb/`)的灵感来源
 5. **Architecture as code**(ADR / C4 / Structurizr)→ append-only ADR + Mermaid + 5+1 yaml + v1.1 fitness_spec
 
 ---

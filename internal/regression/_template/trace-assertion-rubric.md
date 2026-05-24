@@ -16,7 +16,7 @@
 ```yaml
 files_read:
   must_include:
-    - "~/.ni-arch-kb/banned-patterns.yaml"          # frame 必读企业 KB
+    - "~/.understand-arch/kb/banned-patterns.yaml"          # frame 必读企业 KB
     - "${ARCH_PROJECT_DIR}/evidence/manifest.yaml"  # judge 必读 baseline
   must_not_include:
     - "src/**/*.ts"                                  # frame 主上下文不应读 src

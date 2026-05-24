@@ -115,7 +115,7 @@ Supersedes: `architect-skill-suite-research.md`(同目录,先前的初稿研究)
 ### Approach A1: 不新增 skill,扩 3 个现有 skill ✅ **Recommended (Accepted)**
 
 - **Gap A(v1.0)**:新增**第 6 类 yaml 资产**——org-scoped 企业知识库
-  - 位置:`~/.ni-arch-kb/`(用户级)或 `<org>/.arch-kb/`(团队级)
+  - 位置:`~/.understand-arch/kb/`(用户级)或 `<org>/.arch-kb/`(团队级)
   - 内容:`banned-patterns.yaml` / `compliance-redlines.yaml` / `network-boundaries.yaml` / `naming-conventions.yaml` / `tech-radar.yaml`
   - **`arch-frame`** 启动时加载相关条目,写进 `项目总览.yaml.org_constraints`
   - **`arch-options`** 选方案时强制对照(违反 banned → 降级或拒绝)
@@ -125,7 +125,7 @@ Supersedes: `architect-skill-suite-research.md`(同目录,先前的初稿研究)
   - `arch-review --mode=fitness` 主动跑所有 ADR 的 fitness_spec
   - **延后理由**:需要 ADR 累积才有 enforce 对象;additive 字段,无破坏性
 
-**净改动(v1.0)**:**skill 数 9 不变**,扩 `frame` / `options` / `review` 三个 SKILL.md,加 `~/.ni-arch-kb/` 目录约定。
+**净改动(v1.0)**:**skill 数 9 不变**,扩 `frame` / `options` / `review` 三个 SKILL.md,加 `~/.understand-arch/kb/` 目录约定。
 
 ### Approach A2(否决): 新增 `arch-knowledge` + `arch-fitness`
 
@@ -173,7 +173,7 @@ Supersedes: `architect-skill-suite-research.md`(同目录,先前的初稿研究)
 5. 决策与证据索引.yaml(arch-adr + arch-options)
 + design 专属:**影响面.yaml**(arch-diff-judge)
 
-**Org-scoped(N yaml,新增第 6 类)**:`~/.ni-arch-kb/`
+**Org-scoped(N yaml,新增第 6 类)**:`~/.understand-arch/kb/`
 - `banned-patterns.yaml`
 - `compliance-redlines.yaml`
 - `network-boundaries.yaml`
@@ -196,7 +196,7 @@ Supersedes: `architect-skill-suite-research.md`(同目录,先前的初稿研究)
   - PRD 不清晰:命中 ≥3 个具体未答问题(必填字段缺失 / 验收标准不可量化 / NFR 关键维度未表态 / non-goals 模糊 / 检测到歧义句 / 关键依赖未明,任一项算 1 个)
   - 必须产出 `PM问题清单.md` 作为 gate 的可验证证据
 - **企业 KB 加载失败行为**:
-  - `~/.ni-arch-kb/` 不存在 → degrade-with-warning,标 `org_constraints: not_configured`,继续 workflow(让首次用户能跑通)
+  - `~/.understand-arch/kb/` 不存在 → degrade-with-warning,标 `org_constraints: not_configured`,继续 workflow(让首次用户能跑通)
   - 存在但某 yaml 文件 schema 不过 → **fail-loud**,告诉用户哪个文件哪行错,暂停 workflow
   - 部分 yaml 存在(如有 banned-patterns 没 compliance-redlines)→ 加载存在的,缺失的标 `not_loaded`,继续
 - **AI/agent 域走 architecture_profile** 自动识别 + LLM 自选 references + LLM 自选 phase(eval-design 等)
@@ -323,7 +323,7 @@ architecture_profile:                # LLM 识别的架构画像
   recommended_diagram_style: string
   user_override: object|null         # 用户改过的版本
 
-org_constraints:                     # 从 ~/.ni-arch-kb/ 加载,Gap A 落地点
+org_constraints:                     # 从 ~/.understand-arch/kb/ 加载,Gap A 落地点
   banned_patterns: [{id, rule, severity}] | not_configured | not_loaded
   compliance_redlines: [{id, rule}] | not_configured | not_loaded
   network_boundaries: [...] | not_configured | not_loaded
