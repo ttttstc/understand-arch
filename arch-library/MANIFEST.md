@@ -46,16 +46,18 @@
 | `branch-by-abstraction.md` | 通过抽象层切换实现 |
 | `parallel-run.md` | 双写、双读、对比、切流 |
 
-### `agent-architecture/`
+### `agent-architecture/` ⬜ AI 域全部 defer
 
-| 文件 | scope |
-|---|---|
-| `agent-patterns.md` | 单 agent / supervisor-worker / hierarchical / swarm |
-| `rag-patterns.md` | naive / advanced / agentic RAG / 检索策略 |
-| `tool-design.md` | tool 粒度、幂等性、错误语义、参数设计 |
-| `memory-architecture.md` | short/long term / episodic / semantic memory |
-| `guardrails.md` | 输入输出护栏、prompt injection 防御 |
-| `eval-patterns.md` | offline eval / A/B / golden set |
+> 用户指示 AI 域 v1.0 不支持。下列文件未实装,等 AI 支持开放后做。
+
+| 文件 | scope | 状态 |
+|---|---|---|
+| `agent-patterns.md` | 单 agent / supervisor-worker / hierarchical / swarm | ⬜ |
+| `rag-patterns.md` | naive / advanced / agentic RAG / 检索策略 | ⬜ |
+| `tool-design.md` | tool 粒度、幂等性、错误语义、参数设计 | ⬜ |
+| `memory-architecture.md` | short/long term / episodic / semantic memory | ⬜ |
+| `guardrails.md` | 输入输出护栏、prompt injection 防御 | ⬜ |
+| `eval-patterns.md` | offline eval / A/B / golden set | ⬜ |
 
 ### `nfr-checklists/`
 
@@ -68,10 +70,10 @@
 
 ### `anti-patterns/`
 
-| 文件 | scope |
-|---|---|
-| `microservices-anti-patterns.md` | 微服务常见反模式 |
-| `agent-anti-patterns.md` | agent 常见反模式(uncontrolled recursion / tool soup / 无 eval / prompt 漂移) |
+| 文件 | scope | 状态 |
+|---|---|---|
+| `microservices-anti-patterns.md` | 微服务常见反模式 | ✅ |
+| `agent-anti-patterns.md` | agent 常见反模式 | ⬜ defer 到 AI 域支持时一起做 |
 
 ## 加新 reference 的姿势
 
