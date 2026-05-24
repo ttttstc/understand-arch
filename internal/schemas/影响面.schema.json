@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/change-impact.schema.json",
+  "title": "影响面",
+  "description": "arch-diff-judge 产出的 design mode 变更影响契约。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "generated_at",
+    "generated_by",
+    "change_request",
+    "affected",
+    "scope_boundary",
+    "risks",
+    "verify_passed",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project_name": { "$ref": "#/$defs/kebabName" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": { "type": "string", "const": "arch-diff-judge" },
+    "change_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "summary"],
+      "properties": {
+        "source": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "affected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["services", "modules", "apis", "data_models", "events_messages", "permissions", "deployments", "configs"],
+      "properties": {
+        "services": { "type": "array", "items": { "$ref": "#/$defs/serviceImpact" } },
+        "modules": { "type": "array", "items": { "$ref": "#/$defs/moduleImpact" } },
+        "apis": { "type": "array", "items": { "$ref": "#/$defs/apiImpact" } },
+        "data_models": { "type": "array", "items": { "$ref": "#/$defs/dataModelImpact" } },
+        "events_messages": { "type": "array", "items": { "$ref": "#/$defs/eventImpact" } },
+        "permissions": { "type": "array", "items": { "$ref": "#/$defs/permissionImpact" } },
+        "deployments": { "type": "array", "items": { "$ref": "#/$defs/deploymentImpact" } },
+        "configs": { "type": "array", "items": { "$ref": "#/$defs/configImpact" } }
+      }
+    },
+    "scope_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["must_change", "may_change", "should_not_change"],
+      "properties": {
+        "must_change": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "may_change": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "should_not_change": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
+      }
+    },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/derivedRisk" } },
+    "verify_passed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["structural", "semantic", "overrides"],
+      "properties": {
+        "structural": { "type": "boolean" },
+        "semantic": { "type": "boolean" },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["reason", "by", "at"],
+            "properties": {
+              "reason": { "$ref": "#/$defs/nonEmptyString" },
+              "by": { "$ref": "#/$defs/nonEmptyString" },
+              "at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "changeType": { "type": "string", "enum": ["add", "modify", "deprecate", "drop", "no_impact"] },
+    "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "commit"],
+      "properties": {
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "line": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "string", "pattern": "^\\d+(?:-\\d+)?$" },
+            { "type": "string", "const": "not_applicable" }
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable|external)$"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "baseImpact": {
+      "type": "object",
+      "required": ["id", "change_type", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "serviceImpact": {
+      "allOf": [
+        { "$ref": "#/$defs/baseImpact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "change_type", "owner", "evidence_refs"],
+          "properties": {
+            "id": { "$ref": "#/$defs/nonEmptyString" },
+            "change_type": { "$ref": "#/$defs/changeType" },
+            "owner": { "$ref": "#/$defs/nonEmptyString" },
+            "reason": { "type": ["string", "null"] },
+            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+          }
+        }
+      ]
+    },
+    "moduleImpact": {
+      "allOf": [
+        { "$ref": "#/$defs/baseImpact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "change_type", "dep_impact", "evidence_refs"],
+          "properties": {
+            "id": { "$ref": "#/$defs/nonEmptyString" },
+            "change_type": { "$ref": "#/$defs/changeType" },
+            "dep_impact": { "$ref": "#/$defs/nonEmptyString" },
+            "reason": { "type": ["string", "null"] },
+            "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+          }
+        }
+      ]
+    },
+    "apiImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "change_type", "contract_change", "compat_strategy", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "contract_change": { "$ref": "#/$defs/nonEmptyString" },
+        "compat_strategy": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "dataField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "nullable", "default"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "type": { "$ref": "#/$defs/nonEmptyString" },
+        "nullable": { "type": "boolean" },
+        "default": { "type": ["string", "number", "boolean", "null"] }
+      }
+    },
+    "dataModelImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "change_type",
+        "fields",
+        "migration_strategy",
+        "backfill_plan",
+        "compat_strategy",
+        "rollback",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/dataField" } },
+        "migration_strategy": { "$ref": "#/$defs/nonEmptyString" },
+        "backfill_plan": { "type": ["string", "null"] },
+        "compat_strategy": { "$ref": "#/$defs/nonEmptyString" },
+        "rollback": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "eventImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "change_type", "schema_change", "compat", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "schema_change": { "$ref": "#/$defs/nonEmptyString" },
+        "compat": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "permissionImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "change_type", "audit_impact", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "audit_impact": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "deploymentImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id", "change_type", "release_order", "evidence_refs"],
+      "properties": {
+        "unit_id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "release_order": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "configImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "change_type", "rollback", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "change_type": { "$ref": "#/$defs/changeType" },
+        "rollback": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "derivedRisk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "severity", "mitigation", "derived_from_change", "evidence_refs"],
+      "properties": {
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "mitigation": { "$ref": "#/$defs/nonEmptyString" },
+        "derived_from_change": { "type": "boolean", "const": true },
+        "related_existing_risk": { "type": ["string", "null"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    }
+  }
+}

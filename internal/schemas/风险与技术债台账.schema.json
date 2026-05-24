@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/risk-tech-debt-register.schema.json",
+  "title": "风险与技术债台账",
+  "description": "arch-analyze --depth=risk 产出的风险、技术债、影响范围与处置建议台账。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "generated_at",
+    "generated_by",
+    "depth",
+    "baseline_commits",
+    "risks",
+    "technical_debts",
+    "summary",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project_name": { "$ref": "#/$defs/kebabName" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": { "type": "string", "const": "arch-analyze" },
+    "depth": { "type": "string", "enum": ["risk", "full"] },
+    "baseline_commits": { "$ref": "#/$defs/baselineCommits" },
+    "risks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/risk" }
+    },
+    "technical_debts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/technicalDebt" }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["highest_severity", "top_risks", "recommended_next_actions"],
+      "properties": {
+        "highest_severity": { "$ref": "#/$defs/severity" },
+        "top_risks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/kebabName" }
+        },
+        "recommended_next_actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+    "baselineCommits": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable)$"
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "commit"],
+      "properties": {
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "line": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "string", "pattern": "^\\d+(?:-\\d+)?$" },
+            { "type": "string", "const": "not_applicable" }
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable|external)$"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "category",
+        "severity",
+        "affected_scope",
+        "description",
+        "mitigation",
+        "owner",
+        "status",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "category": { "type": "string", "enum": ["coupling", "reliability", "security", "performance", "data", "operability", "maintainability", "compliance", "unknown"] },
+        "severity": { "$ref": "#/$defs/severity" },
+        "affected_scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "mitigation": { "$ref": "#/$defs/nonEmptyString" },
+        "owner": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "type": "string", "enum": ["open", "accepted", "mitigated", "deferred"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "technicalDebt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "debt_type",
+        "severity",
+        "affected_scope",
+        "paydown_strategy",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "debt_type": { "type": "string", "enum": ["architecture", "test", "dependency", "observability", "documentation", "data", "security", "unknown"] },
+        "severity": { "$ref": "#/$defs/severity" },
+        "affected_scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "paydown_strategy": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    }
+  }
+}

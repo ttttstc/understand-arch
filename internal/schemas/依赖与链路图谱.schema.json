@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/dependency-flow-map.schema.json",
+  "title": "依赖与链路图谱",
+  "description": "arch-analyze --depth=manifest 产出的服务、模块、外部依赖与关键业务链路事实源。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "generated_at",
+    "generated_by",
+    "depth",
+    "baseline_commits",
+    "nodes",
+    "dependencies",
+    "external_dependencies",
+    "critical_flows",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project_name": { "$ref": "#/$defs/kebabName" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": { "type": "string", "const": "arch-analyze" },
+    "depth": { "type": "string", "enum": ["manifest", "model", "risk", "full"] },
+    "baseline_commits": { "$ref": "#/$defs/baselineCommits" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "external_dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/externalDependency" }
+    },
+    "critical_flows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/criticalFlow" }
+    },
+    "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "baselineCommits": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable)$"
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "commit"],
+      "properties": {
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "line": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "string", "pattern": "^\\d+(?:-\\d+)?$" },
+            { "type": "string", "const": "not_applicable" }
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable|external)$"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "repo_id", "label", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "kind": {
+          "type": "string",
+          "enum": ["repo", "service", "module", "database", "queue", "topic", "external-system", "deployment-unit", "unknown"]
+        },
+        "repo_id": { "type": ["string", "null"] },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "type",
+        "direction",
+        "strength",
+        "runtime_criticality",
+        "evidence_refs"
+      ],
+      "properties": {
+        "from": { "$ref": "#/$defs/kebabName" },
+        "to": { "$ref": "#/$defs/kebabName" },
+        "type": {
+          "type": "string",
+          "enum": ["imports", "http", "rpc", "event", "database", "cache", "config", "deployment", "unknown"]
+        },
+        "direction": { "type": "string", "enum": ["sync", "async", "build-time", "deploy-time", "unknown"] },
+        "strength": { "type": "string", "enum": ["hard", "soft", "optional", "unknown"] },
+        "runtime_criticality": { "type": "string", "enum": ["critical", "high", "medium", "low", "unknown"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "externalDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type", "owner", "used_by", "risk_note", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "type": { "type": "string", "enum": ["saas", "api", "database", "message-broker", "identity", "payment", "storage", "llm-provider", "unknown"] },
+        "owner": { "$ref": "#/$defs/nonEmptyString" },
+        "used_by": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/kebabName" }
+        },
+        "risk_note": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "criticalFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "trigger", "steps", "nfr_notes", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "trigger": { "$ref": "#/$defs/nonEmptyString" },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["order", "node_id", "action"],
+            "properties": {
+              "order": { "type": "integer", "minimum": 1 },
+              "node_id": { "$ref": "#/$defs/kebabName" },
+              "action": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "nfr_notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    }
+  }
+}

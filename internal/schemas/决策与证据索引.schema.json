@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/decision-evidence-index.schema.json",
+  "title": "决策与证据索引",
+  "description": "arch-options 与 arch-adr 共同维护的候选方案、推荐、ADR、待决策问题与假设索引。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "generated_at",
+    "generated_by",
+    "decisions",
+    "candidate_options",
+    "recommendations",
+    "pending_decisions",
+    "assumptions",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project_name": { "$ref": "#/$defs/kebabName" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["arch-options", "arch-adr", "arch-diff-judge", "arch-workflow"] }
+    },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decision" }
+    },
+    "candidate_options": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidateOption" }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recommendation" }
+    },
+    "pending_decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pendingDecision" }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assumption" }
+    },
+    "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+  },
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "commit"],
+      "properties": {
+        "file": { "$ref": "#/$defs/nonEmptyString" },
+        "line": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "string", "pattern": "^\\d+(?:-\\d+)?$" },
+            { "type": "string", "const": "not_applicable" }
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{7,64}|git_unavailable|external)$"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    },
+    "adrId": {
+      "type": "string",
+      "pattern": "^ADR-\\d{3}$"
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adr_id",
+        "title",
+        "date",
+        "status",
+        "path",
+        "related_options",
+        "related_evidence_refs"
+      ],
+      "properties": {
+        "adr_id": { "$ref": "#/$defs/adrId" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["proposed", "accepted", "deprecated", "superseded"] },
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "related_options": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/kebabName" }
+        },
+        "related_evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "candidateOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "summary",
+        "impact_scope",
+        "module_dependency_changes",
+        "data_model_changes",
+        "rollback_strategy",
+        "kb_violations",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" },
+        "impact_scope": { "$ref": "#/$defs/nonEmptyString" },
+        "module_dependency_changes": { "$ref": "#/$defs/nonEmptyString" },
+        "data_model_changes": { "$ref": "#/$defs/nonEmptyString" },
+        "rollback_strategy": { "$ref": "#/$defs/nonEmptyString" },
+        "kb_violations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/kbViolation" }
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "selected_option_id", "rationale", "conditions", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "selected_option_id": { "$ref": "#/$defs/kebabName" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "pendingDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "owner", "needed_by", "blocking"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "question": { "$ref": "#/$defs/nonEmptyString" },
+        "owner": { "$ref": "#/$defs/nonEmptyString" },
+        "needed_by": { "type": ["string", "null"], "format": "date" },
+        "blocking": { "type": "boolean" }
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "status", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabName" },
+        "text": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "type": "string", "enum": ["unconfirmed", "confirmed", "rejected", "superseded"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "kbViolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "severity", "reason"],
+      "properties": {
+        "rule_id": { "$ref": "#/$defs/nonEmptyString" },
+        "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "reason": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}
