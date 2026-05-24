@@ -13,6 +13,15 @@
 
 每个文件 **≤200 行**,聚焦单一关切。v1.1 可扩深度。
 
+### `typescript-patterns/`
+
+| 文件 | scope |
+|---|---|
+| `project-structure.md` | TS/JS 项目类型、单仓 vs monorepo、目录组织、模块边界 |
+| `type-discipline.md` | strict 配置、any/unknown、branded type、类型边界(zod)、API 类型来源 |
+| `build-and-bundle.md` | Vite/Webpack/tsup/esbuild 选型、ESM/CJS、tree-shake、dual package hazard |
+| `testing-strategy.md` | Testing Trophy、Vitest/Playwright、MSW、e2e 稳定性、覆盖率陷阱 |
+
 ### `microservices-patterns/`
 
 | 文件 | scope |
