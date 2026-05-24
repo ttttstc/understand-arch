@@ -1,0 +1,37 @@
+# Schema: internal/schemas/项目总览.schema.json
+# Owner skill: arch-frame
+# STUB — arch-frame 首次运行填充。这是所有其他 yaml 回链的根。
+
+project_name: ""
+generated_at: ""
+generated_by: "arch-frame"
+mode: ""
+baseline_commits: {}
+
+design_intent:
+  problem_statement: ""
+  business_goals: []
+  non_goals: []
+  acceptance_criteria: []
+
+architecture_profile:
+  identified_styles: []
+  primary_concerns: []
+  recommended_references: []      # 路径 under arch-library/
+  recommended_phases: []          # 名字 from internal/phases/
+  recommended_diagram_style: ""
+  user_override: null
+
+org_constraints:
+  tech_radar: []
+  banned_patterns: []
+  naming_conventions: []
+  network_boundaries: []
+  compliance_redlines: []
+  loaded_from: ""                 # ~/.understand-arch/kb 路径或 "(none)"
+  degraded: false
+
+evidence_refs:
+  - source: ""
+    lines: ""
+    note: ""

@@ -1,16 +1,21 @@
 # `_template/` — Workspace Skeleton
 
-`arch-workflow` copies this directory into `arch/{project-name}/` on the first invocation for a new project. **Do not run skills against `_template/` directly** — it is the source, not a workspace.
+`arch-workflow` 在首次为某个项目调用时,把本目录 copy 到 `arch/{项目名}/`。
 
-Each stub file inside contains a comment header explaining what schema it satisfies and what the canonical filler skill is. Stubs are intentionally invalid against their JSON Schemas (they lack required fields) so that a half-copied template never accidentally passes acceptance.
+**不要直接对 `_template/` 跑 skill** — 它是源,不是工作区。
 
-## Editing this template
+## 顶层 2-bucket
 
-Change the template only when:
-- A schema in `internal/schemas/` adds or removes a required top-level field
-- A new mandatory file is added to the workspace contract
-- A directory's purpose changes
+- `agent/` 🤖 — 引擎契约;每个文件含 schema 注释。stubs 故意 schema-invalid,半 copy 不能蒙混过 acceptance。
+- `user/` ★ — 给人看的;`user/README.md` 是入口,知识库 7 页 stubs 含填什么的提示。
 
-Schema-internal field changes (sub-fields, enum widening) do **not** require template changes — those flow through skill prompts, not through this skeleton.
+## 编辑模板时
 
-After editing, bump the `template_version` field in `state.yaml` and document the change in `CHANGELOG.md`.
+仅在以下情况改:
+- `internal/schemas/` 增删 top-level required 字段
+- 工作区契约增删强制目录/文件
+- 某目录用途变
+
+字段级改动(子字段、enum 拓展)不需改本模板 — 走 skill prompt。
+
+修改完 bump `agent/状态.yaml` 里的 `template_version` + 在 `CHANGELOG.md` 留痕。

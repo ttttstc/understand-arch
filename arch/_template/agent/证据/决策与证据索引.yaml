@@ -1,0 +1,27 @@
+# Schema: internal/schemas/决策与证据索引.schema.json
+# Owner skill: arch-frame (open_questions) / arch-adr (accepted_decisions)
+# STUB
+
+generated_at: ""
+
+accepted_decisions: []
+# - adr_id: "ADR-001"
+#   title: ""
+#   accepted_at: ""
+#   summary: ""
+#   path: "user/决策史/ADR-001-xxx.md"
+#   supersedes: []
+#   evidence_refs: []
+
+open_questions: []
+# - id: "Q-001"
+#   question: ""
+#   blocker_for: []
+#   owner_hint: ""
+#   raised_by: ""             # skill 名 或 "user"
+#   first_seen: ""
+
+evidence_index: []
+# - claim: ""
+#   appears_in: []            # user/知识库/... user/决策史/... 等路径
+#   evidence_refs: []

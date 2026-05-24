@@ -1,0 +1,23 @@
+# Schema: internal/schemas/仓库与组件清单.schema.json
+# Owner skill: arch-analyze
+# STUB
+
+generated_at: ""
+generated_by: "arch-analyze"
+baseline_commits: {}
+
+repos: []
+# - name: ""                # kebab-case
+#   url: ""
+#   primary_language: ""
+#   owner: ""               # 团队/人,或 "unknown" 配合 open_question
+#   role: ""
+#   components:
+#     - name: ""
+#       kind: ""            # service | library | job | frontend | infra | docs | tests
+#       responsibility: ""
+#       entrypoints: []
+#       owner: ""
+#       evidence_refs: []
+
+unknown_owners: []
