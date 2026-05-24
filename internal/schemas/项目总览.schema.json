@@ -1,0 +1,647 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/project-overview.schema.json",
+  "title": "项目总览",
+  "description": "arch-frame 产出的项目总览契约。作为后续 arch-analyze / arch-options / arch-review / arch-pack 的事实源，锁定 design_intent、architecture_profile、org_constraints 与 evidence_refs 回链。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "generated_at",
+    "generated_by",
+    "mode",
+    "baseline_commits",
+    "design_intent",
+    "architecture_profile",
+    "org_constraints",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "项目目录名，kebab-case，最大 40 字符。",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 40
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generated_by": {
+      "type": "string",
+      "const": "arch-frame"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "onboard",
+        "audit",
+        "design",
+        "brief"
+      ]
+    },
+    "baseline_commits": {
+      "type": "object",
+      "description": "被纳入本次架构基线的仓库与 commit hash 映射，用于过期检测。",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{7,64}$"
+      }
+    },
+    "design_intent": {
+      "$ref": "#/$defs/designIntent"
+    },
+    "architecture_profile": {
+      "$ref": "#/$defs/architectureProfile"
+    },
+    "org_constraints": {
+      "$ref": "#/$defs/orgConstraints"
+    },
+    "evidence_refs": {
+      "$ref": "#/$defs/evidenceRefs"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "design"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "design_intent": {
+            "properties": {
+              "business_goals": {
+                "minItems": 1
+              },
+              "in_scope": {
+                "minItems": 1
+              },
+              "non_goals": {
+                "minItems": 1
+              },
+              "acceptance_criteria": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "line",
+        "commit"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d+(?:-\\d+)?$"
+            }
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,64}$"
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidenceRef"
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "requires_confirmation",
+        "pm_answered",
+        "answer"
+      ],
+      "properties": {
+        "text": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "requires_confirmation": {
+          "type": "boolean"
+        },
+        "pm_answered": {
+          "type": "boolean"
+        },
+        "answer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "pm_answered": {
+                "const": true
+              }
+            },
+            "required": [
+              "pm_answered"
+            ]
+          },
+          "then": {
+            "properties": {
+              "answer": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "nfrs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reliability",
+        "cost",
+        "latency",
+        "security",
+        "compliance"
+      ],
+      "properties": {
+        "reliability": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cost": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "latency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "security": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "compliance": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hard",
+        "soft"
+      ],
+      "properties": {
+        "hard": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "soft": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "designIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prd_source",
+        "business_goals",
+        "user_value",
+        "in_scope",
+        "non_goals",
+        "nfrs",
+        "constraints",
+        "assumptions",
+        "acceptance_criteria"
+      ],
+      "properties": {
+        "prd_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "business_goals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "user_value": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "in_scope": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "non_goals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "nfrs": {
+          "$ref": "#/$defs/nfrs"
+        },
+        "constraints": {
+          "$ref": "#/$defs/constraints"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assumption"
+          }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "architectureProfileOverride": {
+      "type": "object",
+      "description": "用户确认时手工覆盖的 profile 片段；允许增量覆盖，不强制整对象齐全。",
+      "additionalProperties": false,
+      "properties": {
+        "identified_styles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "primary_concerns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "recommended_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/referencePath"
+          }
+        },
+        "recommended_phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/phaseName"
+          }
+        },
+        "recommended_diagram_style": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        }
+      }
+    },
+    "referencePath": {
+      "type": "string",
+      "pattern": "^(arch-library|skills|internal)/.+\\.(md|yaml|yml|mmd)$"
+    },
+    "phaseName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "architectureProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identified_styles",
+        "primary_concerns",
+        "recommended_references",
+        "recommended_phases",
+        "recommended_diagram_style",
+        "user_override",
+        "confirmed_by_user_at"
+      ],
+      "properties": {
+        "identified_styles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "primary_concerns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "recommended_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/referencePath"
+          }
+        },
+        "recommended_phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/phaseName"
+          }
+        },
+        "recommended_diagram_style": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "user_override": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "type": "object"
+              },
+              "then": {
+                "$ref": "#/$defs/architectureProfileOverride"
+              }
+            }
+          ]
+        },
+        "confirmed_by_user_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "loadStatus": {
+      "type": "string",
+      "enum": [
+        "not_configured",
+        "not_loaded"
+      ]
+    },
+    "kbRuleSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "rule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "networkBoundarySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "rule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "boundary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "direction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "namingConventionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "rule": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "applies_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "techRadarSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "technology",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "technology": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "adopt",
+            "trial",
+            "assess",
+            "hold",
+            "approved",
+            "experimental",
+            "deprecated"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "orgConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "banned_patterns",
+        "compliance_redlines",
+        "network_boundaries",
+        "naming_conventions",
+        "tech_radar"
+      ],
+      "properties": {
+        "banned_patterns": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loadStatus"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/kbRuleSummary"
+              }
+            }
+          ]
+        },
+        "compliance_redlines": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loadStatus"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/kbRuleSummary"
+              }
+            }
+          ]
+        },
+        "network_boundaries": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loadStatus"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/networkBoundarySummary"
+              }
+            }
+          ]
+        },
+        "naming_conventions": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loadStatus"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/namingConventionSummary"
+              }
+            }
+          ]
+        },
+        "tech_radar": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loadStatus"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/techRadarSummary"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
