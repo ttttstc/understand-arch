@@ -1,0 +1,31 @@
+{
+  "name": "understand-arch",
+  "owner": {
+    "name": "泥巴猪",
+    "email": "423310463@qq.com"
+  },
+  "metadata": {
+    "description": "面向高级软件架构师的 evidence-driven workflow skill suite。Governance-first(治理优先),brownfield 主战场,只产描述类交付件(ADR / 设计文档 / 17 章实施方案 / Mermaid 图 / 5+1 yaml 证据资产),不生成业务代码。",
+    "version": "0.2.0-skeleton"
+  },
+  "plugins": [
+    {
+      "name": "understand-arch",
+      "description": "架构师工作流套件:onboard / audit / design / brief 4 mode + 9 atomic skill + 1 编排 skill + 5+1 yaml 证据契约 + PRD HARD GATE + Goal-driven 验收 loop + 反合理化清单 + 企业 KB 加载。v0.2.0 = 10 skill 骨架全部写完,完整实现见 docs/spec-v1.0.md。",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/arch-workflow",
+        "./skills/arch-frame",
+        "./skills/arch-analyze",
+        "./skills/arch-diff-judge",
+        "./skills/arch-options",
+        "./skills/arch-adr",
+        "./skills/arch-diagram",
+        "./skills/arch-review",
+        "./skills/arch-pack",
+        "./skills/arch-radar"
+      ]
+    }
+  ]
+}

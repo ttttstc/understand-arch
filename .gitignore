@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Users' local working directories (when running this plugin against their projects)
+arch/
+.metrics.jsonl
+
+# Tooling (future)
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/

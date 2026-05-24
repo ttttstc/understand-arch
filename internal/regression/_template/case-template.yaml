@@ -1,0 +1,76 @@
+# Skill Regression Case Template (v1.1 实装,v1.0 占位)
+# 复制此文件到 ../{skill-name}/case-XXX-{description}.yaml 然后填具体内容
+# 详见 ../README.md 与同目录 trace-assertion-rubric.md
+
+case_id: skill-name-001-short-description     # 必填,kebab-case,全局唯一
+target_skill: arch-frame                       # 必填,被测的 skill
+target_skill_version: v1.0                     # 可选,记录测试时的版本
+
+# === 输入(可复现的 fixture)===
+input:
+  mode: design                                  # workflow mode(若 skill 独立调用则 null)
+  fixtures_dir: ./fixtures/{case_id}/           # 可选,存输入素材
+  args: {}                                      # skill 的输入参数
+  env:                                          # 环境前置
+    ARCH_PROJECT_DIR: ./fixtures/{case_id}/arch/
+    org_kb_path: ./fixtures/{case_id}/.ni-arch-kb/
+
+# === 预期行为(自然语言)===
+expected_behavior:
+  - "Loads org_kb successfully (no missing files)"
+  - "Parses PRD without triggering HARD GATE"
+  - "Outputs architecture_profile with ≥3 references selected"
+  # 人能读、描述意图,不是机器断言
+
+# === Trace 断言(行为可观察)===
+# 参考 trace-assertion-rubric.md
+trace_assertion:
+  files_read:                                   # 必读 / 必不读
+    must_include:
+      - "~/.ni-arch-kb/banned-patterns.yaml"
+      - "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
+    must_not_include: []
+  subagents_spawned:                            # 子 agent 启动数
+    min: 0
+    max: 0                                       # frame 应该 0 subagent
+  gates_passed:                                 # 应通过的门禁
+    must_include: ["clarity_check", "kb_load"]
+  gates_failed:                                 # 应失败的门禁
+    must_be_empty: true
+  tools_called:                                 # 调用的工具
+    must_include: ["yaml_writer"]
+    must_not_include: ["subagent_spawn", "code_scanner"]
+
+# === 结果断言(产物质量)===
+result_assertion:
+  files_produced:
+    - path: "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
+      check: schema_passes
+      schema: internal/schemas/项目总览.schema.json
+    - path: "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
+      check: field_eq
+      field: design_intent.non_goals
+      not_empty: true
+  state:
+    - field: readiness
+      value: ready                              # ready | degraded | blocked
+  outputs:
+    - field: architecture_profile.recommended_references
+      length_gte: 3
+
+# === 已知失败模式(回归提醒)===
+known_failure_modes:
+  - description: "Hallucinates non_goals when PRD doesn't specify"
+    last_observed: 2026-05-01
+    fixed_in: arch-frame v0.3
+  - description: "Mislabels NFR severity"
+    last_observed: 2026-04-15
+    fixed_in: ongoing
+
+# === 元数据 ===
+authored_by: contributor-name
+authored_at: 2026-05-24
+last_validated_at: 2026-05-24
+notes: |
+  Optional free-form notes about why this case exists, what edge case it covers,
+  related ADRs or issues, etc.
