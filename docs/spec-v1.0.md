@@ -33,6 +33,9 @@
 5. **Governance 即 Moat**  
    证据链、append-only ADR、org KB、traceability、acceptance gate、writeback review 是本套件的核心价值。
 
+6. **用户可见交互中文优先**  
+   用户提示、阻塞原因、刷新建议、评审结论默认使用中文。必要时可在括号中保留英文术语，例如“架构基线可能已过期(stale)”。内部 schema key 可以使用英文以保持稳定。
+
 ## 边界
 
 允许产物：
@@ -52,6 +55,30 @@
 - 业务代码
 
 遇到禁止产物请求时，skill 必须拒绝，并提示用户使用专门的 coding agent、IaC 工具或代码生成工具。
+
+## 用户交互语言
+
+用户可见输出必须优先使用中文，避免让用户先理解英文术语再理解动作。
+
+推荐提示：
+
+```text
+当前架构基线可能已过期：上次扫描提交为 abc1234，当前提交为 def5678。
+本次变更命中了数据模型和接口契约相关文件，建议刷新 specs 后再继续设计。
+```
+
+不推荐：
+
+```text
+specs stale, run refresh?
+```
+
+语言规则：
+
+- 用户提示、错误、gate、建议动作：中文。
+- 首次出现关键英文概念时可保留括号：`架构漂移(drift)`、`写回(writeback)`。
+- YAML/schema 字段：使用稳定英文 key。
+- 生成的人类文档：中文标题和解释为主，保留必要技术名词。
 
 ## 核心信息架构
 
@@ -132,6 +159,10 @@ critical_flows:
 ownership:
 known_unknowns:
 last_verified:
+last_scanned_commit:
+current_commit_at_review:
+changed_files_since_scan:
+freshness_status:
 baseline_commits:
 evidence_refs:
 ```
@@ -143,6 +174,8 @@ evidence_refs:
 - 接口契约必须记录兼容策略或变更敏感性。
 - 外部依赖必须记录 owner、SLA/风险、替代或降级路径。
 - 每条判断必须有 `evidence_refs`。
+- `last_scanned_commit` 记录最后一次代码扫描提交。
+- `freshness_status` 使用 `fresh|possibly_stale|stale|unknown`。
 
 ### `specs/quality.yaml`
 
@@ -363,6 +396,197 @@ evidence_refs:
 - CR -> specs writeback
 - CR -> ADR
 
+## 代码扫描算法
+
+`arch-analyze` 需要生成本套件自己的 specs 标准产物。v1.0 不强依赖 Understand-Anything，不要求用户安装它，也不把它的目录结构或 JSON 格式作为事实源。
+
+但代码扫描算法参考 Understand-Anything 的思路，吸收其“确定性扫描 + 文件分析 + 架构图谱 + 图审查 + 增量更新”的模式。
+
+### 不强依赖原则
+
+本套件不做以下事情：
+
+- 不要求安装 `Lum1104/Understand-Anything`。
+- 不读取 `.understand-anything/` 作为唯一事实源。
+- 不把 Understand-Anything 的 UI、CLI、目录结构暴露给用户。
+- 不把对方代码直接 vendoring 到本仓，除非后续明确处理 license、attribution 和维护策略。
+
+允许：
+
+- 参考其仓库扫描算法思想。
+- 自行实现扫描 pipeline。
+- 可选读取其已有 knowledge graph 作为外部输入，再转换为本套件 specs。
+
+### v1.0 扫描 Pipeline
+
+```text
+Project Scanner
+→ File Analyzer
+→ Architecture Analyzer
+→ Graph Reviewer
+→ Specs Writer
+```
+
+#### Project Scanner
+
+确定性扫描：
+
+- 文件树。
+- 语言与包管理器。
+- 入口文件。
+- 构建/测试配置。
+- 部署与运行配置。
+- API/事件/数据模型线索。
+- Git commit 与文件修改历史。
+
+#### File Analyzer
+
+对关键文件输出结构化摘要：
+
+- 文件职责。
+- imports/exports。
+- 路由与 handler。
+- 数据访问。
+- 外部调用。
+- 事件生产/消费。
+- 权限与安全检查。
+
+#### Architecture Analyzer
+
+聚合为 specs 结构：
+
+- repositories。
+- components。
+- interfaces。
+- data_models。
+- external_dependencies。
+- deployment_units。
+- critical_flows。
+- runtime_configs。
+
+#### Graph Reviewer
+
+检查架构图谱质量：
+
+- 孤立节点。
+- 悬挂边。
+- 循环依赖。
+- owner 缺失。
+- evidence_refs 缺失。
+- 命名不稳定。
+- 4+1 视图覆盖缺失。
+
+#### Specs Writer
+
+写入本套件标准资产：
+
+- `specs/baseline.yaml`
+- `specs/quality.yaml`
+- `specs/risks.yaml`
+- `specs/diagrams/*.mmd`
+- `specs/overview.md`
+- `specs/traceability.yaml`
+
+### 增量更新
+
+v1.0 必须支持基于 commit diff 的增量判断：
+
+1. 读取 `specs/baseline.yaml.last_scanned_commit`。
+2. 对比当前仓库 commit。
+3. 获取中间 changed files。
+4. 判断是否命中架构敏感文件。
+5. 只重扫受影响文件或建议 refresh。
+
+增量扫描的目标是减少全仓扫描频率，不是隐藏 specs 过期风险。
+
+## Specs 新鲜度与失效防护
+
+specs 不会自动永远有效。v1.0 必须让失效可检测、可解释、可修复。
+
+### Freshness 状态
+
+```yaml
+freshness:
+  last_scanned_commit: abc1234
+  current_commit: def5678
+  changed_files_since_scan:
+    - src/order/api.ts
+    - src/order/model.ts
+  freshness_status: fresh|possibly_stale|stale|unknown
+  reason: "Changed files include API and data model paths."
+```
+
+四档含义：
+
+| 状态 | 中文提示 | 含义 |
+|---|---|---|
+| `fresh` | 当前 specs 与代码提交一致。 | 无需刷新 |
+| `possibly_stale` | 代码有变化，但暂未发现影响架构基线的文件。 | 可继续，但 audit 应提示复核 |
+| `stale` | 代码变化命中架构敏感区域，建议刷新 specs。 | 默认建议 refresh |
+| `unknown` | 无法判断 specs 是否过期，建议轻量扫描或人工确认。 | Git 不可用或证据不足 |
+
+### 架构敏感文件
+
+命中以下文件变化时，通常应标记 `stale` 或建议 refresh：
+
+- 包依赖：`package.json`、`pyproject.toml`、`go.mod`、`pom.xml`、锁文件。
+- 入口/路由：routes、controllers、handlers、bootstrap。
+- 数据模型：models、entities、schema、migrations、Prisma、SQL。
+- 接口契约：OpenAPI、proto、GraphQL、RPC definitions。
+- 消息事件：events、topics、producers、consumers。
+- 部署运行：Dockerfile、compose、Helm、K8s、env templates。
+- 安全权限：auth、permission、policy、IAM。
+- 配置：feature flags、runtime config、model/provider config。
+- 架构资产：`arch/{project}/specs/`、ADR、CR writeback。
+
+以下变化通常可标记 `possibly_stale`：
+
+- 纯测试改动。
+- 局部业务实现且不改接口、依赖、数据、部署。
+- 注释或 README 小修。
+- 样式或文案改动。
+- 内部算法实现但边界不变。
+
+### 无 Git 或无 Commit 时
+
+如果无法读取 commit，workflow 不能通过 diff 判断 specs 是否过期。此时应提示：
+
+```text
+当前项目无法读取 Git 提交历史，因此不能通过代码差异判断 specs 是否过期。
+我会改用 specs 内容完整性检查：验证 4+1 视图覆盖、证据链接、风险更新时间和 known_unknowns。
+```
+
+检查项：
+
+- `last_verified` 是否存在。
+- evidence_refs 是否还能打开。
+- 4+1 coverage 是否缺项。
+- known_unknowns 是否过多或长期未处理。
+- owner 是否大量 unknown。
+- risks 是否长期未 reviewed。
+- external_dependencies 是否缺 owner/SLA。
+- data_models 是否缺 owner/compat/rollback。
+
+### 防失效机制
+
+1. **commit diff freshness**  
+   用 `last_scanned_commit` 与当前 commit 对比，并分类 changed files。
+
+2. **evidence_refs closure**  
+   evidence 指向的文件、行号、commit 不存在时，specs 标 degraded。
+
+3. **writeback gate**  
+   重要 specs 修改必须来自 baseline refresh 或 CR writeback。
+
+4. **known_unknowns 留痕**  
+   未知项不能被生成文档润色消失。
+
+5. **audit 建议 refresh**  
+   `audit` 发现 stale/incomplete 时，用中文建议用户刷新 specs。
+
+6. **drift audit 按需扫仓**  
+   默认 audit 不扫全仓。用户确认后才运行重型漂移扫描。
+
 ## Wiki 与人类可读材料
 
 本套件同时服务人和 Agent，但维护对象必须分离。
@@ -400,15 +624,16 @@ Human generated views: generated/wiki/*
 | `arch-pack` | 按需生成 wiki/brief/report |
 | `arch-radar` | 按需外部调研与选型，不进入默认链路 |
 
-用户高频入口：
+用户可见入口第一版只暴露 4 个：
 
 ```text
 /arch:onboard
 /arch:design
-/arch:review
 /arch:audit
 /arch:brief
 ```
+
+`arch-review` 不作为第一版用户入口暴露，而是收敛进 `onboard`、`design`、`audit`、`brief` 的内部 gate。
 
 内部 skill 可由 workflow 调度，用户不必直接理解全部 skill。
 
@@ -440,12 +665,19 @@ arch-analyze
 - 每条关键判断有 evidence_refs。
 - `known_unknowns` 明确列出。
 
-### 2. Specs Review
-
-用于不扫全仓的架构审视。
+用户可见提示示例：
 
 ```text
-/arch:review specs
+架构基线已生成，但发现 2 个未知 owner 和 1 个缺失的部署视图。
+建议先补齐这些 known_unknowns，再把 specs 作为团队基线使用。
+```
+
+### 2. Specs Review 内置于 Audit
+
+用于不扫全仓的架构审视。第一版不单独暴露 `/arch:review`，而是通过 `/arch:audit` 默认执行。
+
+```text
+/arch:audit
 
 read specs/*
 → check schema
@@ -453,7 +685,8 @@ read specs/*
 → check evidence closure
 → check freshness
 → check risk/debt quality
-→ output review.yaml or generated report
+→ suggest refresh when stale or incomplete
+→ output audit result
 ```
 
 它回答：
@@ -465,6 +698,13 @@ read specs/*
 - 哪些 known unknowns 阻塞设计？
 
 不扫全仓的 review 不能证明代码没有漂移。它只能审视当前 specs 的质量。
+
+中文提示示例：
+
+```text
+当前 specs 可以支持架构审视，但可能已过期：上次扫描提交 abc1234，当前提交 def5678。
+变更文件命中了接口契约和数据模型，建议运行 /arch:onboard --refresh。
+```
 
 ### 3. Drift Audit
 
@@ -480,6 +720,8 @@ arch-analyze --depth=manifest/risk
 ```
 
 它可以扫仓，成本更高，应按需运行。
+
+当默认 audit 发现 `freshness_status=stale` 时，应先建议 refresh；只有用户确认需要验证代码漂移时，才运行 `--drift`。
 
 ### 4. Change Request Design
 
@@ -500,6 +742,13 @@ arch-frame
 ```
 
 默认不生成 9 文件，不强制 ADR，不强制图，不强制 wiki。
+
+如果 specs stale 或 incomplete，design 应先提示：
+
+```text
+当前 specs 可能无法可靠支撑本次设计：缺少数据模型 owner，且上次扫描提交已落后当前代码。
+建议先 refresh specs；如果你确认继续，我会把该风险写入 CR review。
+```
 
 ### 5. Writeback
 
@@ -530,6 +779,34 @@ read specs + CR + ADR
 
 生成内容必须带 source artifacts。派生文档不是事实源。
 
+## 用户暴露面
+
+v1.0 第一版只向用户暴露四个主入口：
+
+| 入口 | 用户理解 | 内部调用 |
+|---|---|---|
+| `/arch:onboard` | 建立或刷新项目架构基线 specs | `arch-analyze` + `arch-diagram` + internal review |
+| `/arch:design` | 为一次需求创建 CR 并做架构设计 | `arch-frame` + `arch-diff-judge` + conditional `arch-options`/`arch-adr` + internal review |
+| `/arch:audit` | 审视 specs 是否完整、可信、过期；必要时建议 refresh | internal `arch-review`; optional `arch-analyze --drift` |
+| `/arch:brief` | 从 specs/CR/ADR 生成给人看的 wiki/report/brief | `arch-pack` + `arch-diagram` |
+
+不直接暴露：
+
+- `arch-review`：作为内部 gate。
+- `arch-options`：仅当存在真实方案分歧时运行。
+- `arch-adr`：仅当存在 durable decision 时运行。
+- `arch-radar`：高级按需能力，后续可作为显式 expert mode。
+- `arch-diagram` / `arch-pack`：由 brief/onboard/design 内部触发。
+
+这样用户心智保持为：
+
+```text
+onboard：建立 specs。
+design：创建 CR。
+audit：检查 specs 是否还可信，必要时提示 refresh。
+brief：生成给人看的材料。
+```
+
 ## Acceptance
 
 ### specs acceptance
@@ -538,9 +815,12 @@ read specs + CR + ADR
 
 - schema validation
 - required architecture dimension coverage
+- 4+1 view coverage: logical / development / process / physical / scenarios
 - evidence_refs closure
 - known_unknowns present
 - last_verified present
+- last_scanned_commit present or git unavailable reason present
+- freshness_status present
 - baseline_commits present or `git_unavailable`
 - C4 Mermaid sources exist
 - risks have severity / owner / mitigation / evidence
@@ -617,17 +897,19 @@ Metrics support 90-day validation of governance value:
 New v1.0 build order:
 
 1. Rewrite schemas around specs/CR model.
-2. Rewrite `arch-workflow` around baseline / CR / review / writeback.
+2. Rewrite `arch-workflow` around four user-visible entries: onboard / design / audit / brief.
 3. Rewrite `arch-analyze` to produce specs baseline.
-4. Rewrite `arch-frame` to create CR and hard-gate unclear PRD.
-5. Rewrite `arch-diff-judge` to produce `cr-impact.yaml` from specs.
-6. Rewrite `arch-review` to support specs review, CR review, and drift audit.
-7. Rewrite `arch-adr` to link ADRs into specs decisions and traceability.
-8. Rewrite `arch-diagram` to treat Mermaid as stable specs diagram source.
-9. Rewrite `arch-pack` as generated-view exporter only.
-10. Keep `arch-options` and `arch-radar` conditional.
-11. Add `arch/{project}/` template and sample.
-12. Add acceptance YAML for specs / CR / generated views.
+4. Implement Understand-Anything-inspired scanner pipeline without external hard dependency.
+5. Implement specs freshness checks based on commit diff and architecture-sensitive paths.
+6. Rewrite `arch-frame` to create CR and hard-gate unclear PRD.
+7. Rewrite `arch-diff-judge` to produce `cr-impact.yaml` from specs.
+8. Rewrite `arch-review` as an internal gate for onboard/design/audit/brief.
+9. Rewrite `arch-adr` to link ADRs into specs decisions and traceability.
+10. Rewrite `arch-diagram` to treat Mermaid as stable specs diagram source.
+11. Rewrite `arch-pack` as generated-view exporter only.
+12. Keep `arch-options` and `arch-radar` conditional.
+13. Add `arch/{project}/` template and sample.
+14. Add acceptance YAML for specs / CR / generated views.
 
 ## Non-Goals for v1.0
 
