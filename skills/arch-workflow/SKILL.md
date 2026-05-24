@@ -75,7 +75,7 @@ description: |
 ### 6.1 onboard mode
 - Pipeline: `frame → analyze --depth=full → pack(--audience=onboarding)→ review(workflow-end)`
 - 关键路口:profile 确认 / 预算预告 / 仓重要性排序后选深挖范围
-- Acceptance:见 `references/acceptance-checklists/onboard.yaml`
+- Acceptance:见 `internal/acceptance/onboard.yaml`
 
 ### 6.2 audit mode
 - Pipeline: `(prereq:无 baseline 接 onboard)→ frame(audit 风格)→ analyze --depth=full(增量,跳已缓存)→ review --mode=audit → pack --audience=decision`
@@ -125,7 +125,7 @@ workflow 收到 `frame readiness=blocked` →
 - 第 3 次仍不过 → **显式用户裁判**(retry hints / manual fix / override skip / abort)
 - **不让 retry 进入空转**
 
-每 mode acceptance checklist 存 `references/acceptance-checklists/{mode}.yaml`。
+每 mode acceptance checklist 存 `internal/acceptance/{mode}.yaml`(canonical,引擎可读)。
 
 ## 10. 反合理化清单
 
@@ -207,10 +207,10 @@ workflow 收到 `frame readiness=blocked` →
 - `references/mode-pipelines.md` —— 4 mode 详细状态机图 + 每 phase 输入输出契约
 - `references/anti-rationalization.md` —— 6 条反合理化规则详细(**已写骨架**)
 - `references/integrity-recovery-matrix.md` —— integrity check 缺失分级处理矩阵
-- `references/acceptance-checklists/onboard.yaml` —— onboard 验收清单
-- `references/acceptance-checklists/audit.yaml`
-- `references/acceptance-checklists/design.yaml`
-- `references/acceptance-checklists/brief.yaml`
+- `internal/acceptance/onboard.yaml` —— onboard 验收清单(canonical)
+- `internal/acceptance/audit.yaml`
+- `internal/acceptance/design.yaml`
+- `internal/acceptance/brief.yaml`
 
 ## Codex Implementation Notes
 
