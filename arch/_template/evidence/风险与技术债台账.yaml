@@ -1,0 +1,32 @@
+# Schema: internal/schemas/风险与技术债台账.schema.json
+# Owner skill: arch-analyze (initial) / arch-review (audit mode)
+# Status: STUB
+#
+# Architecture risks + tech debt. Each entry needs 4 fields to count as
+# fully described (severity, affected_scope, mitigation, evidence_refs);
+# entries missing fields trigger semantic acceptance failure.
+
+generated_at: ""
+generated_by: "arch-analyze"
+
+risks: []
+# - id: "R-001"
+#   title: ""
+#   category: ""              # reliability | security | scalability | maintainability | cost | compliance
+#   severity: ""              # critical | high | medium | low
+#   affected_scope: []        # component names
+#   description: ""
+#   mitigation: ""            # proposed action (may be "(open)")
+#   owner_hint: ""
+#   evidence_refs: []
+
+tech_debt: []
+# - id: "D-001"
+#   title: ""
+#   category: ""              # architectural | code-quality | dependency | docs | tests
+#   severity: ""              # high | medium | low
+#   affected_scope: []
+#   description: ""
+#   estimated_effort: ""      # e.g., "1 day" | "1 sprint" | "unknown"
+#   owner_hint: ""
+#   evidence_refs: []

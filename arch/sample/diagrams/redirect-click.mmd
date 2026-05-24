@@ -1,0 +1,28 @@
+---
+title: redirect + click record flow
+generated_at: 2026-05-20T09:21:00+08:00
+generated_by: arch-diagram
+source_yaml: ../evidence/依赖与链路图谱.yaml#business_flows.redirect
+---
+sequenceDiagram
+  participant V as Visitor
+  participant A as api
+  participant R as redis-shortlink
+  participant P as postgres-shortlink
+  participant G as click-aggregator
+
+  V->>A: GET /{slug}
+  A->>R: GET slug
+  alt cache hit
+    R-->>A: long URL
+  else cache miss (R-001 fallback)
+    A->>P: SELECT long_url WHERE slug=?
+    P-->>A: long URL
+    A->>R: SETEX slug
+  end
+  A-->>V: 302 Location: long URL
+  Note over A,R: async — A returns before this
+  A->>R: XADD click stream
+  G->>R: XREAD click stream
+  G->>P: batch INSERT minute_clicks
+  Note over G: R-002 — no XACK, crash loses batch

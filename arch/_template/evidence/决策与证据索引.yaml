@@ -1,0 +1,31 @@
+# Schema: internal/schemas/决策与证据索引.schema.json
+# Owner skill: arch-frame (initial) / arch-adr (decisions) / any skill (open_questions)
+# Status: STUB
+#
+# Bridge between human prose artifacts (wiki / ADRs / design docs) and the
+# evidence yamls. Lets reviewers trace every assertion to its source.
+
+generated_at: ""
+
+accepted_decisions: []
+# - adr_id: "ADR-001"
+#   title: ""
+#   accepted_at: ""
+#   summary: ""
+#   path: "adr/ADR-001-xxx.md"
+#   supersedes: []            # adr_ids
+#   evidence_refs: []
+
+open_questions: []
+# - id: "Q-001"
+#   question: ""
+#   blocker_for: []           # phase or artifact this question blocks
+#   owner_hint: ""
+#   raised_by: ""             # skill name or "user"
+#   first_seen: ""
+
+evidence_index: []
+# Cross-cutting index for traceability. Optional but recommended for audit mode.
+# - claim: ""                 # short summary of an assertion
+#   appears_in: []            # wiki/adr/audit paths where the claim appears
+#   evidence_refs: []

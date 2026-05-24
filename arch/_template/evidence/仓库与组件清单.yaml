@@ -1,0 +1,27 @@
+# Schema: internal/schemas/仓库与组件清单.schema.json
+# Owner skill: arch-analyze
+# Status: STUB
+#
+# Inventory of repos and their components (services, libraries, jobs, frontends).
+
+generated_at: ""
+generated_by: "arch-analyze"
+baseline_commits: {}
+
+repos:
+  # - name: ""                # repo name, kebab-case
+  #   url: ""
+  #   primary_language: ""
+  #   owner: ""               # team or person, or "unknown" with open_question id
+  #   role: ""                # one-line responsibility
+  #   components:
+  #     - name: ""
+  #       kind: ""            # service | library | job | frontend | infra | docs
+  #       responsibility: ""
+  #       entrypoints: []
+  #       owner: ""
+  #       evidence_refs:
+  #         - source: ""
+  #           lines: ""
+
+unknown_owners: []            # component names whose owner could not be resolved

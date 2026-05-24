@@ -1,0 +1,24 @@
+---
+title: create shortlink flow
+generated_at: 2026-05-20T09:22:00+08:00
+generated_by: arch-diagram
+source_yaml: ../evidence/依赖与链路图谱.yaml#business_flows.create-shortlink
+---
+sequenceDiagram
+  participant U as Marketing User
+  participant A as api
+  participant B as abuse-detector (in-proc)
+  participant P as postgres-shortlink
+  participant R as redis-shortlink
+
+  U->>A: POST /shortlinks {long_url}
+  A->>B: check(long_url)
+  B-->>A: ok / blocked
+  alt blocked
+    A-->>U: 422 abusive target
+  else ok
+    A->>P: INSERT url (slug, long_url)
+    P-->>A: ok
+    A->>R: SETEX slug long_url
+    A-->>U: 201 {short_url}
+  end
