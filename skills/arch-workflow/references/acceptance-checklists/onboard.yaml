@@ -1,0 +1,37 @@
+mode: onboard
+canonical_source: internal/acceptance/onboard.yaml
+purpose: "Create a reusable system baseline for a new maintainer."
+structural_gate:
+  required: true
+  must_have:
+    - "state.yaml exists and phase is done or degraded"
+    - "evidence/项目总览.yaml passes internal/schemas/项目总览.schema.json"
+    - "evidence/仓库与组件清单.yaml passes internal/schemas/仓库与组件清单.schema.json"
+    - "evidence/依赖与链路图谱.yaml passes internal/schemas/依赖与链路图谱.schema.json"
+    - "evidence/风险与技术债台账.yaml passes internal/schemas/风险与技术债台账.schema.json"
+    - "evidence/决策与证据索引.yaml passes internal/schemas/决策与证据索引.schema.json"
+    - "wiki has 6 required pages"
+    - "diagrams has at least 3 mmd/svg/png artifacts"
+semantic_gate:
+  threshold: "7/8"
+  allows_degraded: true
+  questions:
+    - id: repos-and-responsibilities
+      asks: "Can a new maintainer name every repo/component and its responsibility?"
+    - id: key-flows
+      asks: "Are the critical business flows traceable from wiki to dependency graph?"
+    - id: top-risks
+      asks: "Are top architecture risks ranked and evidenced?"
+    - id: ownership
+      asks: "Are owners or unknown-owner gaps explicit?"
+    - id: deployability
+      asks: "Are build and deployment paths visible?"
+    - id: data-and-external-deps
+      asks: "Are data stores and external dependencies identified?"
+    - id: decision-history
+      asks: "Are accepted decisions and open questions visible?"
+    - id: evidence-closure
+      asks: "Do user-facing conclusions link back to evidence_refs?"
+retry_policy:
+  max_retries: 2
+  on_failure: "retry failed owning skill with verifier notes"

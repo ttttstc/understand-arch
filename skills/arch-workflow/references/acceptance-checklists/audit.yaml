@@ -1,0 +1,27 @@
+mode: audit
+canonical_source: internal/acceptance/audit.yaml
+purpose: "Produce a decision-ready architecture health assessment."
+structural_gate:
+  required: true
+  must_have:
+    - "risk register exists and passes schema"
+    - "audit report exists under audits/{date}/"
+    - "remediation roadmap exists under audits/{date}/"
+    - "org-conformance section is present or explicitly degraded because KB is not configured"
+semantic_gate:
+  threshold: "all"
+  allows_degraded: false
+  questions:
+    - id: severity-order
+      asks: "Are findings sorted by severity with blocking items first?"
+    - id: four-field-risk
+      asks: "Does every risk include severity, affected_scope, mitigation, and evidence_refs?"
+    - id: drift-and-conformance
+      asks: "Does the audit distinguish architecture drift from org KB violations?"
+    - id: roadmap-actionability
+      asks: "Can decision makers see what to do next, in what order, and why?"
+    - id: non-recommendations
+      asks: "Does the report say which tempting fixes are not recommended?"
+retry_policy:
+  max_retries: 2
+  on_failure: "retry arch-review or arch-pack with failed checklist items"

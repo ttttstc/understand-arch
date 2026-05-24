@@ -1,0 +1,40 @@
+mode: design
+canonical_source: internal/acceptance/design.yaml
+purpose: "Turn a change request into an evidence-backed design package."
+structural_gate:
+  required: true
+  must_have:
+    - "frame.yaml or evidence/项目总览.yaml exists and passes schema"
+    - "影响面.yaml exists and passes internal/schemas/影响面.schema.json"
+    - "options.md exists with the 4 required tradeoff columns"
+    - "影响面清单.md exists"
+    - "模块依赖变化.md exists"
+    - "数据模型变更.md exists"
+    - "回滚方案.md exists"
+    - "ADR-NNN-*.md exists with 7 required sections"
+    - "design-doc.md exists"
+    - "实施方案.md exists with 17 required chapters"
+    - "arch-review.md exists"
+semantic_gate:
+  threshold: "all"
+  allows_degraded: false
+  questions:
+    - id: prd-clarity
+      asks: "Did frame resolve or explicitly block all critical PRD ambiguities?"
+    - id: impact-completeness
+      asks: "Are all 7 impact dimensions covered, including no-impact reasons?"
+    - id: option-tradeoff
+      asks: "Does every option cover impact, dependency changes, data changes, and rollback?"
+    - id: selected-decision
+      asks: "Is the selected option recorded before ADR generation?"
+    - id: rollback-realism
+      asks: "Can rollback be followed without inventing missing steps?"
+    - id: implementation-readiness
+      asks: "Can engineers start from the 17-chapter implementation plan?"
+    - id: org-conformance
+      asks: "Are KB violations marked and escalated?"
+    - id: evidence-closure
+      asks: "Does every major assertion cite YAML or source evidence?"
+retry_policy:
+  max_retries: 2
+  on_failure: "retry failed owning skill; third failure requires user judgment"
