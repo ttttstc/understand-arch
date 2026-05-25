@@ -15,6 +15,7 @@ deployment_units: []
 runtime_configs: []
 critical_flows: []
 ownership: []
+capabilities_index: []   # 业务能力索引,详情见 specs/capabilities.yaml
 view_coverage:
   logical: missing
   development: missing

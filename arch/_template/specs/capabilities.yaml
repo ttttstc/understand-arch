@@ -1,0 +1,25 @@
+# Schema: internal/schemas/specs-capabilities.schema.json
+# Owner skill: arch-analyze(初次抽取) + arch-frame(CR 引入新能力)
+# STUB — onboard 首跑时 arch-analyze 按 capabilities-rubric.md 抽取候选,
+# 人工 review 后才正式落 baseline。
+# 业务能力是长期事实,半年内变化不大;不要每次 audit 都重写。
+
+capabilities: []
+# - id: CAP-001
+#   name: ""                  # 中文优先,2-6 字
+#   description: ""           # ≤30 字,对外视角
+#   category: ""              # 可选,业务域分组
+#   importance: ""            # core | supporting | peripheral
+#   maturity: ""              # mature | evolving | experimental | deprecated | missing
+#   supporting_components:    # 必须存在于 baseline.yaml#components
+#     - component: ""
+#       role: ""              # primary | secondary | shared
+#   user_facing: true         # 最终用户能否感知
+#   gaps: []                  # 当前缺口,关联 R-NNN / Q-NNN
+#   external_dependencies: [] # 必须存在于 baseline.yaml#external_dependencies
+#   evidence_refs: []
+
+evidence_refs:
+  - file: arch/_template/specs/capabilities.yaml
+    line: 1
+    commit: template-scaffold

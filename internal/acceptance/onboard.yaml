@@ -7,6 +7,7 @@ structural_checks:
     check: files_exist
     targets:
       - specs/baseline.yaml
+      - specs/capabilities.yaml
       - specs/quality.yaml
       - specs/risks.yaml
       - specs/decisions.yaml
@@ -27,6 +28,8 @@ structural_checks:
     targets:
       - file: specs/baseline.yaml
         schema: internal/schemas/specs-baseline.schema.json
+      - file: specs/capabilities.yaml
+        schema: internal/schemas/specs-capabilities.schema.json
       - file: specs/quality.yaml
         schema: internal/schemas/specs-quality.schema.json
       - file: specs/risks.yaml
@@ -74,10 +77,18 @@ semantic_checks:
     rubric:
       - YAML 顶层和关键条目包含 evidence_refs
       - traceability.yaml 能把 specs 与 ADR 或其他资产连起来
+  - id: capabilities-coverage
+    question: "业务能力地图是否达到最小可用门槛？"
+    severity: required
+    rubric:
+      - capabilities.yaml 至少含 3 条 user_facing=true 的能力(过少则标 known_unknowns 解释为什么)
+      - 每条能力的 supporting_components 引用都能在 baseline.yaml#components 找到
+      - baseline.yaml.capabilities_index 与 capabilities.yaml 的 (id,name) 集合一致
+      - 每条能力的 gaps[] 若引用 R-NNN/Q-NNN,目标必须存在
 
 threshold:
   structural: 100%
-  semantic: 5/5
+  semantic: 6/6
 
 retry_policy:
   max_retries: 2

@@ -18,9 +18,10 @@
 
 其中给人看的默认结构是：
 
-- `specs/overview.md`：稳定入口
-- `generated/wiki/01-05`：onboarding 展开视图
-- `generated/briefs/`：短摘要或汇报稿
+- `generated/overview.md`:1 页稳定入口(11 段固定结构,≤200 行)
+- `generated/wiki/01-06`:onboarding 展开视图(6 页,含业务能力雷达)
+- `generated/audit/{date}-健康度.md`:每次 audit 产的系统问题集成视图
+- `generated/briefs/`:受众化摘要或汇报稿
 
 ## 什么时候需要改模板
 

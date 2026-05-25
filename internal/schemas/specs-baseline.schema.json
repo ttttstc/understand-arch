@@ -15,6 +15,7 @@
     "runtime_configs",
     "critical_flows",
     "ownership",
+    "capabilities_index",
     "view_coverage",
     "known_unknowns",
     "last_verified",
@@ -81,6 +82,20 @@
     "ownership": {
       "type": "array",
       "items": { "$ref": "#/$defs/ownership" }
+    },
+    "capabilities_index": {
+      "type": "array",
+      "description": "业务能力索引(详情见 specs/capabilities.yaml)。仅放 id + name 摘要,避免 baseline 膨胀。空数组表示尚未抽取业务能力(常见于 onboard 首跑前)。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^CAP-[0-9]{3}$" },
+          "name": { "type": "string", "minLength": 1 },
+          "importance": { "type": "string", "enum": ["core", "supporting", "peripheral"] }
+        }
+      }
     },
     "view_coverage": {
       "type": "object",

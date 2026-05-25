@@ -7,7 +7,8 @@
 ```text
 arch/{project}/
 ├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源)
-│   ├── baseline.yaml
+│   ├── baseline.yaml                 # 含 capabilities_index 索引
+│   ├── capabilities.yaml             # 业务能力地图(能力 × 成熟度 × 承载组件 × gaps)
 │   ├── quality.yaml
 │   ├── risks.yaml
 │   ├── decisions.yaml
@@ -24,7 +25,8 @@ arch/{project}/
 │       └── options.md
 ├── generated/                        # 可删可重建的人类视图
 │   ├── overview.md                   # 1 页稳定入口(≤200 行)
-│   ├── wiki/                         # 5 页 onboarding 展开
+│   ├── wiki/                         # 6 页 onboarding 展开(含 06-能力雷达)
+│   ├── audit/                        # {date}-健康度.md(audit 收尾产)
 │   ├── diagrams/                     # 渲染图(SVG/PNG)
 │   └── briefs/                       # 受众化摘要
 ├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)

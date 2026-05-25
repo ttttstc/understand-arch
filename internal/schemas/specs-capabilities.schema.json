@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/specs-capabilities.schema.json",
+  "title": "Business Capabilities Map",
+  "description": "业务能力地图。把'业务能力'抽象层显式建模,作为 specs/ 一等公民。同一能力可由多个 component 承载;同一 component 可能服务多个能力。能力清单是长期事实,onboard 时初次抽取候选,后续 CR 引入新能力时增量更新。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capabilities",
+    "evidence_refs"
+  ],
+  "properties": {
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" },
+      "description": "全部业务能力清单。"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "importance",
+        "maturity",
+        "supporting_components",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^CAP-[0-9]{3}$",
+          "description": "能力 id,CAP-001 三位连续编号。"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "业务能力名(中文优先,例 '订阅计费' / '内容推荐')。"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "一句话说明该能力对业务的意义。"
+        },
+        "category": {
+          "type": "string",
+          "description": "可选业务域分组(例 '账务' / '用户' / '推送' / '内容')。同 category 的能力在汇报时可聚合到同一 slide。"
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["core", "supporting", "peripheral"],
+          "description": "对业务的重要度:core=核心(挂了业务挂)/supporting=支撑(挂了业务降级)/peripheral=外围(挂了业务无感)。"
+        },
+        "maturity": {
+          "type": "string",
+          "enum": ["mature", "evolving", "experimental", "deprecated", "missing"],
+          "description": "成熟度:mature=稳定可信 / evolving=活跃迭代 / experimental=验证中 / deprecated=待下线 / missing=识别出但未实现(gap)。"
+        },
+        "supporting_components": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["component", "role"],
+            "properties": {
+              "component": {
+                "type": "string",
+                "minLength": 1,
+                "description": "组件名,必须存在于 baseline.yaml#components。"
+              },
+              "role": {
+                "type": "string",
+                "enum": ["primary", "secondary", "shared"],
+                "description": "该 component 在本能力中的角色:primary=主承载 / secondary=辅助 / shared=横切共享。"
+              }
+            }
+          },
+          "description": "承载该能力的组件清单。maturity=missing 时可以为空,表示能力被识别但未实现。"
+        },
+        "user_facing": {
+          "type": "boolean",
+          "description": "是否直接面向最终用户(true=用户能感知,false=内部基础设施级)。"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description"],
+            "properties": {
+              "description": { "type": "string", "minLength": 1 },
+              "related_risks": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^R-[0-9]{3}$" },
+                "description": "对应 risks.yaml#risks 的 R-NNN id"
+              },
+              "related_open_questions": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "description": "本能力当前的缺口(eg. '回滚能力不足' / '性能未达 SLA')。"
+        },
+        "external_dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本能力依赖的外部系统名(必须存在于 baseline.yaml#external_dependencies)。"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "commit"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "commit": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
