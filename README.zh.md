@@ -2,55 +2,132 @@
 
 > 面向 Claude Code 的 Docs-as-Code 架构知识套件。
 
-[English](./README.md) | [完整规格](./docs/spec-v1.0.md) | [贡献指南](./CONTRIBUTING.md)
+[English](./README.md) · [完整规格](./docs/spec-v1.0.md) · [贡献指南](./CONTRIBUTING.md)
 
-## 它现在的定位
+---
 
-`understand-arch` 不再追求“为每次需求生成一大包文档”，而是维护一套长期可信的架构知识底座：
+## 它解决什么
 
-- `specs/`：稳定架构基线
-- `change-requests/CR-*`：单次变更的 delta
-- `decisions/`：append-only ADR
-- `generated/`：给人看的可重建视图
+`understand-arch` **不**是又一个文档生成器。它给项目维护一份**可信、可版本化、Agent 可读**的架构基线,并把每次变更当作相对基线的 delta 记录下来。
 
-## 对用户暴露的入口
+它在任何时刻都能回答:
 
-v1.0 第一版只暴露 4 个入口：
+- 当前系统架构是什么样? *(specs)*
+- 这次改动会动什么、回滚怎么走? *(CR)*
+- 哪些结论有证据支撑? *(traceability)*
+- 哪些知识可能过期了? *(freshness 状态机)*
 
-- `/arch:onboard`：建立或刷新 `specs/`
-- `/arch:design`：针对一次需求创建 CR 并完成技术设计
-- `/arch:audit`：审视当前 `specs` 是否完整、可信、过期，必要时建议 refresh
-- `/arch:brief`：从 `specs / CR / ADR` 生成 wiki、brief、report
+## 用户入口(只暴露 4 个)
+
+| 命令 | 你会怎么说 | 实际发生 |
+|---|---|---|
+| `/arch:onboard` | "帮我看懂这套系统" / "建一份基线" | 扫代码,产 `specs/`(5 份 schema-locked YAML + Mermaid 图源) |
+| `/arch:design` | "根据 PRD 设计 X" / "开个 CR" | 建 `change-requests/CR-*/`,产影响面 / 方案权衡 / ADR / 评审 |
+| `/arch:audit` | "现在的基线还能信么" | 只读 `specs/`,审视完整度 + 新鲜度;必要时建议 refresh 或 drift audit |
+| `/arch:brief` | "给新人写个 wiki" / "给 CTO 一份汇报" | 重组已有事实成 `generated/overview.md`、5 页 wiki、或受众化摘要 |
+
+`arch-review`、`arch-options`、`arch-adr`、`arch-diagram`、`arch-pack`、`arch-radar` 都是内部 skill,由上面 4 个入口按需调度。
 
 ## 工作区结构
 
 ```text
-arch/{project}/
-├── specs/
-├── decisions/
+arch/{项目名}/
+├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源,无 markdown 解释)
+│   ├── baseline.yaml                 # 组件、接口、数据模型、部署单元
+│   ├── quality.yaml                  # NFR、组织 KB、运行/发布/回滚约束
+│   ├── risks.yaml                    # 风险 + 技术债台账
+│   ├── decisions.yaml                # ADR 索引 + superseded[] 关系
+│   ├── traceability.yaml             # CR ↔ specs ↔ ADR ↔ release 追溯链
+│   └── diagrams/                     # 稳定 C4 Mermaid 源
+├── decisions/                        # append-only ADR markdown(文件本身永不修改)
+│   └── ADR-NNN-*.md
 ├── change-requests/
-├── generated/
-├── state.yaml
-└── .metrics.jsonl
+│   └── CR-YYYY-NNN-{slug}/
+│       ├── cr.md
+│       ├── impact.yaml
+│       ├── review.yaml
+│       ├── traceability.yaml
+│       └── options.md                # 条件产出,仅当存在真实方案分歧时
+├── generated/                        # 派生人类视图,可删可重建
+│   ├── overview.md                   # 1 页稳定入口(11 段固定结构,≤200 行硬上限)
+│   ├── wiki/01-..05-*.md             # 5 页 onboarding 展开
+│   ├── diagrams/                     # 渲染后的 SVG/PNG
+│   └── briefs/                       # 受众化摘要
+├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)
+└── .metrics.jsonl                    # 每次 skill 运行的埋点
 ```
 
-## 边界
+## 治理六条(Governance Pillars)
 
-允许产物：
+随 LLM 能力提升,**乱产文档**的风险越大,治理价值越显著。这 6 条是套件长期能站住的根:
 
-- `*.md`
-- `*.yaml`
-- `*.mmd`
-- `*.svg|*.png`
+1. **specs 是唯一事实源** — `specs/*.yaml` schema-locked。任何 `generated/`、`cr.md`、ADR 正文或汇报里出现的事实如果与 specs 矛盾,就是 bug。
+2. **Append-only 历史** — `decisions/ADR-*.md` commit 后永不修改;supersede 关系记在 `specs/decisions.yaml#superseded[]`。`state.yaml.history` 与 `state.yaml.overrides` 同样仅追加。
+3. **新鲜度状态机** — 每份 baseline 带 `freshness_status: fresh|possibly_stale|stale|unknown`,基于 commit diff 命中架构敏感文件计算。`stale` 时 design 会用中文给 refresh 建议,不让用户在过期基线上做决定。
+4. **state.yaml 单 writer** — 唯一可写者是 `arch-workflow`,其他 skill 通过返 `state_delta` 让 workflow 合并。杜绝并发状态污染。
+5. **Write-scope 契约** — `internal/tool-contracts/write-scope.yaml` 声明每个 skill 的可写/可读/禁写路径。`arch-pack` 不能动 `specs/`、`arch-review` 除了 `review.yaml` 全只读、`arch-analyze` 不能写 `decisions/`。v1.0 靠 acceptance 审计,v1.1 上 PreToolUse hook 硬拦截。
+6. **证据闭合** — YAML 里每条断言带 `evidence_refs`;`overview.md` 与 wiki 里每条结论必须回链到 YAML 字段或 ADR/CR 路径。**禁止**"应该 / 大概 / 通常"等弱化词。
 
-禁止产物：
+## 产物边界
 
-- IaC
-- DDL / migration
-- CI workflow
-- 服务骨架
-- 业务代码
+| ✅ 允许 | ❌ 拒绝 |
+|---|---|
+| `*.md`(overview / wiki / ADR / CR / brief) | Terraform / Helm / Pulumi |
+| `*.yaml`(schema-locked 事实) | DDL / ORM migration |
+| `*.mmd`(Mermaid 源) | `.github/workflows/*` / `.gitlab-ci.yml` |
+| `*.svg` / `*.png`(渲染图) | 服务骨架 / OpenAPI 客户端代码 |
+|   | 业务代码 |
 
-## 状态
+Write-scope 契约在 tool 层强化:即便 prompt 上来要求,也会被拦截。
 
-当前仓库正从旧的“交付件工厂”模型迁移到新的 `specs + CR + governance` 模型。规范以 [docs/spec-v1.0.md](./docs/spec-v1.0.md) 为准。
+## 包含什么
+
+| 层 | 内容 |
+|---|---|
+| 10 个 skill | `arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar`,每个含 `SKILL.md` + 可执行 `references/`(rubric / template / playbook) |
+| Schema | 5 个 specs schema + 3 个 CR schema + state schema + 5 个组织 KB schema |
+| Acceptance | 4 入口各一份 YAML,含 `structural_checks` + `semantic_checks` + `scope_audit` |
+| Tool 契约 | `internal/tool-contracts/write-scope.yaml` — 每 skill write/read/forbidden 矩阵 |
+| 模板 | `arch/_template/` 工作区骨架 + `arch/sample/` 示例 |
+| KB seed(`arch-library/`) | 8 个域、共 18 份 ≤200 行的高信号 seed:`typescript-patterns/` × 4 · `microservices-patterns/` × 3 · `devops-patterns/` × 3 · `migration-patterns/` × 3 · `nfr-checklists/` × 4 · `anti-patterns/` × 1 |
+
+AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI 域支持落地后再补。
+
+## 用户交互语言
+
+用户可见提示**默认中文**(eg. "当前架构基线可能已过期"),首次出现关键英文术语时加括号(eg. "架构漂移(drift)"、"写回(writeback)")。YAML key 与 schema 字段保持稳定英文。
+
+## 怎么开始
+
+```bash
+# 在 Claude Code 里装好本 plugin 后:
+/arch:onboard
+```
+
+首次运行扫代码 → 写 `specs/` 基线 → 计算 `freshness_status` → 用中文列出 `known_unknowns`(例如未识别 owner 的组件)。后续的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量演进。
+
+## 当前状态
+
+**v1.0 specs-CR 模型已落地**,含:
+
+- spec + 10 skill + 13 JSON schema + 4 acceptance gate + write-scope 契约 + 16 份 reference playbook/rubric + 18 份 KB seed
+- `arch/_template/` 骨架 + `arch/sample/` 演示工作区
+
+未进 v1.0(见 [v1.1 候选](./docs/spec-v1.0.md#v11-candidates)):
+
+- 多 agent 并行扫描器(spec 已勾勒方向,未编排实装)
+- `arch-review --mode=fitness`(ADR fitness spec 兜底)
+- PreToolUse hook 硬拦截 write-scope
+- LLM 渲染 wiki / 基于 specs/CR 的 RAG
+- AI / agent 架构 KB seed
+
+## License 与致谢
+
+License 见 [LICENSE](./LICENSE)。
+
+我们借鉴但**不依赖**:
+
+- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)** — 扫描 pipeline 思路(project → file → architecture → review → write)
+- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)** — 可选渲染后端,不装时自动降级到 Mermaid
+
+两者都不是运行时硬依赖。
