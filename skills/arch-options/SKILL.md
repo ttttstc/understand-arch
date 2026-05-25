@@ -42,9 +42,23 @@ description: |
 - 比较维度完整
 - 推荐理由清楚
 
+## Write Scope
+
+完整定义见 `internal/tool-contracts/write-scope.yaml#skills.arch-options`。
+
+- ✅ 可写: `change-requests/${active_cr}/options.md`(仅当前 active_cr)
+- ❌ 禁写: `state.yaml` · `specs/**` · `decisions/**` · `generated/**` · 其他 CR
+
+### state_delta(可选,仅在产 options 时返)
+```yaml
+state_delta:
+  history_append: {at, action: options_produced, cr_id, option_count}
+```
+
 ## 参考
 
 - `docs/spec-v1.0.md`
+- `internal/tool-contracts/write-scope.yaml`
 - `internal/acceptance/design.yaml`
 - `references/options-rubric.md`
 - `references/options-table-template.md`

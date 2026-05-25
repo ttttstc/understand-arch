@@ -1,0 +1,328 @@
+# Write-Scope Contract — 每个 skill 的 write 权限边界
+#
+# 用法:
+#   1. v1.0: 每个 SKILL.md 头部 "## Write Scope" 段引用本文,LLM 跑时遵守
+#   2. v1.0: arch-workflow dispatch 子 skill 前在 .metrics.jsonl 写
+#      {"skill":"arch-X","allowed_writes":[...],"dispatched_at":"..."}
+#   3. v1.0: acceptance 的 no_writes_outside_scope check 用 git diff 与
+#      dispatch 记录对比,任何越界 = 验收失败
+#   4. v1.1: .claude/hooks/check-write-scope.sh PreToolUse 拦截 Edit/Write,
+#      根据当前 skill + 本契约判定路径合法性
+#
+# Path 变量:
+#   ${ARCH_PROJECT_DIR}  当前项目工作区根 (eg. arch/tower/)
+#   ${CODE_REPO}         被扫的目标代码仓
+#   ${KB_DIR}            ~/.understand-arch/kb/
+
+version: "1.0"
+
+# ============================================================
+# 全局禁令(所有 skill 一律遵守)
+# ============================================================
+
+global_forbidden_writes:
+  - description: "代码 / IaC / CI / DDL 类产物全禁(spec 边界 + 强化到 tool level)"
+    patterns:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.py"
+      - "**/*.go"
+      - "**/*.java"
+      - "**/Dockerfile"
+      - "**/*.tf"
+      - "**/*.tfvars"
+      - "**/helm/**"
+      - "**/.github/workflows/**"
+      - "**/.gitlab-ci.yml"
+      - "**/migrations/**"
+      - "**/*.sql"
+
+  - description: "decisions/ADR-*.md 一旦存在,正文永不修改(append-only 真意)"
+    rule: "新文件可写;已存在文件禁 Edit。supersede 关系走 specs/decisions.yaml#superseded[]"
+    enforcement: "git status + diff 检测已 commit 文件被 Modify"
+
+  - description: "change-requests/CR-*/ 一旦 review.yaml.readiness=ready,整目录禁重写"
+    rule: "只能新建 CR 或在 agent/overrides/OVR-NNN.yaml(本契约前身,后续视情移到 state.yaml.overrides)留 override"
+
+  - description: "跨 CR 写禁令"
+    rule: "任何写 change-requests/CR-*/ 时,CR id 必须等于 state.yaml.active_cr,否则拒绝"
+
+# ============================================================
+# 各 skill write-scope
+# ============================================================
+
+skills:
+
+  # -----------------------------------------------------------
+  # arch-workflow: 编排器,唯一可写 state.yaml
+  # -----------------------------------------------------------
+  arch-workflow:
+    write:
+      - path: "${ARCH_PROJECT_DIR}/state.yaml"
+        constraints:
+          - "history 字段仅 append"
+          - "overrides 字段仅 append"
+          - "其他 skill 通过返回 state_delta 给 workflow,workflow 合并写入"
+      - path: "${ARCH_PROJECT_DIR}/.metrics.jsonl"
+        constraints: ["append-only,每行一条 JSON"]
+    read:
+      - "${ARCH_PROJECT_DIR}/**"
+      - "${KB_DIR}/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+
+  # -----------------------------------------------------------
+  # arch-analyze: baseline-refresh 产 specs;drift-audit 只读
+  # -----------------------------------------------------------
+  arch-analyze:
+    modes:
+      baseline-refresh:
+        write:
+          - "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+          - "${ARCH_PROJECT_DIR}/specs/quality.yaml"
+          - "${ARCH_PROJECT_DIR}/specs/risks.yaml"
+          - path: "${ARCH_PROJECT_DIR}/specs/decisions.yaml"
+            constraints:
+              - "只写 accepted/proposed/superseded/key_assumptions/pending_decisions 索引字段"
+              - "不修改既有 ADR 索引项(append-only)"
+          - "${ARCH_PROJECT_DIR}/specs/traceability.yaml"
+          - "${ARCH_PROJECT_DIR}/specs/diagrams/*.mmd"
+        forbidden_writes:
+          - "${ARCH_PROJECT_DIR}/generated/**"
+          - "${ARCH_PROJECT_DIR}/decisions/**"
+          - "${ARCH_PROJECT_DIR}/change-requests/**"
+        returns_to_workflow:
+          state_delta:
+            - "current_phase: baseline_refresh"
+            - "status: idle|running|completed|blocked"
+            - "kb_loaded: {...}"
+            - "history append: {at, action, result}"
+
+      drift-audit:
+        write: []          # 不直接落盘
+        read:
+          - "${CODE_REPO}/**"
+          - "${ARCH_PROJECT_DIR}/specs/**"
+        returns_to_workflow:
+          findings: "供 arch-review 写入 review buffer 或 audit 报告"
+
+      targeted-refresh:
+        write:
+          - path: "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+            constraints: ["仅更新受影响 components/interfaces/data_models 条目"]
+          - "${ARCH_PROJECT_DIR}/specs/diagrams/*.mmd"
+        forbidden_writes:
+          - "其他 specs 文件"
+          - "${ARCH_PROJECT_DIR}/generated/**"
+
+  # -----------------------------------------------------------
+  # arch-frame: 建 CR,所有 state 改动通过 state_delta 给 workflow
+  # -----------------------------------------------------------
+  arch-frame:
+    write:
+      - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/cr.md"
+        constraints:
+          - "active_cr 必须等于本次 dispatch 的 CR id"
+          - "新建为主;若已存在 review.yaml.readiness=ready,禁重写"
+    read:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${KB_DIR}/**"
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/state.yaml"        # 严格:走 state_delta
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/(?!${active_cr})/**"
+    returns_to_workflow:
+      state_delta:
+        - "active_cr: <new_cr_id>"
+        - "kb_loaded: {banned_patterns,compliance_redlines,network_boundaries,naming_conventions,tech_radar}"
+        - "current_phase: cr_frame"
+
+  # -----------------------------------------------------------
+  # arch-diff-judge: 只产当前 CR 的 impact.yaml
+  # -----------------------------------------------------------
+  arch-diff-judge:
+    write:
+      - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/impact.yaml"
+        constraints:
+          - "schema validate pass 才能落盘"
+          - "其他 CR 目录禁写"
+    read:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/(?!${active_cr})/**"
+    returns_to_workflow:
+      state_delta:
+        - "current_phase: impact_analysis"
+
+  # -----------------------------------------------------------
+  # arch-options: 条件运行,只写当前 CR 的 options.md
+  # -----------------------------------------------------------
+  arch-options:
+    write:
+      - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/options.md"
+    read:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"
+      - "${KB_DIR}/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/(?!${active_cr})/**"
+
+  # -----------------------------------------------------------
+  # arch-adr: 严格 append-only;老 ADR 文件永不修改
+  # -----------------------------------------------------------
+  arch-adr:
+    write:
+      - path: "${ARCH_PROJECT_DIR}/decisions/ADR-NNN-*.md"
+        constraints:
+          - "只能新建,NNN 三位连续编号"
+          - "禁止 Edit / Write 任何已 commit 的 ADR 文件"
+          - "若需 supersede:新 ADR 自身记 'Supersedes: ADR-OLD',且 arch-adr 在 returns_to_workflow 内带 supersede_index_update"
+    returns_to_workflow:
+      supersede_index_update:
+        - "specs/decisions.yaml#superseded 加一条 {old_adr_id, new_adr_id, at}"
+        - "由 arch-workflow 实际写入 decisions.yaml(arch-adr 只 build delta)"
+      state_delta:
+        - "history append: {at, action: 'adr_added', adr_id}"
+    read:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/decisions/ADR-*.md(已存在的)"  # 严格 append-only
+      - "${ARCH_PROJECT_DIR}/specs/decisions.yaml"            # 走 returns_to_workflow.supersede_index_update
+      - "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/quality.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/risks.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/traceability.yaml"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+
+  # -----------------------------------------------------------
+  # arch-diagram: source=specs 写 specs/diagrams/;其他写 generated/
+  # -----------------------------------------------------------
+  arch-diagram:
+    modes:
+      source-specs:
+        write:
+          - "${ARCH_PROJECT_DIR}/specs/diagrams/*.mmd"
+        forbidden_writes:
+          - "${ARCH_PROJECT_DIR}/generated/**"
+      source-cr:
+        write:
+          - "${ARCH_PROJECT_DIR}/generated/diagrams/*.mmd"
+          - "${ARCH_PROJECT_DIR}/generated/diagrams/*.svg"
+          - "${ARCH_PROJECT_DIR}/generated/diagrams/*.png"
+        forbidden_writes:
+          - "${ARCH_PROJECT_DIR}/specs/diagrams/**"
+      source-generated-view:
+        write:
+          - "${ARCH_PROJECT_DIR}/generated/diagrams/*.mmd"
+        forbidden_writes:
+          - "${ARCH_PROJECT_DIR}/specs/**"
+
+  # -----------------------------------------------------------
+  # arch-review: 全只读,除 CR review.yaml(cr mode)和 audit 报告
+  # -----------------------------------------------------------
+  arch-review:
+    modes:
+      specs:
+        write: []                # 内部 buffer,workflow 决定是否落盘
+        read: ["${ARCH_PROJECT_DIR}/specs/**", "${KB_DIR}/**"]
+        returns_to_workflow:
+          findings: "结构化 findings 数组"
+          state_delta:
+            - "history append: {at, action: 'specs_review', result, findings_count}"
+
+      cr:
+        write:
+          - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/review.yaml"
+            constraints:
+              - "schema validate pass"
+              - "若已 readiness=ready 禁重写(开新 CR 或加 OVR)"
+        read:
+          - "${ARCH_PROJECT_DIR}/specs/**"
+          - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"
+          - "${KB_DIR}/**"
+        forbidden_writes:
+          - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/cr.md"
+          - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/impact.yaml"
+          - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/options.md"
+          - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/traceability.yaml"
+          - "其他 CR 目录"
+          - "${ARCH_PROJECT_DIR}/specs/**"
+          - "${ARCH_PROJECT_DIR}/decisions/**"
+          - "${ARCH_PROJECT_DIR}/generated/**"
+          - "${ARCH_PROJECT_DIR}/state.yaml"
+
+      drift:
+        write: []
+        read: ["${CODE_REPO}/**", "${ARCH_PROJECT_DIR}/specs/**"]
+        returns_to_workflow:
+          findings: "drift findings 数组"
+
+  # -----------------------------------------------------------
+  # arch-pack: 只产人类视图(generated/),完全不动 specs
+  # -----------------------------------------------------------
+  arch-pack:
+    write:
+      - "${ARCH_PROJECT_DIR}/generated/overview.md"        # 注意:overview 已移到 generated/
+      - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"
+      - "${ARCH_PROJECT_DIR}/generated/briefs/*.md"
+      - "${ARCH_PROJECT_DIR}/generated/diagrams/*"         # arch-pack 嵌入图时
+    read:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/specs/**"                     # ★ 关键:arch-pack 不再写 specs/
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+    returns_to_workflow:
+      state_delta:
+        - "history append: {at, action: 'brief_generated', audience, target_path}"
+
+  # -----------------------------------------------------------
+  # arch-radar: 无文件落地,只返摘要
+  # -----------------------------------------------------------
+  arch-radar:
+    write: []
+    read:
+      - "网络(WebFetch / WebSearch)"
+      - "${KB_DIR}/**"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/**"
+    returns_to_workflow:
+      research_summary: "供 arch-options 调用方使用"
+
+# ============================================================
+# Enforcement(v1.0 → v1.1 路径)
+# ============================================================
+
+enforcement:
+  v1.0:
+    - "skill prompt 自律(每个 SKILL.md 头部 '## Write Scope' 段)"
+    - "arch-workflow dispatch 时 .metrics.jsonl 记录 allowed_writes"
+    - "acceptance 加 no_writes_outside_scope structural check(用 git diff)"
+
+  v1.1:
+    - ".claude/hooks/check-write-scope.sh PreToolUse 拦截 Edit/Write/MultiEdit/NotebookEdit"
+    - "拦截器从 conversation 推断当前 skill,查本契约,违规 → 拒绝 + reason"
+    - "拦截器自带的 audit log 写入 ${ARCH_PROJECT_DIR}/.metrics.jsonl"

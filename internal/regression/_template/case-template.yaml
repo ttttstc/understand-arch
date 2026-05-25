@@ -28,7 +28,7 @@ trace_assertion:
   files_read:                                   # 必读 / 必不读
     must_include:
       - "~/.understand-arch/kb/banned-patterns.yaml"
-      - "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
+      - "${ARCH_PROJECT_DIR}/change-requests/CR-*/cr.md"
     must_not_include: []
   subagents_spawned:                            # 子 agent 启动数
     min: 0
@@ -44,19 +44,21 @@ trace_assertion:
 # === 结果断言(产物质量)===
 result_assertion:
   files_produced:
-    - path: "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
+    - path: "${ARCH_PROJECT_DIR}/change-requests/CR-*/cr.md"
+      check: file_exists
+    - path: "${ARCH_PROJECT_DIR}/state.yaml"
       check: schema_passes
-      schema: internal/schemas/项目总览.schema.json
-    - path: "${ARCH_PROJECT_DIR}/evidence/项目总览.yaml"
-      check: field_eq
-      field: design_intent.non_goals
+      schema: internal/schemas/state.schema.json
+    - path: "${ARCH_PROJECT_DIR}/change-requests/CR-*/cr.md"
+      check: contains
+      field: "明确不做的事"
       not_empty: true
   state:
-    - field: readiness
-      value: ready                              # ready | degraded | blocked
+    - field: active_cr
+      not_empty: true
   outputs:
-    - field: architecture_profile.recommended_references
-      length_gte: 3
+    - field: kb_loaded
+      not_empty: true
 
 # === 已知失败模式(回归提醒)===
 known_failure_modes:

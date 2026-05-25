@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/state.schema.json",
+  "title": "Workflow State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project",
+    "public_entry",
+    "current_phase",
+    "status",
+    "template_version",
+    "kb_loaded",
+    "history",
+    "overrides",
+    "last_updated"
+  ],
+  "properties": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "root_path"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "root_path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "public_entry": {
+      "type": "string",
+      "enum": ["onboard", "design", "audit", "brief"]
+    },
+    "current_phase": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "running", "blocked", "completed"]
+    },
+    "template_version": { "type": "string", "minLength": 1 },
+    "active_cr": { "type": ["string", "null"] },
+    "kb_loaded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "banned_patterns",
+        "compliance_redlines",
+        "network_boundaries",
+        "naming_conventions",
+        "tech_radar"
+      ],
+      "properties": {
+        "banned_patterns": { "$ref": "#/$defs/loadState" },
+        "compliance_redlines": { "$ref": "#/$defs/loadState" },
+        "network_boundaries": { "$ref": "#/$defs/loadState" },
+        "naming_conventions": { "$ref": "#/$defs/loadState" },
+        "tech_radar": { "$ref": "#/$defs/loadState" }
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ts", "phase", "status", "summary"],
+        "properties": {
+          "ts": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ts", "scope", "reason"],
+        "properties": {
+          "ts": { "type": "string", "minLength": 1 },
+          "scope": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "pending_actions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "suggested_next_action": { "type": "string" },
+    "last_updated": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "loadState": {
+      "type": "string",
+      "enum": ["loaded", "not_loaded", "not_configured", "schema_error"]
+    }
+  }
+}

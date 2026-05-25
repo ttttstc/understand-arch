@@ -1,36 +1,64 @@
 mode: design
-purpose: "Turn a change request into an evidence-backed design package."
+purpose: "Turn one change request into a reviewable and writeback-ready CR package."
 
-structural_gate:
-  required: true
-  must_have:
-    - "agent/证据/项目总览.yaml exists and passes schema"
-    - "agent/证据/影响面-{change}.yaml exists and passes internal/schemas/影响面.schema.json"
-    - "user/设计变更/{change}/设计文档.md exists and contains: 背景与诉求 / 影响面摘要 / 方案权衡(≥2 options + 4 列矩阵) / 回滚方案"
-    - "user/设计变更/{change}/实施方案.md exists with 17 required chapters"
-    - "user/设计变更/{change}/评审报告.md exists"
-    - "user/决策史/ADR-NNN-*.md exists with 7 required sections (Context / Decision / Consequences / Rejected Alternatives / Compliance / Implementation Plan Reference / Fitness Spec)"
+structural_checks:
+  - id: cr-files
+    description: "core CR files exist"
+    check: files_exist
+    targets:
+      - change-requests/*/cr.md
+      - change-requests/*/impact.yaml
+      - change-requests/*/review.yaml
+      - change-requests/*/traceability.yaml
+  - id: cr-schemas
+    description: "CR yaml files pass schema"
+    check: schema_bundle
+    targets:
+      - file: change-requests/*/impact.yaml
+        schema: internal/schemas/cr-impact.schema.json
+      - file: change-requests/*/review.yaml
+        schema: internal/schemas/cr-review.schema.json
+      - file: change-requests/*/traceability.yaml
+        schema: internal/schemas/cr-traceability.schema.json
+  - id: no-writes-outside-scope
+    description: "design 链路所有 skill 落盘均在 write-scope 范围内;active_cr 一致"
+    check: scope_audit
+    contract: internal/tool-contracts/write-scope.yaml
+    against: .metrics.jsonl
+  - id: adr-append-only
+    description: "若本轮新增 ADR,既有 ADR 文件正文未被修改"
+    check: append_only
+    target: decisions/ADR-*.md
 
-semantic_gate:
-  threshold: "all"
-  allows_degraded: false
-  questions:
-    - id: prd-clarity
-      asks: "Did arch-frame resolve or explicitly block all critical PRD ambiguities?"
-    - id: impact-completeness
-      asks: "Are all 7 impact dimensions covered in 影响面.yaml, including no-impact reasons?"
-    - id: option-tradeoff
-      asks: "Does every option cover impact / dependency changes / data changes / rollback?"
-    - id: selected-decision
-      asks: "Is the selected option recorded in 设计文档.md before ADR generation?"
-    - id: rollback-realism
-      asks: "Can rollback in 设计文档.md be followed without inventing missing steps?"
-    - id: implementation-readiness
-      asks: "Can engineers start from the 17-chapter 实施方案.md?"
-    - id: org-conformance
-      asks: "Are KB violations marked in 评审报告.md and escalated?"
-    - id: evidence-closure
-      asks: "Does every major assertion in 设计文档.md cite YAML or source evidence?"
+semantic_checks:
+  - id: impact-depth
+    question: "这次变更的影响面是否足够细，能支撑实现前讨论？"
+    severity: required
+    rubric:
+      - impact.yaml 覆盖 services/modules/apis/data_models/events_messages/permissions/deployments/configs
+      - 无影响维度也必须显式写 no_impact
+  - id: dependency-and-data
+    question: "模块依赖变化和数据模型变化是否讲清楚了？"
+    severity: required
+    rubric:
+      - 依赖变化不是只写一句“会影响多个模块”
+      - 数据模型变化含 migration/backfill/compatibility/rollback_strategy
+  - id: rollback
+    question: "回滚策略是否可执行？"
+    severity: required
+    rubric:
+      - 至少说明代码、配置、数据中的相关回退路径
+      - 不允许只写 revert PR
+  - id: writeback-ready
+    question: "CR 是否已经为 writeback 做好准备？"
+    severity: required
+    rubric:
+      - review.yaml 给出 readiness
+      - traceability.yaml 指出将来要写回哪些 specs 资产
+
+threshold:
+  structural: 100%
+  semantic: 4/4
 
 retry_policy:
   max_retries: 2

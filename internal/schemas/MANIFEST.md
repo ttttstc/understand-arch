@@ -1,26 +1,29 @@
-# internal/schemas/ — JSON Schemas for 5+1 YAML Assets
+# internal/schemas/ — JSON Schemas for the v1.0 Specs/CR Model
 
-> 所有 schema **必需**。Skills 在输出 yaml 时**必须**通过这里的 JSON Schema 验证。
+> 所有结构化 YAML 都必须通过这里的 schema。`overview.md`、ADR、wiki、brief 不属于 JSON Schema 约束层。
 
-## Project-scoped(5 schemas)
+## Core workspace schemas
 
-| 文件 | 验证什么 yaml | 产 yaml 的 skill |
+| 文件 | 验证什么 | 主要写入方 |
 |---|---|---|
-| `项目总览.schema.json` | `evidence/项目总览.yaml` | `arch-frame` |
-| `仓库与组件清单.schema.json` | `evidence/仓库与组件清单.yaml` | `arch-analyze --depth=manifest` |
-| `依赖与链路图谱.schema.json` | `evidence/依赖与链路图谱.yaml` | `arch-analyze --depth=manifest` |
-| `风险与技术债台账.schema.json` | `evidence/风险与技术债台账.yaml` | `arch-analyze --depth=risk` |
-| `决策与证据索引.schema.json` | `evidence/决策与证据索引.yaml` | `arch-adr` + `arch-options` |
+| `state.schema.json` | `arch/{project}/state.yaml` | `arch-workflow` |
+| `specs-baseline.schema.json` | `arch/{project}/specs/baseline.yaml` | `arch-analyze` |
+| `specs-quality.schema.json` | `arch/{project}/specs/quality.yaml` | `arch-analyze` + `arch-frame` |
+| `specs-risks.schema.json` | `arch/{project}/specs/risks.yaml` | `arch-analyze` |
+| `specs-decisions.schema.json` | `arch/{project}/specs/decisions.yaml` | `arch-adr` + `arch-options` |
+| `specs-traceability.schema.json` | `arch/{project}/specs/traceability.yaml` | `arch-workflow` + writeback |
 
-## Design-mode 专属(1 schema)
+## Change request schemas
 
-| 文件 | 验证什么 yaml | 产 yaml 的 skill |
+| 文件 | 验证什么 | 主要写入方 |
 |---|---|---|
-| `影响面.schema.json` | `design-docs/{change}/影响面.yaml` | `arch-diff-judge` |
+| `cr-impact.schema.json` | `arch/{project}/change-requests/CR-*/impact.yaml` | `arch-diff-judge` |
+| `cr-review.schema.json` | `arch/{project}/change-requests/CR-*/review.yaml` | `arch-review` |
+| `cr-traceability.schema.json` | `arch/{project}/change-requests/CR-*/traceability.yaml` | `arch-workflow` + writeback |
 
-## Org-scoped(5 schemas,企业 KB 用)
+## Org-scoped schemas
 
-| 文件 | 验证什么 yaml | 加载方 |
+| 文件 | 验证什么 | 加载方 |
 |---|---|---|
 | `banned-patterns.schema.json` | `~/.understand-arch/kb/banned-patterns.yaml` | `arch-frame` |
 | `compliance-redlines.schema.json` | `~/.understand-arch/kb/compliance-redlines.yaml` | `arch-frame` |
@@ -28,24 +31,19 @@
 | `naming-conventions.schema.json` | `~/.understand-arch/kb/naming-conventions.yaml` | `arch-frame` |
 | `tech-radar.schema.json` | `~/.understand-arch/kb/tech-radar.yaml` | `arch-frame` |
 
-## v1.1: External baseline source
+## 关键约束
 
-| 文件 | 验证什么 | 加载方 |
-|---|---|---|
-| `external-baseline.schema.json` | 用户提供的 `--baseline-source=*.json`(节省全仓扫描时) | `arch-analyze` |
+- 所有 `specs/*.yaml`、`change-requests/*/*.yaml`、`state.yaml` 都必须有顶层 `evidence_refs`，除非该文件只记录 workflow 状态且没有架构断言。
+- `specs/baseline.yaml` 必须包含 4+1 视图覆盖状态与 freshness 相关字段。
+- `cr-impact.yaml` 必须显式覆盖:
+  - 影响面
+  - 模块依赖变化
+  - 数据模型变化
+  - 回滚策略
+- `cr-review.yaml` 必须显式输出 `readiness` 与 findings。
+- `specs/traceability.yaml` 与 `CR/traceability.yaml` 都必须支持 writeback 追溯。
 
-## 硬要求:`evidence_refs` 字段
+## 命名与迁移说明
 
-**每个 project-scoped yaml 都必须含 `evidence_refs: [{file, line, commit}]` 字段**,用于每条断言的回溯。这是"证据可追溯"在 schema 层的强制落地。
-
-JSON Schema 中通过 `"required": ["evidence_refs"]` 标记。
-
-## Schema 草图位置
-
-参考 `docs/office-hours-2026-05-24.md` Appendix A —— 那里有 `项目总览.yaml` 和 `影响面.yaml` 的完整字段草图。实现时直接转 JSON Schema。
-
-## 实现状态
-
-- v0.1.0(当前): 全部 schema 待实现
-- v1.0 目标: 5+1+5 个 schema 全部实现 + skill 输出 yaml 通过校验
-- v1.1: 加 `external-baseline.schema.json`
+- 旧的 `项目总览.schema.json`、`仓库与组件清单.schema.json`、`依赖与链路图谱.schema.json`、`风险与技术债台账.schema.json`、`决策与证据索引.schema.json`、`影响面.schema.json` 已被新的 specs/CR schema 集合取代。
+- 旧 schema 若仍被引用，视为实现未迁移完成，应继续清理。

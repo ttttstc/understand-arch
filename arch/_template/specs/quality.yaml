@@ -1,0 +1,27 @@
+nfrs:
+  reliability: []
+  latency: []
+  performance: []
+  cost: []
+  security: []
+  compliance: []
+  observability: []
+  maintainability: []
+runtime_constraints: []
+release_constraints: []
+rollback_constraints: []
+org_constraints:
+  banned_patterns:
+    status: not_configured
+  compliance_redlines:
+    status: not_configured
+  network_boundaries:
+    status: not_configured
+  naming_conventions:
+    status: not_configured
+  tech_radar:
+    status: not_configured
+evidence_refs:
+  - file: arch/_template/specs/quality.yaml
+    line: 1
+    commit: template-scaffold

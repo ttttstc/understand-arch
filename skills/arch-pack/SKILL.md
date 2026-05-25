@@ -1,48 +1,51 @@
 ---
 name: arch-pack
 description: |
-  人类视图导出器。把 `specs / CR / ADR` 组装成 `specs/overview.md`、onboarding wiki、brief、review packet 等可读材料。不创造新事实，只重组现有事实并保留来源回链。
+  人类视图导出器。把 `specs / CR / ADR` 组装成 `generated/overview.md`、onboarding wiki、brief 等可读材料。**只重组现有事实**,不创造新事实。**完全不动 `specs/**`**;所有人类视图落在 `generated/` 下。
 
   触发词: 生成 wiki / 出汇报 / 给领导看 / 整理一份给新人 / 导出说明
 
-  本 skill 不生成结构化基线，不替代 ADR，不写代码。
+  本 skill 不生成结构化基线,不替代 ADR,不写代码。
 ---
 
 # arch-pack
 
 ## 角色定位
 
-- 只负责“给人看”。
-- 输入是可信事实，输出是可读视图。
-- 稳定的人类入口是 `specs/overview.md`。
-- `generated/wiki/` 是展开视图，不是事实源。
+- 只负责"给人看"
+- 输入是可信事实(specs/CR/ADR),输出是可读视图
+- **稳定的人类入口是 `generated/overview.md`**(归 generated/,不再在 specs/)
+- `generated/wiki/` 是展开视图,不是事实源
 
 ## 输入
 
-- `specs/`
+- `specs/*.yaml`(全)
 - 可选 `change-requests/CR-*`
 - 可选 `decisions/ADR-*`
 - `audience=onboarding|management|engineering`
 
 ## 输出
 
-- `specs/overview.md`
-- `generated/wiki/*.md`
-- `generated/briefs/*.md`
+| 路径 | 何时产 |
+|---|---|
+| `generated/overview.md` | 任何 audience 都更新(1 页稳定入口) |
+| `generated/wiki/01-05.md` | audience=onboarding |
+| `generated/briefs/{audience}-{date}.md` | audience=management|engineering |
+| `generated/diagrams/*` | 给 wiki/brief 嵌图时(委托 arch-diagram) |
 
 ## 约束
 
-1. 不发明新事实。
-2. 关键结论要能回链来源文件。
-3. 给管理层的摘要要尽量短，强调风险、决策、影响。
-4. 给 onboarding 的 wiki 要解释系统现状，而不是直接转储 YAML。
-5. `specs/overview.md` 与 `generated/wiki/` 不能各自维护不同版本的事实。
+1. **不发明新事实** — 每条结论必须能追溯到 `specs/*.yaml` 字段、ADR 路径或活跃 CR
+2. **不写 `specs/**`** — 关键边界。即便 overview.md 看起来像"specs 的解释",它依然落在 `generated/`
+3. 管理层摘要简短(≤1 页),强调风险、决策、影响
+4. onboarding wiki 解释系统现状,不是直接转储 YAML
+5. overview 和 5 页 wiki **不能各自维护不同版本的事实** — 都从同一份 specs 重组
 
 ## 人类视图分层
 
-### 稳定入口：`specs/overview.md`
+### 1 页稳定入口:`generated/overview.md`
 
-这是任何人第一次进入项目时应该先读的一页。它必须长期存在，结构固定，负责回答：
+任何人第一次进入项目应先读的一页。**11 段固定结构,200 行硬上限**(详见 `references/overview-template.md`)。回答:
 
 - 这是什么系统
 - 主要由哪些仓库与组件构成
@@ -50,9 +53,9 @@ description: |
 - 现在最大的风险、技术债、关键决策、活跃 CR 是什么
 - 这份基线是否过期
 
-### 展开视图：`generated/wiki/`
+### 展开视图:`generated/wiki/`
 
-当 `audience=onboarding` 时，默认生成固定 5 页：
+audience=onboarding 时默认生成固定 5 页(`references/wiki-pages-template/01-05`):
 
 1. `01-系统全景.md`
 2. `02-组件与依赖.md`
@@ -60,40 +63,56 @@ description: |
 4. `04-质量属性与运行约束.md`
 5. `05-风险、决策与近期变更.md`
 
-每页规则：
+每页规则:
+1. 每页只回答一类问题
+2. 先结论,后细节
+3. 允许引用图,但图不是唯一表达
+4. source 不足时显式写 `known unknowns`,不脑补
 
-1. 每页只回答一类问题。
-2. 每页先给结论，再给细节。
-3. 页内允许引用图，但图不是唯一表达。
-4. 如果 source 不足，显式写 `known unknowns`，不要脑补。
+### 受众化摘要:`generated/briefs/`
 
-## 内容完备要求
-
-onboarding wiki 至少要能让读者回答：
-
-- 系统边界和目标是什么
-- 主要组件、接口、依赖怎么连
-- 关键数据模型和数据所有权在哪里
-- 哪些 NFR / 运行时约束最重要
-- 当前最大的风险、技术债、ADR、活跃变更是什么
-- 这份架构基线的新鲜度如何
+audience=management|engineering 时产 `{date}-{audience}.md`。
 
 ## 验收
 
-- `specs/overview.md` 已更新
-- brief/wiki 文件已生成
-- audience 风格正确
-- 关键结论可回链
+- `generated/overview.md` 已更新(11 段齐 + ≤200 行)
+- 若 audience=onboarding,5 页 wiki 全产出
+- 若 audience=management|engineering,brief 已落在 `generated/briefs/`
+- 关键结论可回链到 specs/CR/ADR
 
 ## 降级
 
-- 缺少足够 source artifacts：提示先跑 onboard 或 design
-- 某些图缺失：允许仅输出文字版
-- 某页 source 不足：保留页面结构，但显式标注 `known unknowns`
+- 缺少足够 source artifacts:提示先跑 onboard 或 design
+- 某些图缺失:允许仅输出文字版
+- 某页 source 不足:保留页面结构,显式标注 `known unknowns`
+
+## Write Scope
+
+完整定义见 `internal/tool-contracts/write-scope.yaml#skills.arch-pack`。
+
+- ✅ 可写:
+  - `generated/overview.md`(11 段固定结构,≤200 行硬上限)
+  - `generated/wiki/*.md`
+  - `generated/briefs/*.md`
+  - `generated/diagrams/*`(委托 arch-diagram 时)
+- ❌ **严格禁写** `specs/**`(关键边界 — arch-pack 不动事实层)
+- ❌ 禁写 `decisions/**` / `change-requests/**` / `state.yaml`
+
+### state_delta
+```yaml
+state_delta:
+  current_phase: brief_generated
+  history_append:
+    at: "..."
+    action: brief_generated
+    audience: onboarding|management|engineering
+    target_paths: ["generated/overview.md", "generated/wiki/...", ...]
+```
 
 ## 参考
 
 - `docs/spec-v1.0.md`
+- `internal/tool-contracts/write-scope.yaml`
 - `internal/acceptance/brief.yaml`
 - `references/wiki-playbook.md`
 - `references/overview-template.md`

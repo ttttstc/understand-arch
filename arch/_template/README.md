@@ -1,21 +1,31 @@
 # `_template/` — Workspace Skeleton
 
-`arch-workflow` 在首次为某个项目调用时,把本目录 copy 到 `arch/{项目名}/`。
+`arch-workflow` 首次为某个项目建立工作区时，会把本目录复制到 `arch/{project}/`。
 
-**不要直接对 `_template/` 跑 skill** — 它是源,不是工作区。
+**不要直接对 `_template/` 运行 skill。**
 
-## 顶层 2-bucket
+## 模板目标
 
-- `agent/` 🤖 — 引擎契约;每个文件含 schema 注释。stubs 故意 schema-invalid,半 copy 不能蒙混过 acceptance。
-- `user/` ★ — 给人看的;`user/README.md` 是入口,知识库 7 页 stubs 含填什么的提示。
+模板只提供稳定目录和少量占位文件，不预填“看起来完整”的伪内容。
 
-## 编辑模板时
+它必须对齐以下新主线:
 
-仅在以下情况改:
-- `internal/schemas/` 增删 top-level required 字段
-- 工作区契约增删强制目录/文件
-- 某目录用途变
+- `specs/` 是稳定事实源
+- `change-requests/` 记录单次变更
+- `decisions/` 是 append-only ADR
+- `generated/` 是派生视图
+- `state.yaml` 管 workflow 状态与 freshness 提示
 
-字段级改动(子字段、enum 拓展)不需改本模板 — 走 skill prompt。
+其中给人看的默认结构是：
 
-修改完 bump `agent/状态.yaml` 里的 `template_version` + 在 `CHANGELOG.md` 留痕。
+- `specs/overview.md`：稳定入口
+- `generated/wiki/01-05`：onboarding 展开视图
+- `generated/briefs/`：短摘要或汇报稿
+
+## 什么时候需要改模板
+
+- `internal/schemas/` 新增/删除必需文件
+- 工作区目录契约发生变化
+- `state.yaml` 的顶层结构调整
+
+字段级扩展通常不需要调整模板，只要 skill 写入逻辑和 schema 同步即可。

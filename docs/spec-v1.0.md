@@ -25,7 +25,7 @@
    `change-requests/CR-*` 不复制全量架构。它只记录一次变更相对 specs 的目标、影响面、依赖变化、数据变化、回滚策略、评审和 writeback 映射。
 
 3. **Wiki 是人类视图，不是事实源**  
-   人看 `overview.md` 和 generated wiki。Agent 看 schema-locked YAML。Wiki 可以生成、删除、重建；长期事实以 YAML、ADR、traceability 为准。
+   人看 `overview.md` 和 generated wiki。Agent 看 schema-locked YAML。`overview.md` 是稳定的人类入口；`generated/wiki/` 是可重建的展开视图。长期事实以 YAML、ADR、traceability 为准。
 
 4. **同一事实只维护一次**  
    不把同一个架构事实同时维护在 wiki、设计文档、图、报告、实施方案里。派生文档必须回链 source artifacts。
@@ -86,53 +86,94 @@ specs stale, run refresh?
 
 ```text
 arch/{project}/
-├── specs/                         # 稳定架构基线，长期维护
-│   ├── overview.md                # 人类入口，解释系统全景与关键结论
+├── specs/                         # 稳定架构基线,长期维护;100% 事实层(yaml + diagram 源)
 │   ├── baseline.yaml              # 组件、依赖、接口、数据、部署、外部依赖
 │   ├── quality.yaml               # NFR、安全、合规、可观测性、运行约束
 │   ├── risks.yaml                 # 风险与技术债台账
-│   ├── decisions.yaml             # ADR 索引、关键假设、待决策项
+│   ├── decisions.yaml             # ADR 索引、key_assumptions、superseded 关系
 │   ├── traceability.yaml          # specs / CR / ADR / release 追溯链
 │   └── diagrams/                  # 稳定 Mermaid 图源
 │       ├── c4-context.mmd
 │       ├── c4-container.mmd
 │       └── c4-component-*.mmd
-├── decisions/                     # append-only ADR
+├── decisions/                     # append-only ADR markdown(文件本身永不修改)
 │   └── ADR-001-*.md
 ├── change-requests/               # 过程态变更知识
 │   └── CR-2026-001-{slug}/
-│       ├── cr.md                  # 人类入口：需求、设计、任务、风险摘要
+│       ├── cr.md                  # 人类入口:需求、设计、任务、风险摘要
 │       ├── impact.yaml            # 影响面、依赖变化、数据变化、回滚策略
 │       ├── review.yaml            # gate / findings / readiness
 │       ├── traceability.yaml      # 本 CR 内需求→设计→任务→证据→writeback
-│       └── options.md             # 条件生成：存在真实方案分歧时
-├── generated/                     # 派生视图，可删除重建
-│   ├── wiki/
-│   ├── diagrams/
-│   └── briefs/
-├── state.yaml                     # workflow 状态机
+│       └── options.md             # 条件生成:存在真实方案分歧时
+├── generated/                     # 派生人类视图,可删除重建
+│   ├── overview.md                # 1 页稳定入口(从 specs/CR/ADR 重组,200 行硬上限)
+│   ├── wiki/                      # 默认 5 页 onboarding 展开视图
+│   ├── diagrams/                  # 派生展示图(SVG/PNG 渲染输出)
+│   └── briefs/                    # 受众化摘要
+├── state.yaml                     # workflow 状态机(仅 arch-workflow 可写)
 └── .metrics.jsonl                 # 运行埋点
 ```
+
+**关键约束**:
+
+- **`specs/` 100% 事实层** — 全是 schema-locked yaml + Mermaid diagram 源;**没有**任何 markdown 解释文件
+- **`generated/` 是派生视图**(含 `overview.md` 与 5 页 wiki)— 可重建;由 `arch-pack` 单独负责
+- **`decisions/ADR-*.md` 文件本身永不修改** — supersede 关系**全部**记录在 `specs/decisions.yaml#superseded[]`,markdown 文件 commit 后永远只读
+- **`state.yaml` 唯一可写者是 `arch-workflow`** — 其他 skill 通过返回 `state_delta` 给 workflow 合并写入
 
 ## specs 稳定资产标准
 
 `specs/` 是项目架构现状的稳定资产。它必须覆盖足够多的架构维度，支持不扫全仓的架构审视。
 
-### `specs/overview.md`
+### `generated/overview.md`
 
-面向人类的架构入口，内容来自 YAML 与 ADR，不独立维护新事实。
+面向人类的架构入口,内容**完全来自** `specs/*.yaml` + `decisions/ADR-*.md` + 活跃 `change-requests/CR-*/cr.md`。
+
+**定位**:派生视图(在 `generated/`,不在 `specs/`)。由 `arch-pack` 重组事实,不独立维护新事实。可删可重建。
+**约束**: ≤ 200 行硬上限,11 段固定结构(详见 `skills/arch-pack/references/overview-template.md`)。
 
 必须包含：
 
-- 系统做什么、边界是什么。
+- 系统做什么、边界是什么、当前目标是什么。
 - C4 context/container/component 图链接。
-- 主要仓库与组件。
-- 关键业务链路。
+- 主要仓库与组件摘要。
+- 关键接口与依赖拓扑摘要。
+- 关键业务链路摘要。
 - 关键数据模型与数据所有权摘要。
-- Top 风险与技术债摘要。
+- 部署与运行时约束摘要。
+- Top 风险与 Top 技术债，且两者分开呈现。
 - 重要 ADR。
 - 最近活跃 CR。
 - specs 新鲜度与 known unknowns。
+
+### `generated/wiki/*`
+
+`generated/wiki/` 是给人看的展开式阅读视图，不是事实源。v1.0 推荐固定为 `1 + 5` 信息架构：
+
+```text
+generated/overview.md                 # 稳定入口
+generated/wiki/
+├── 01-系统全景.md
+├── 02-组件与依赖.md
+├── 03-数据与关键链路.md
+├── 04-质量属性与运行约束.md
+└── 05-风险、决策与近期变更.md
+```
+
+页面职责：
+
+- `01-系统全景.md`：系统边界、主要仓库、主要组件、C4 总览。
+- `02-组件与依赖.md`：组件职责、接口边界、关键依赖关系、主要外部依赖。
+- `03-数据与关键链路.md`：关键数据模型、数据所有权、关键业务链路、关键时序。
+- `04-质量属性与运行约束.md`：NFR、运行时约束、部署约束、组织红线。
+- `05-风险、决策与近期变更.md`：Top 风险、技术债、ADR、近期 CR、已知未知项。
+
+格式要求：
+
+- 每页只回答一类问题，不做“大全页”。
+- 不直接转储 YAML 字段。
+- 所有关键结论必须能回链 specs / CR / ADR。
+- 允许删除重建，不接受手工维护成新的事实源。
 
 ### `specs/baseline.yaml`
 
@@ -484,7 +525,7 @@ Project Scanner
 - `specs/quality.yaml`
 - `specs/risks.yaml`
 - `specs/diagrams/*.mmd`
-- `specs/overview.md`
+- `generated/overview.md`
 - `specs/traceability.yaml`
 
 ### 增量更新
@@ -595,15 +636,16 @@ freshness:
 
 ```text
 Agent facts: specs/*.yaml + CR/*.yaml
-Human baseline: specs/overview.md
-Human generated views: generated/wiki/*
+Human baseline: generated/overview.md
+Human generated views: generated/wiki/01-05
 ```
 
 规则：
 
 - Wiki 是从 specs、CR、ADR 生成的人类视图。
 - Wiki 不作为事实源。
-- 用户可以编辑 `specs/overview.md`，但新增事实必须回写 YAML 或引用 YAML。
+- `generated/overview.md` 是稳定入口，用户可以编辑，但新增事实必须回写 YAML 或引用 YAML。
+- `generated/wiki/` 只做展开解释，不承担“唯一入口”职责。
 - `generated/wiki/` 可以删除并重建。
 - `arch-pack` 只做按需导出，不在默认 workflow 强制生成大包文档。
 
@@ -652,7 +694,7 @@ arch-analyze
 → write specs/quality.yaml
 → write specs/risks.yaml
 → write specs/diagrams/*.mmd
-→ update specs/overview.md
+→ update generated/overview.md
 → update specs/decisions.yaml
 → update specs/traceability.yaml
 → arch-review --mode=specs
@@ -771,9 +813,10 @@ Writeback 必须说明：
 
 ```text
 /arch:brief --audience=management
-/arch:pack --audience=onboarding
+/arch:brief --audience=onboarding
 
 read specs + CR + ADR
+→ update generated/overview.md
 → generate generated/wiki or generated/briefs
 ```
 

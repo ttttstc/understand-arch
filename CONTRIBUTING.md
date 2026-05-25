@@ -1,78 +1,93 @@
 # Contributing to understand-arch
 
-> 本文件是任何贡献者(Codex / Claude / Cursor / 人)填写剩余 v1.0 skill 骨架的入口。
+> 本文件是 v1.0 新主线的实现入口。任何贡献都应先把仓库对齐到 `specs + CR + governance` 模型，再补细节。
 
 ## 项目现状
 
-- **v0.2.0(当前)**:**全骨架阶段**。**10/10 skill 骨架已写**(含编排器),完整实现待接手。
-- **v1.0 目标**:9 个 skill 全部 functional + 验收 loop 工作 + 5+1 yaml schema 验证通过 + `arch-library/` v1.0 seed。
+- **v0.2.x(当前)**: 仓库里仍混有旧的“交付件工厂”实现痕迹。
+- **v1.0 目标**: 完整落地 [docs/spec-v1.0.md](./docs/spec-v1.0.md) 定义的 `specs baseline + change request delta + internal review gate + generated views` 方案。
 
 ## 设计源文档(开工前必读)
 
-1. **[docs/spec-v1.0.md](./docs/spec-v1.0.md)** —— v1.0 完整规格(canonical 参考)
-2. **[docs/office-hours-2026-05-24.md](./docs/office-hours-2026-05-24.md)** —— 设计诊断 + premises + YAML schema 草图 + 8 founder signals
+1. **[docs/spec-v1.0.md](./docs/spec-v1.0.md)** —— v1.0 canonical 规格
+2. **[docs/office-hours-2026-05-24.md](./docs/office-hours-2026-05-24.md)** —— 设计诊断、架构事实源、schema 草图来源
 
-## 设计三大支柱(任何展开都不得违反)
+## 当前设计原则
 
-1. **以交付件为中心** —— 输出是可验收的产物组合,不是聊天结论
-2. **5+1 YAML schema-locked 契约层** —— subagent 与主上下文之间用结构化 yaml,每条判断回链 `evidence_refs`
-3. **Governance 即 Moat** —— append-only ADR + 反合理化清单 + 企业 KB + 验收 loop。**LLM 越能"乱产"越需要 governance**。
+1. **specs 是稳定事实源**  
+   只读 `arch/{project}/specs/`，就应能生成架构现状报告、风险与技术债审视，以及 4+1 视图覆盖判断。
+2. **CR 记录单次变更 delta**  
+   每次变更只维护相对基线的差异，不复制全量架构。
+3. **同一事实只维护一次**  
+   Agent 事实用 YAML，给人看的解释用 `overview.md` 与 `generated/` 视图。
+4. **Governance 即 moat**  
+   append-only ADR、traceability、evidence_refs、acceptance、org KB、writeback gate 是核心价值。
+5. **用户可见交互中文优先**  
+   用户提示、审计结果、刷新建议默认中文。
 
-## 边界(只产描述类)
+## 边界
 
-✅ **可**产:`*.md` / `*.yaml` / `*.mmd` / `*.svg|png`(via fireworks-tech-graph)
-❌ **不**产:Terraform / Helm / DDL / `.gitlab-ci.yml` / `.github/workflows/*` / 服务骨架 / OpenAPI 客户端代码 / 业务代码
+✅ 可产: `*.md` / `*.yaml` / `*.mmd` / `*.svg|*.png`  
+❌ 不产: Terraform / Helm / Pulumi / DDL / ORM migration / CI workflow / 服务骨架 / OpenAPI client / 业务代码
 
-任何要求 src/IaC/pipeline 生成的请求 → **拒绝并提示用 Cline / aider / IaC 工具**。
+任何要求生成代码、IaC、pipeline 的请求都必须拒绝，并提示用户改用专门的 coding agent 或基础设施工具。
 
-## Build Order(按此顺序展开)
+## Build Order
 
-| # | 文件 | 状态 |
+| # | 实施面 | 目标 |
 |---|---|---|
-| 1 | `skills/arch-workflow/SKILL.md` —— 编排器骨架 | ✅ 骨架已写 |
-| 2 | `internal/schemas/*.json` —— 6+5 个 JSON Schema(见 `internal/schemas/MANIFEST.md`) | ⬜ 待实现 |
-| 3 | `skills/arch-frame/SKILL.md` —— PRD HARD GATE + KB 加载 + architecture_profile | ✅ 骨架已写 |
-| 4 | `skills/arch-analyze/SKILL.md` —— 4 档 depth subagent + 2 阶段算法 | ✅ 骨架已写 |
-| 5 | `skills/arch-diff-judge/SKILL.md` —— 变更影响 subagent | ✅ 骨架已写 |
-| 6 | `skills/arch-options/SKILL.md` —— 4 列权衡矩阵 + org KB 对照 | ✅ 骨架已写 |
-| 7 | `skills/arch-adr/SKILL.md` —— append-only 7 段 | ✅ 骨架已写 |
-| 8 | `skills/arch-diagram/SKILL.md` —— fireworks 主 + Mermaid 降级 | ✅ 骨架已写 |
-| 9 | `skills/arch-review/SKILL.md` —— doc/code 双模式 | ✅ 骨架已写 |
-| 10 | `skills/arch-pack/SKILL.md` —— audience × format,17 章实施方案模板 | ✅ 骨架已写 |
-| 11 | `skills/arch-radar/SKILL.md` —— 行业对标(按需) | ✅ 骨架已写 |
-| 12 | `arch-library/` v1.0 seed —— 每域 ≤200 行(见 MANIFEST) | ⬜ 待实现 |
-| 13 | `internal/phases/eval-design.md` | ⬜ 待实现 |
-| 14 | `internal/acceptance/{mode}.yaml` × 4 | ⬜ 待实现 |
-| 15 | `arch/{project}/` template + sample | ⬜ 待实现 |
+| 1 | `internal/schemas/` | 用 `state + specs + CR + org KB` 替换旧 5+1 schema 模型 |
+| 2 | `internal/acceptance/` | 用 `specs / audit / CR / brief` 验收替换旧交付件数量验收 |
+| 3 | `skills/arch-workflow/` | 收敛为 4 个用户入口: `onboard / design / audit / brief` |
+| 4 | `skills/arch-analyze/` | 产出/刷新 `specs/`，实现受控扫描与 freshness 判定 |
+| 5 | `skills/arch-frame/` | 创建 CR、加载 org KB、在 design 前做问题界定 |
+| 6 | `skills/arch-diff-judge/` | 基于 specs 产 `impact.yaml` |
+| 7 | `skills/arch-review/` | 变成内部 gate，负责 specs 审视、CR 审视、drift audit |
+| 8 | `skills/arch-adr/` | 仅记录 durable decision，append-only |
+| 9 | `skills/arch-diagram/` | 从 specs/CR 生成 Mermaid 与可选 SVG/PNG |
+| 10 | `skills/arch-pack/` | 只做 wiki / brief / report 视图导出，不做事实生产 |
+| 11 | `skills/arch-options/` / `skills/arch-radar/` | 条件调用，不进入默认主链 |
+| 12 | `arch/_template/` / `arch/README.md` | 对齐新目录结构与用法 |
+| 13 | `arch-library/` | 只保留对新 workflow 真有帮助的 seed 内容 |
+| 14 | `internal/phases/eval-design.md` | 适配新 `change-requests/` 路径与内部插入逻辑 |
 
 ## 实现约定
 
-- **每个 SKILL.md 必含**:frontmatter(name + description + triggers) / 角色定位 / 输入输出契约 / 行为(关键流程) / 硬规则 / 验收 / 降级 / 参考文件清单
-- **每个原子 skill 必声明**:`subagent: required | conditional | none`
-- **subagent-required skill 必给出**:触发阈值 / prompt template / 返回 schema / 失败降级
-- **5+1 yaml 资产产权**:见 spec §5
-- **跨 skill 引用**:用 skill name(不要硬编路径),例 "委托给 `arch-analyze --depth=manifest`"
-- **`${ARCH_PROJECT_DIR}`** 是路径占位符,workflow 注入
+- 每个 `SKILL.md` 必须说明:
+  - 角色定位
+  - 输入输出契约
+  - 关键流程
+  - 硬规则
+  - 验收
+  - 降级
+- 任何会扫描代码或大范围读仓的 skill 都要明确:
+  - 是否必须 subagent
+  - freshness 判定方式
+  - 失败时如何降级
+- 所有结构化 YAML 都必须通过 `internal/schemas/*.json`。
+- 所有架构断言都必须能回链 `evidence_refs`。
+- 公开给用户的动作只有:
+  - `/arch:onboard`
+  - `/arch:design`
+  - `/arch:audit`
+  - `/arch:brief`
+- 其他 skill 默认作为内部能力存在。
 
-## marketplace.json 注册
+## SKILL.md 自检
 
-v0.2.0 起 marketplace.json **已注册全部 10 个 skill 骨架**(SKILL.md 是合法 frontmatter,不会让 `/plugin install` 崩)。
-
-Codex 实装时按 Build Order 逐个 flesh out,无需再改 marketplace.json。**实装完一个,在 SKILL.md 自检 checklist 走一遍,再继续下一个**。
-
-## SKILL.md 自检(展开完后)
-
-- [ ] frontmatter 触发词覆盖 spec §9 的相应条目
-- [ ] 硬规则段对应 spec §7 的不变量
-- [ ] 验收段有 ≥3 个可验证项
-- [ ] 降级段含 ≥2 个真实场景
-- [ ] 引用的 references 文件都列出来
+- [ ] 用户语义与 `docs/spec-v1.0.md` 一致
+- [ ] 不再引用旧的 5+1 证据模型或 9 文件/17 章强制交付模型
+- [ ] 输入输出路径落在 `arch/{project}/specs/`、`change-requests/`、`decisions/`、`generated/`
+- [ ] 验收规则围绕完整性、traceability、freshness、writeback，而不是文件数堆砌
+- [ ] 用户可见提示默认中文
 
 ## 借鉴说明(非依赖)
 
-我们**学但不依赖**:
-- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)**(22.7k⭐) —— 借鉴 2 阶段代码分析模式(deterministic script + LLM 解释)
-- **[wshobson/agents](https://github.com/wshobson/agents)**(35.8k⭐) —— 借鉴 ADR skill 范式
-- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)**(7k⭐) —— 用作 `arch-diagram` 的**可选**渲染后端,不装则降级 Mermaid
+我们借鉴，但不强依赖:
 
-以上**均非必装依赖**。本套件保持独立。
+- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)**  
+  借鉴扫描算法分层: `project scanner → file analyzer → architecture analyzer → graph reviewer → incremental update`。
+- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)**  
+  可选渲染后端，不装时必须优雅降级到 Mermaid。
+
+本仓库产自己的规范产物，不依赖外部工具的目录结构、CLI、JSON 格式或运行时存在。

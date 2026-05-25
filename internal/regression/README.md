@@ -1,8 +1,8 @@
 # internal/regression/ — Skill Regression Suite(PLACEHOLDER)
 
-> **Status: PLACEHOLDER。IMPLEMENTATION = v1.1。**
+> **Status: PLACEHOLDER.**
 >
-> 本目录为 Skill Regression Suite 占位。v1.0 仅有设计,实际测试 case v1.1 实现。
+> v1.0 只保留最小回归模板，方便后续围绕 `specs + CR` 模型补真实 case。
 
 ## 为什么这个目录存在
 
@@ -47,15 +47,15 @@ input:
 expected_behavior:
   - loads org_kb successfully
   - parses PRD without HARD GATE
-  - outputs architecture_profile with ≥3 references selected
+  - creates a CR entry or updates specs as expected
 trace_assertion:
   - reads ~/.understand-arch/kb/ files
-  - does NOT spawn subagent (frame is main-context)
-  - writes 项目总览.yaml with all required fields
+  - does NOT spawn subagent when not needed
+  - writes the expected file under specs/ or change-requests/
 result_assertion:
-  - 项目总览.yaml schema passes
-  - readiness == ready
-  - design_intent.non_goals is non-empty
+  - target yaml schema passes
+  - readiness / freshness conclusion is correct
+  - required CR or specs section is non-empty
 known_failure_modes:
   - hallucinates non_goals when PRD doesn't specify
   - mislabels NFR severity
@@ -108,4 +108,4 @@ Cases 对比 `.metrics.jsonl`(v1.0 中已埋点,v1.1 扩展含 trace 字段):
 ## 参考
 
 - 原论点:[Skill 文档债 — 梯度不陡](https://mp.weixin.qq.com/s/46sZ3jbOapz_CP17gEbhXA)
-- Premise 4:[docs/office-hours-2026-05-24.md](../../docs/office-hours-2026-05-24.md)(待加)
+- 规格来源:[docs/spec-v1.0.md](../../docs/spec-v1.0.md)

@@ -1,74 +1,65 @@
 # `arch/` — Per-Project Architecture Workspaces
 
-每个被 `understand-arch` 操作过的项目,在这里有一个 `arch/{项目名}/` 子目录,作为该项目的**唯一架构工作区**。
+`arch/{project}/` 是每个项目的架构知识工作区。这里不再区分 `agent/` / `user/` 双桶，而是直接围绕稳定基线、变更请求、决策史和派生视图组织。
 
-## 顶层结构(每个项目)
+## 目录结构
 
-每个项目目录被切成 **2 个 bucket,边界清晰**:
-
-```
-arch/{项目名}/
-├── agent/       🤖 引擎契约,人不需要看(LLM / 工作流自己读写)
-└── user/        ★ 给人看的全部交付件,从 user/README.md 开始
-```
-
-### 🤖 agent/ — 引擎契约
-
-| 文件 / 目录 | 用途 |
-|---|---|
-| `状态.yaml` | workflow 状态机 + baseline_commits + overrides 索引 + integrity history |
-| `证据/项目总览.yaml` | `arch-frame` 产,所有其他 skill 都回链这份 |
-| `证据/仓库与组件清单.yaml` | `arch-analyze` 产 |
-| `证据/依赖与链路图谱.yaml` | `arch-analyze` 产 |
-| `证据/风险与技术债台账.yaml` | `arch-analyze` 产 |
-| `证据/决策与证据索引.yaml` | `arch-adr` / `arch-frame` 产 |
-| `证据/影响面-{change}.yaml` | `arch-diff-judge` 产(design 模式时每次变更一份) |
-| `覆盖记录/OVR-NNN-{topic}.yaml` | 人工 acceptance override 审计 |
-| `PM问题清单.md` | HARD GATE 时产出(本质是引擎状态,等用户填) |
-| `指标.jsonl` | 每个 skill 跑完 append 一行(token / 时长 / 输入输出) |
-
-### ★ user/ — 给人看的
-
-| 路径 | 类型 | 何时产 |
-|---|---|---|
-| `README.md` | 入口 hub | 每次 workflow 跑完更新 |
-| `知识库/首页.md + 01-06` | 持续更新 | onboard / audit 后 |
-| `架构图/*.mmd` | 持续更新 | onboard / audit / design 时按需 |
-| `决策史/ADR-NNN-xxx.md` | append-only | design 时产 |
-| `设计变更/{change}/设计文档.md + 实施方案.md + 评审报告.md` | append-only | design 一次一目录 |
-| `审计/{date}-体检.md` | append-only | audit 产 |
-| `审计/{date}-评审-{topic}.md` | append-only | `/arch-review` 独立调用产 |
-| `汇报/{date}-{audience}.md` | append-only | brief 产 |
-
-## 公共子目录
-
-```
-arch/
-├── _template/        Skeleton arch-workflow 复制为新项目工作区
-├── sample/           Minimal worked example (shortlink-svc) 供阅读
-└── {你的项目}/       第一次 /arch:* 调用时自动建
+```text
+arch/{project}/
+├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源)
+│   ├── baseline.yaml
+│   ├── quality.yaml
+│   ├── risks.yaml
+│   ├── decisions.yaml
+│   ├── traceability.yaml
+│   └── diagrams/
+├── decisions/                        # append-only ADR markdown(文件永不修改)
+│   └── ADR-001-*.md
+├── change-requests/
+│   └── CR-YYYY-NNN-{slug}/
+│       ├── cr.md
+│       ├── impact.yaml
+│       ├── review.yaml
+│       ├── traceability.yaml
+│       └── options.md
+├── generated/                        # 可删可重建的人类视图
+│   ├── overview.md                   # 1 页稳定入口(≤200 行)
+│   ├── wiki/                         # 5 页 onboarding 展开
+│   ├── diagrams/                     # 渲染图(SVG/PNG)
+│   └── briefs/                       # 受众化摘要
+├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)
+└── .metrics.jsonl
 ```
 
-## 工作区如何诞生
+## 设计语义
 
-1. 用户运行 `/arch:onboard` 等任意 mode
-2. `arch-workflow` resolve `${ARCH_PROJECT_DIR}` 为 `arch/{项目名}/`
-3. 目录不存在 → 从 `_template/` copy
-4. 各原子 skill 填充对应文件
-5. 二次运行时 `arch-workflow` 跑 integrity check;append-only 路径缺失即停
+- **`specs/` 100% 事实层** — 全是 schema-locked yaml + Mermaid diagram 源;**没有**任何 markdown 解释文件
+- **`decisions/` append-only ADR** — markdown 文件 commit 后永远只读;supersede 关系全记在 `specs/decisions.yaml#superseded[]`
+- **`change-requests/`**: 单次变更的 delta,不复制全量架构
+- **`generated/` 可删可重建** — 含 `overview.md`(1 页稳定入口)+ 5 页 wiki + 渲染图 + briefs
+- **`state.yaml`**: workflow 状态机、history、overrides、freshness 建议、下一步动作。**唯一可写者是 `arch-workflow`**;其他 skill 通过 `state_delta` 走 workflow merge
 
-## append-only 边界
+## 给人看的视图
 
-`user/决策史/`、`user/设计变更/`、`user/审计/`、`user/汇报/` 是**架构史**,**永不悄悄改**。任何修改只能 git 显式操作。这是 governance 的根。
+- **`generated/overview.md`**: 1 页稳定入口,任何人第一次进入项目先读这一页(11 段固定结构,≤200 行硬上限)
+- `generated/wiki/`: onboarding 展开视图,默认固定 5 页:
+  - `01-系统全景.md`
+  - `02-组件与依赖.md`
+  - `03-数据与关键链路.md`
+  - `04-质量属性与运行约束.md`
+  - `05-风险、决策与近期变更.md`
+- `generated/briefs/`: 面向管理层或特定受众的短摘要。
 
-## 为什么 `_template/` 和 `sample/` 被 commit
+## 工作区如何创建
 
-- 让仓库读者无需运行就能看到 canonical 形态
-- 给 `arch-workflow` 一个稳定的首次 copy 源
-- 让 OSS 用户上手前能"看到成品长啥样"
+1. 用户运行 `/arch:onboard`
+2. `arch-workflow` 创建 `arch/{project}/`
+3. 从 `_template/` 复制基础结构
+4. `arch-analyze` 产出第一版 specs
+5. 之后的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量更新
 
-`{你的项目}/` 默认 gitignored(那是你本地的工作区,不应该混入 plugin 仓库)。
+## 版本治理
 
-## 文件数最小化原则
-
-每个 change 收敛到 3 文件;每次审计 1 文件;每份汇报 1 文件。**禁止**为追求"完整性"加无信息文件 — 信息密度优先。
+- `decisions/` 和历史 CR 是架构史，默认 append-only。
+- `generated/` 不是事实源，允许重建。
+- `specs/` 允许通过 refresh 和 writeback 演进，但必须保留 traceability 与 evidence_refs。

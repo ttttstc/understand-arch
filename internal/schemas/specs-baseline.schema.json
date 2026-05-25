@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/specs-baseline.schema.json",
+  "title": "Specs Baseline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project",
+    "repositories",
+    "components",
+    "interfaces",
+    "data_models",
+    "external_dependencies",
+    "deployment_units",
+    "runtime_configs",
+    "critical_flows",
+    "ownership",
+    "view_coverage",
+    "known_unknowns",
+    "last_verified",
+    "last_scanned_commit",
+    "current_commit_at_review",
+    "changed_files_since_scan",
+    "freshness_status",
+    "baseline_commits",
+    "evidence_refs"
+  ],
+  "properties": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "owners"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/repository" }
+    },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apis", "events", "messages"],
+      "properties": {
+        "apis": { "type": "array", "items": { "$ref": "#/$defs/interfaceItem" } },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/interfaceItem" } },
+        "messages": { "type": "array", "items": { "$ref": "#/$defs/interfaceItem" } }
+      }
+    },
+    "data_models": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dataModel" }
+    },
+    "external_dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/externalDependency" }
+    },
+    "deployment_units": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/namedFact" }
+    },
+    "runtime_configs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/namedFact" }
+    },
+    "critical_flows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/criticalFlow" }
+    },
+    "ownership": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ownership" }
+    },
+    "view_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logical", "development", "process", "physical", "scenarios"],
+      "properties": {
+        "logical": { "$ref": "#/$defs/viewStatus" },
+        "development": { "$ref": "#/$defs/viewStatus" },
+        "process": { "$ref": "#/$defs/viewStatus" },
+        "physical": { "$ref": "#/$defs/viewStatus" },
+        "scenarios": { "$ref": "#/$defs/viewStatus" }
+      }
+    },
+    "known_unknowns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/knownUnknown" }
+    },
+    "last_verified": { "type": "string", "minLength": 1 },
+    "last_scanned_commit": { "type": "string", "minLength": 1 },
+    "current_commit_at_review": { "type": "string", "minLength": 1 },
+    "changed_files_since_scan": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "freshness_status": {
+      "type": "string",
+      "enum": ["fresh", "possibly_stale", "stale", "unknown"]
+    },
+    "baseline_commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "commit"],
+        "properties": {
+          "scope": { "type": "string", "minLength": 1 },
+          "commit": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    }
+  },
+  "$defs": {
+    "viewStatus": {
+      "type": "string",
+      "enum": ["complete", "partial", "missing"]
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "commit"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "commit": { "type": "string", "minLength": 1 }
+      }
+    },
+    "namedFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "summary", "owner", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "repository": {
+      "allOf": [
+        { "$ref": "#/$defs/namedFact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "language", "responsibility"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "language": { "type": "string", "minLength": 1 },
+            "responsibility": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "component": {
+      "allOf": [
+        { "$ref": "#/$defs/namedFact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["component_type", "repository_id"],
+          "properties": {
+            "component_type": { "type": "string", "minLength": 1 },
+            "repository_id": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "interfaceItem": {
+      "allOf": [
+        { "$ref": "#/$defs/namedFact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exposed_by", "compatibility"],
+          "properties": {
+            "exposed_by": { "type": "string", "minLength": 1 },
+            "compatibility": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "dataModel": {
+      "allOf": [
+        { "$ref": "#/$defs/namedFact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "read_write_boundary",
+            "compatibility_constraints",
+            "migration_notes",
+            "rollback_notes"
+          ],
+          "properties": {
+            "read_write_boundary": { "type": "string", "minLength": 1 },
+            "compatibility_constraints": { "type": "string", "minLength": 1 },
+            "migration_notes": { "type": "string", "minLength": 1 },
+            "rollback_notes": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "externalDependency": {
+      "allOf": [
+        { "$ref": "#/$defs/namedFact" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sla_or_risk", "fallback_path"],
+          "properties": {
+            "sla_or_risk": { "type": "string", "minLength": 1 },
+            "fallback_path": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "criticalFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "summary", "steps", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "steps": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_id", "owner", "status", "evidence_refs"],
+      "properties": {
+        "subject_id": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["confirmed", "unknown_owner"] },
+        "reason": { "type": "string" },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "knownUnknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "impact", "next_action"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "question": { "type": "string", "minLength": 1 },
+        "impact": { "type": "string", "minLength": 1 },
+        "next_action": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

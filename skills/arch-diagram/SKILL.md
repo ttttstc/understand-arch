@@ -38,8 +38,21 @@ description: |
 - `.mmd` 可解析
 - 图中命名与 specs/CR 一致
 
+## Write Scope
+
+完整定义见 `internal/tool-contracts/write-scope.yaml#skills.arch-diagram`。
+
+| mode (source) | ✅ 可写 | ❌ 禁写 |
+|---|---|---|
+| `source=specs` | `specs/diagrams/*.mmd` | `generated/**` |
+| `source=cr` | `generated/diagrams/*.{mmd,svg,png}` | `specs/diagrams/**` |
+| `source=generated-view`(为 wiki/brief 嵌图) | `generated/diagrams/*.mmd` | `specs/**` |
+
+任何 mode 都 ❌ 禁写: `state.yaml` / `specs/*.yaml` / `decisions/**` / `change-requests/**`
+
 ## 参考
 
 - `docs/spec-v1.0.md`
+- `internal/tool-contracts/write-scope.yaml`
 - `references/diagram-playbook.md`
 - `references/mermaid-templates.md`
