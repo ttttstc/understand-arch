@@ -1,106 +1,50 @@
 # ADR Template
 
-> One architecture decision per file. ADRs are append-only decision snapshots.
+> 用途：只记录 durable decision。若是替代已有决策，使用 `Supersedes` 区域，不改写旧 ADR 正文。
 
-## Filename
+# ADR-{NNN}: {Title}
 
-```text
-ADR-NNN-{kebab-title}.md
-```
-
-Example:
-
-```text
-ADR-003-payment-channel-migration.md
-```
-
-## Template
-
-```markdown
----
-adr_id: ADR-<NNN>
-status: proposed|accepted|deprecated|superseded-by-<NNN>
-date: <YYYY-MM-DD>
-generated_by: arch-adr
-related_options: <path-or-null>
-related_evidence_index: evidence/决策与证据索引.yaml
----
-
-# ADR-<NNN>: <Title>
-
-## Status
-
-<proposed|accepted|deprecated|superseded-by-NNN>
-
-## Date
-
-<YYYY-MM-DD>
+- Status: proposed | accepted | superseded
+- Date: {YYYY-MM-DD}
+- Related CR: `{CR-id}`
+- Supersedes: `{ADR-id or none}`
 
 ## Context
 
-<Why this decision is needed now. Include business driver, architecture constraints, and relevant prior decisions.>
+- 当前架构背景：
+- 触发这次决策的约束 / 问题：
+- 不做决定的代价：
 
 ## Decision
 
-<One concise statement of what is decided.>
+- 选定方案：
+- 明确不选的边界：
 
 ## Consequences
 
 ### Positive
 
-- <benefit>
+- {benefit}
 
-### Negative
+### Negative / Trade-offs
 
-- <cost or trade-off>
+- {cost_or_constraint}
 
-### Neutral
+## Alternatives Considered
 
-- <side effect, operational note, or constraint>
-
-## Alternatives
-
-### <Alternative Name>
-
-- Summary: <what it was>
-- Why not chosen: <specific reason>
+1. {option_a}: {why_not}
+2. {option_b}: {why_not}
 
 ## Evidence
 
-- Decision index: `evidence/决策与证据索引.yaml#<entry-id>`
-- Frame: `<path>`
-- Impact: `<path>`
-- Options: `<path>`
-```
+- `{evidence_ref}`
 
-## Required Sections
+## Supersede Notes
 
-All sections are mandatory:
+- 若本 ADR 替代旧 ADR，说明替代范围、生效条件、迁移窗口。
 
-- Status
-- Date
-- Context
-- Decision
-- Consequences
-- Alternatives
-- Evidence
+## v1.1 Fitness Spec Placeholder
 
-Reject ADR generation if any section would be empty.
-
-## Writing Rules
-
-- Decision should fit in 1-3 sentences.
-- Consequences must include positive and negative entries.
-- Alternatives must include at least one rejected option.
-- Evidence must cite YAML or explicit external source.
-- Do not edit old ADR body content.
-
-## Independent ADRs
-
-When ADR is invoked without `arch-options`, Evidence may use:
-
-```markdown
-- External evidence: <user-provided source>
-```
-
-But it must still be explicit. "Team discussion" is insufficient unless accompanied by date, participants/role, and decision context.
+- Intended fitness signal:
+- How it might be measured later:
+- Why v1.0 does not enforce it yet:

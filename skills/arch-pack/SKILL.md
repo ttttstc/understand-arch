@@ -1,158 +1,104 @@
 ---
 name: arch-pack
 description: |
-  受众适配交付。**audience × format 矩阵**适配,汇编上游产物(**不重新发明**)产出最终交付包。design mode 强制 9 文件(4 强制 md + options + ADR + design-doc + **实施方案.md 17 章** + 图规格)。onboard mode 产 6 页 wiki。audit mode 产评审报告 + 改造路线图。brief mode 产受众适配汇报。
+  人类视图导出器。把 `specs / CR / ADR` 组装成 `specs/overview.md`、onboarding wiki、brief、review packet 等可读材料。不创造新事实，只重组现有事实并保留来源回链。
 
-  audience:`onboarding | decision | dev-implementation | management`
-  format:`wiki | md | html | pptx`
-  触发词:汇编 / 出文档 / 整理交付件 / 打包 / 出 RFC / 出设计文档 / 出实施方案 / 出 wiki / 整理给 X 看 / 出汇报
+  触发词: 生成 wiki / 出汇报 / 给领导看 / 整理一份给新人 / 导出说明
 
-  本 skill 只汇编不重新发明(读上游 yaml + md,组装产物),不写代码,不替用户决定 audience(用户 / workflow 指定)。
+  本 skill 不生成结构化基线，不替代 ADR，不写代码。
 ---
 
-# arch-pack — 受众适配交付
+# arch-pack
 
-> 上游产物汇编器。不发明内容,只组装格式。
+## 角色定位
 
-## 1. 角色定位
+- 只负责“给人看”。
+- 输入是可信事实，输出是可读视图。
+- 稳定的人类入口是 `specs/overview.md`。
+- `generated/wiki/` 是展开视图，不是事实源。
 
-- 读全部上游产物 → 按 audience + format 组装
-- **4 audience × 4 format 矩阵**
-- design mode **9 文件强制** + 实施方案 **17 章强制**
-- `subagent: 否`(纯模板渲染,无需重型推理)
+## 输入
 
-## 2. 输入
+- `specs/`
+- 可选 `change-requests/CR-*`
+- 可选 `decisions/ADR-*`
+- `audience=onboarding|management|engineering`
 
-- 全部 `${ARCH_PROJECT_DIR}/evidence/*.yaml`
-- 全部 `${ARCH_PROJECT_DIR}/adr/*.md`
-- (design mode)`${ARCH_PROJECT_DIR}/design-docs/{change}/*`
-- (audit mode)风险台账 + arch-review 输出
-- `--audience=<onboarding|decision|dev-implementation|management>`
-- `--format=<wiki|md|html|pptx>`
+## 输出
 
-## 3. 输出
+- `specs/overview.md`
+- `generated/wiki/*.md`
+- `generated/briefs/*.md`
 
-按 mode 不同:
+## 约束
 
-- **onboard mode**:`${ARCH_PROJECT_DIR}/wiki/` 6 页(首页 / 01-系统全景 / 02-现状架构 / 03-关键业务链路 / 04-风险与技术债 / 05-决策与待办)
-- **design mode**:`${ARCH_PROJECT_DIR}/design-docs/{change}/` 9 文件(见 §4.3)
-- **audit mode**:`${ARCH_PROJECT_DIR}/audits/{date}/` 评审报告 + 路线图
-- **brief mode**:`${ARCH_PROJECT_DIR}/briefs/{audience}-{date}/` 汇报包
+1. 不发明新事实。
+2. 关键结论要能回链来源文件。
+3. 给管理层的摘要要尽量短，强调风险、决策、影响。
+4. 给 onboarding 的 wiki 要解释系统现状，而不是直接转储 YAML。
+5. `specs/overview.md` 与 `generated/wiki/` 不能各自维护不同版本的事实。
 
-## 4. 行为
+## 人类视图分层
 
-### 4.1 加载上游
+### 稳定入口：`specs/overview.md`
 
-- 扫 `${ARCH_PROJECT_DIR}` 所有产物
-- 按 mode 确定关键输入
+这是任何人第一次进入项目时应该先读的一页。它必须长期存在，结构固定，负责回答：
 
-### 4.2 Audience → 模板选择
+- 这是什么系统
+- 主要由哪些仓库与组件构成
+- 关键接口、依赖、数据、部署约束是什么
+- 现在最大的风险、技术债、关键决策、活跃 CR 是什么
+- 这份基线是否过期
 
-| Audience | 模板特征 |
-|---|---|
-| `onboarding` | wiki 风,导航 + 索引;每页 ≤500 行;首页是导航不是内容 |
-| `decision` | 决策导向;Top N 风险 + 推荐 + 影响估算;**摘要 ≤1 页** |
-| `dev-implementation` | **实施方案 17 章**;研发可直接开工;每章可执行项明确 |
-| `management` | 业务语言 + 量化影响;无技术术语堆砌;摘要 + 决策点 + 资源诉求 |
+### 展开视图：`generated/wiki/`
 
-### 4.3 design mode 9 文件强制清单
+当 `audience=onboarding` 时，默认生成固定 5 页：
 
-```
-design-docs/{change-name}/
-├── frame.yaml                    (来自 arch-frame)
-├── 影响面.yaml                    (来自 arch-diff-judge)
-├── options.md                    (来自 arch-options)
-├── 影响面清单.md                 (pack 派生)★ 强制
-├── 模块依赖变化.md               (pack 派生)★ 强制
-├── 数据模型变更.md               (pack 派生)★ 强制
-├── 回滚方案.md                   (pack 派生)★ 强制
-├── ADR-NNN-xxx.md                (来自 arch-adr,同步进 ../adr/)
-├── design-doc.md                 (pack 汇编,RFC 级)
-└── 实施方案.md                   (pack 汇编,SE 细化设计,17 章)
-```
+1. `01-系统全景.md`
+2. `02-组件与依赖.md`
+3. `03-数据与关键链路.md`
+4. `04-质量属性与运行约束.md`
+5. `05-风险、决策与近期变更.md`
 
-**缺任一文件 → `readiness=blocked`,不交付**。
+每页规则：
 
-### 4.4 实施方案 17 章固定结构
+1. 每页只回答一类问题。
+2. 每页先给结论，再给细节。
+3. 页内允许引用图，但图不是唯一表达。
+4. 如果 source 不足，显式写 `known unknowns`，不要脑补。
 
-```markdown
-1. 需求摘要 + 验收标准      (from frame)
-2. 目标实现架构              (from options 选定 + diagram)
-3. 受影响服务与模块          (from judge,链回 影响面.md)
-4. 接口设计                  (from judge.apis,扩展)
-5. 数据模型变更              (链回 数据模型变更.md)
-6. 权限与安全设计
-7. 关键流程与时序            (链回 diagram 时序图)
-8. 错误处理与降级策略
-9. 配置与发布策略
-10. 数据迁移与回填方案        (链回 回滚方案.md)
-11. 测试计划                  (单测/集成/回归/灰度)
-12. 可观测性与告警            (日志/指标/链路/告警)
-13. 实施任务拆解              (按角色 + 工作量 S/M/L)
-14. 联调与发布顺序            (DAG + 里程碑)
-15. 兼容性处理                (老客户端 / 历史数据)
-16. 风险清单 + 缓解            (按严重度)
-17. 研发注意事项
-```
+## 内容完备要求
 
-**每章必有内容**;无法填的标 `not_applicable: <reason>`,**不许直接空**。
+onboarding wiki 至少要能让读者回答：
 
-### 4.5 Format 渲染
-
-- `wiki/md` → 直接 markdown
-- `html` → 用模板转(`internal/templates/html/` v1.0 占位 → Codex 实现)
-- `pptx` → 用模板转(`internal/templates/pptx/` v1.0 占位 → Codex 实现)
-
-### 4.6 Frontmatter 与 traceability
-
-- 每个 pack 产物 frontmatter:
-  ```yaml
-  generated_at: ISO-8601
-  generated_by: arch-pack
-  audience: onboarding|...
-  format: wiki|md|html|pptx
-  source_artifacts: [list of paths]
-  ```
-- 任何数字 / 结论可回链 `source_artifacts`
-
-## 硬规则
-
-- **只汇编不重新发明** —— 任何 pack 产物的内容必须来自上游产物;无中生有违反 R1/R5
-- **design mode 9 文件不可缺**,缺 → blocked
-- **实施方案 17 章每章必有内容**(可标 `not_applicable + reason`)
-- **readiness blocked 必回炉**,不允许 override 跳过
-- **management/decision audience 必有 source 回链**(违反 R5)
-- 不产代码、IaC、骨架(根本边界)
+- 系统边界和目标是什么
+- 主要组件、接口、依赖怎么连
+- 关键数据模型和数据所有权在哪里
+- 哪些 NFR / 运行时约束最重要
+- 当前最大的风险、技术债、ADR、活跃变更是什么
+- 这份架构基线的新鲜度如何
 
 ## 验收
 
-- 所有强制文件存在
-- 实施方案 17 章每章有内容或 `not_applicable`
-- frontmatter `source_artifacts` 字段完整
-- 引用上游产物的位置准确(不悬挂)
-- 4 audience 各自模板特征体现(decision 摘要 ≤1 页;onboarding 首页是导航)
+- `specs/overview.md` 已更新
+- brief/wiki 文件已生成
+- audience 风格正确
+- 关键结论可回链
 
 ## 降级
 
-| 场景 | 行为 |
-|---|---|
-| 上游产物缺(如 ADR 未生成) | `readiness=blocked`,提示先跑哪个 skill |
-| 用户主动跳过某文件(如 brief mode 不要 pptx) | 允许,但记 overrides |
-| 实施方案某章 not_applicable | 允许,但 `reason` 必填 |
-| html/pptx 模板未实装(v1.0) | 降级 markdown,提示 "格式 X v1.1 支持" |
-| audience 与产物不匹配(如 management 要 dev-implementation 详细级) | 提示用户确认 audience |
+- 缺少足够 source artifacts：提示先跑 onboard 或 design
+- 某些图缺失：允许仅输出文字版
+- 某页 source 不足：保留页面结构，但显式标注 `known unknowns`
 
-## References needed(Codex 创建)
+## 参考
 
-- `references/audience-templates/` —— 4 audience 各自的模板(目录)
-- `references/format-renderers/` —— md / html / pptx 渲染器规范
-- `references/implementation-plan-17-chapters.md` —— 17 章详细 schema + 各章必填字段
-- `references/wiki-pages-template/` —— 6 页 wiki 模板(目录)
-- `references/source-traceability.md` —— frontmatter source_artifacts 规则
-
-## Codex Implementation Notes
-
-- **"只汇编不发明" 是 pack 的灵魂** —— 任何"为了好看"的额外创作都违规
-- 17 章是从研究文档 §3.7 SE 细化设计承袭来的,**不要删章节**
-- 4 强制 md 内容大量与 options/judge 重叠,pack 的工作是**按受众重组**,不是复述
-- html/pptx 模板 v1.0 可降级 md;v1.1 用现成工具(pandoc / reveal-md / 等)实现
+- `docs/spec-v1.0.md`
+- `internal/acceptance/brief.yaml`
+- `references/wiki-playbook.md`
+- `references/overview-template.md`
+- `references/wiki-pages-template/01-系统全景.md`
+- `references/wiki-pages-template/02-组件与依赖.md`
+- `references/wiki-pages-template/03-数据与关键链路.md`
+- `references/wiki-pages-template/04-质量属性与运行约束.md`
+- `references/wiki-pages-template/05-风险、决策与近期变更.md`
