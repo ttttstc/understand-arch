@@ -52,7 +52,12 @@ description: |
 ### state_delta(可选,仅在产 options 时返)
 ```yaml
 state_delta:
-  history_append: {at, action: options_produced, cr_id, option_count}
+  history_append:
+    ts: "..."
+    skill: arch-options
+    action: options_produced
+    status: ok
+    ref: {cr_id: "${active_cr}", option_count: N}
 ```
 
 ## 参考

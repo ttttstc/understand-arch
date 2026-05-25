@@ -127,7 +127,7 @@ description: |
 
 ### state_delta merge 协议
 
-`arch-workflow` 是 **`state.yaml` 的唯一 writer**。其他 skill 在产出最后**必须**返回 `state_delta`,workflow 合并写入:
+`arch-workflow` 是 **`state.yaml` 的唯一 writer**。其他 skill 在产出最后**必须**返回 `state_delta`,workflow 合并写入。所有字段名对齐 `internal/schemas/state.schema.json`。
 
 ```yaml
 # arch-frame 返回示例
@@ -135,11 +135,22 @@ state_delta:
   active_cr: "CR-2026-003-shortlink-rate-limit"
   kb_loaded: {banned_patterns: loaded, ...}
   current_phase: cr_frame
-  history_append:
-    at: "2026-05-25T..."
+  history_append:                    # → state.yaml.history[] (append-only)
+    ts: "2026-05-25T..."
+    skill: arch-frame
     action: cr_created
-    cr_id: "CR-2026-003-..."
+    status: ok
+    ref: {cr_id: "CR-2026-003-shortlink-rate-limit"}
+  overrides_append:                  # 可选 → state.yaml.overrides[]
+    ts: "2026-05-25T..."
+    scope: "HARD_GATE"
+    reason: "用户授权跳过缺失 NFR 校验"
+    by: "user"
 ```
+
+字段规约(详见 `state.schema.json`):
+- `history[].{ts, skill, action}` 必填;`{phase, status, summary, ref}` 可选
+- `overrides[].{ts, scope, reason}` 必填;`{by}` 可选
 
 workflow 合并规则:
 1. 验证字段是否在 `state.schema.json` 允许范围

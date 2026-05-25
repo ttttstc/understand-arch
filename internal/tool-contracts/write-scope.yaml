@@ -43,7 +43,12 @@ global_forbidden_writes:
     enforcement: "git status + diff 检测已 commit 文件被 Modify"
 
   - description: "change-requests/CR-*/ 一旦 review.yaml.readiness=ready,整目录禁重写"
-    rule: "只能新建 CR 或在 agent/overrides/OVR-NNN.yaml(本契约前身,后续视情移到 state.yaml.overrides)留 override"
+    rule: |
+      只能新建一个新 CR(下一个连续编号);或者由用户授权后,
+      调用 skill 通过 state_delta.overrides_append 让 arch-workflow
+      把一条 {ts, scope: "CR-NNN-...", reason} 追加进 state.yaml.overrides[]。
+      所有 override 痕迹**仅存在于 state.yaml.overrides**,绝无独立文件。
+    enforcement: "git diff 检测已 ready 的 CR 目录文件被 Modify → 拒绝"
 
   - description: "跨 CR 写禁令"
     rule: "任何写 change-requests/CR-*/ 时,CR id 必须等于 state.yaml.active_cr,否则拒绝"
@@ -255,7 +260,7 @@ skills:
           - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/review.yaml"
             constraints:
               - "schema validate pass"
-              - "若已 readiness=ready 禁重写(开新 CR 或加 OVR)"
+              - "若已 readiness=ready 禁重写(改走新 CR;或经用户授权后由 arch-workflow 通过 state_delta.overrides_append 追加到 state.yaml.overrides[])"
         read:
           - "${ARCH_PROJECT_DIR}/specs/**"
           - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"

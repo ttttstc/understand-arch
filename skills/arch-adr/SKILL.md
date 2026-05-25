@@ -75,10 +75,11 @@ description: |
 state_delta:
   current_phase: adr_recorded
   history_append:
-    at: "..."
+    ts: "..."
+    skill: arch-adr
     action: adr_added
-    adr_id: "ADR-NNN"
-    cr_id: "${active_cr}"
+    status: ok
+    ref: {adr_id: "ADR-NNN", cr_id: "${active_cr}"}
   decisions_index_delta:           # workflow 写入 specs/decisions.yaml
     accepted_append:
       - adr_id: "ADR-NNN"
@@ -89,7 +90,7 @@ state_delta:
     superseded_append:             # 仅 supersede 场景
       - old_adr_id: "ADR-OLD"
         new_adr_id: "ADR-NNN"
-        at: "..."
+        ts: "..."
         reason: "..."
 ```
 

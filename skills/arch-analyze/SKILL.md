@@ -120,7 +120,12 @@ state_delta:
   current_phase: baseline_refresh|drift_audit
   status: idle|running|completed|blocked
   kb_loaded: {...}
-  history_append: {at, action, result}
+  history_append:
+    ts: "..."
+    skill: arch-analyze
+    action: baseline_refreshed     # 或 drift_audited / targeted_refreshed
+    status: ok                     # 或 degraded / blocked
+    ref: {scanned_files: N, components_found: M, freshness_status: stale|fresh|...}
 ```
 
 ## 参考

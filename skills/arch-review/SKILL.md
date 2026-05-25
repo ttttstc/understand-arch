@@ -85,11 +85,14 @@ description: |
 state_delta:
   current_phase: specs_review | cr_review | drift_audit
   history_append:
-    at: "..."
+    ts: "..."
+    skill: arch-review
     action: review_completed
-    mode: specs|cr|drift
-    readiness: ready|degraded|blocked
-    findings_count: N
+    status: ok                # 或 degraded / blocked,与 ref.readiness 一致
+    ref:
+      mode: specs|cr|drift
+      readiness: ready|degraded|blocked
+      findings_count: N
 ```
 
 ## 参考

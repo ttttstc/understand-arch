@@ -92,13 +92,24 @@ description: |
 
 ### state_delta(返 workflow)
 
+字段对齐 `internal/schemas/state.schema.json`(`history[]` 必填 `ts/skill/action`,可选 `phase/status/summary/ref`;`overrides[]` 必填 `ts/scope/reason`,可选 `by`)。
+
 ```yaml
 state_delta:
   active_cr: "CR-2026-NNN-{slug}"
   kb_loaded: {banned_patterns, compliance_redlines, network_boundaries, naming_conventions, tech_radar}
   current_phase: cr_frame
-  history_append: {at, action: cr_created, cr_id}
-  overrides_append: {at, reason, by_user}   # 若用户跳过 HARD GATE
+  history_append:
+    ts: "2026-05-25T..."
+    skill: arch-frame
+    action: cr_created
+    status: ok
+    ref: {cr_id: "CR-2026-NNN-{slug}"}
+  overrides_append:                       # 仅在用户跳过 HARD GATE 等场景
+    ts: "2026-05-25T..."
+    scope: "HARD_GATE"
+    reason: "用户确认在 NFR 不完整下继续进入 design"
+    by: "user"
 ```
 
 ## 参考

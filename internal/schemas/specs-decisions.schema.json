@@ -106,11 +106,11 @@
     "supersededLink": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["old_adr_id", "new_adr_id", "at", "reason"],
+      "required": ["old_adr_id", "new_adr_id", "ts", "reason"],
       "properties": {
         "old_adr_id": { "type": "string", "minLength": 1, "description": "被取代的 ADR id;其 markdown 文件正文不变" },
         "new_adr_id": { "type": "string", "minLength": 1, "description": "取代它的新 ADR id" },
-        "at": { "type": "string", "format": "date-time" },
+        "ts": { "type": "string", "format": "date-time" },
         "reason": { "type": "string", "minLength": 1 }
       }
     }

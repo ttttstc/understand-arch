@@ -103,10 +103,13 @@ audience=management|engineering 时产 `{date}-{audience}.md`。
 state_delta:
   current_phase: brief_generated
   history_append:
-    at: "..."
+    ts: "..."
+    skill: arch-pack
     action: brief_generated
-    audience: onboarding|management|engineering
-    target_paths: ["generated/overview.md", "generated/wiki/...", ...]
+    status: ok
+    ref:
+      audience: onboarding|management|engineering
+      target_paths: ["generated/overview.md", "generated/wiki/...", ...]
 ```
 
 ## 参考

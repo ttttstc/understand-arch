@@ -77,7 +77,12 @@ description: |
 ```yaml
 state_delta:
   current_phase: impact_analysis
-  history_append: {at, action: impact_produced, cr_id}
+  history_append:
+    ts: "..."
+    skill: arch-diff-judge
+    action: impact_produced
+    status: ok
+    ref: {cr_id: "${active_cr}", dimensions_affected: N}
 ```
 
 ## 参考
