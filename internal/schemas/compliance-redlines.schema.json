@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/kb-compliance-redlines.schema.json",
+  "title": "compliance-redlines",
+  "description": "企业知识库：合规红线。命中 critical/high 时后续方案必须降级或暂停。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "owner", "updated_at", "redlines"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "owner": { "$ref": "#/$defs/nonEmptyString" },
+    "updated_at": { "type": "string", "format": "date" },
+    "redlines": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/redline" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "redline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "data_scope",
+        "systems_scope",
+        "required_controls",
+        "evidence_required",
+        "escalation"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CR-[A-Z0-9-]+$" },
+        "rule": { "$ref": "#/$defs/nonEmptyString" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "data_scope": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "systems_scope": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "required_controls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "evidence_required": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "escalation": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

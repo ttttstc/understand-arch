@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/state.schema.json",
+  "title": "Workflow State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project",
+    "public_entry",
+    "current_phase",
+    "status",
+    "template_version",
+    "kb_loaded",
+    "history",
+    "overrides",
+    "last_updated"
+  ],
+  "properties": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "root_path"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "root_path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "public_entry": {
+      "type": "string",
+      "enum": ["onboard", "design", "audit", "brief"]
+    },
+    "current_phase": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "running", "blocked", "completed"]
+    },
+    "template_version": { "type": "string", "minLength": 1 },
+    "active_cr": { "type": ["string", "null"] },
+    "kb_loaded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "banned_patterns",
+        "compliance_redlines",
+        "network_boundaries",
+        "naming_conventions",
+        "tech_radar"
+      ],
+      "properties": {
+        "banned_patterns": { "$ref": "#/$defs/loadState" },
+        "compliance_redlines": { "$ref": "#/$defs/loadState" },
+        "network_boundaries": { "$ref": "#/$defs/loadState" },
+        "naming_conventions": { "$ref": "#/$defs/loadState" },
+        "tech_radar": { "$ref": "#/$defs/loadState" }
+      }
+    },
+    "history": {
+      "type": "array",
+      "description": "Append-only event log. 同时容纳 skill 事件(skill+action,可选 ref)与 phase 转换(可选 phase+status+summary)。仅 arch-workflow 写入,其他 skill 通过 state_delta.history_append 请求追加。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ts", "skill", "action"],
+        "properties": {
+          "ts": { "type": "string", "format": "date-time" },
+          "skill": {
+            "type": "string",
+            "enum": [
+              "arch-workflow",
+              "arch-analyze",
+              "arch-frame",
+              "arch-diff-judge",
+              "arch-options",
+              "arch-adr",
+              "arch-diagram",
+              "arch-review",
+              "arch-pack",
+              "arch-radar",
+              "user"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "description": "事件名,kebab-case;典型值: dispatch / phase_entered / cr_created / impact_produced / options_produced / adr_added / specs_review / cr_review / drift_audit / brief_generated / acceptance_passed / acceptance_failed / override_recorded"
+          },
+          "phase": {
+            "type": "string",
+            "minLength": 1,
+            "description": "可选;phase transition 时填,与 state.current_phase 同语义。"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "degraded", "blocked"]
+          },
+          "summary": { "type": "string" },
+          "ref": {
+            "type": "object",
+            "description": "自由结构化关联字段,典型: {cr_id, adr_id, finding_count, target_path, ...}",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "description": "Append-only override log。仅 arch-workflow 写入,其他 skill 通过 state_delta.overrides_append 请求追加。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ts", "scope", "reason"],
+        "properties": {
+          "ts": { "type": "string", "format": "date-time" },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "description": "override 作用域,如 'CR-2026-003' / 'HARD_GATE' / 'ADR-supersede' / 'acceptance.no_writes_outside_scope'"
+          },
+          "reason": { "type": "string", "minLength": 1 },
+          "by": {
+            "type": "string",
+            "description": "可选;典型值: 'user' / skill 名"
+          }
+        }
+      }
+    },
+    "pending_actions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "suggested_next_action": { "type": "string" },
+    "last_updated": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "loadState": {
+      "type": "string",
+      "enum": ["loaded", "not_loaded", "not_configured", "schema_error"]
+    }
+  }
+}

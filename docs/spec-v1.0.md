@@ -1,487 +1,972 @@
-# 架构师 Workflow Skill 套件 — 完整方案(v1.0 spec)
+# understand-arch v1.0 Spec
 
-> **Updated: 2026-05-24** | **Status: APPROVED**, ready to build
-> Diagnostic record: `./architect-skill-suite-office-hours-2026-05-24.md`
-> Supersedes: 2026-05-22 原 draft(15 skill 设计已废,关键洞察合并入本文)
-
----
+> Updated: 2026-05-24  
+> Status: REDESIGNED DRAFT  
+> Supersedes: the earlier deliverable-factory v1.0 spec.
 
 ## 一句话定位
 
-> **面向高级软件架构师的 evidence-driven workflow skill suite,以「架构交付件」为中心,而不是又一个 coding agent。**
+`understand-arch` 是面向软件架构师的 **Docs-as-Code 架构知识底座 skill suite**。它维护一个可信、可版本化、可审计、可被 Agent 读取的项目架构基线，并用 Change Request 记录每次变更相对基线的 delta。
 
-具体差异化:
+核心目标不是“生成更多文档”，而是让团队在任何时候都能回答：
 
-- **不是给建议,而是给交付件**(描述类:wiki / ADR / 设计文档 / 实施方案 / 图,不含 src/IaC)
-- **不是做搜索,而是做证据链**(5+1 YAML schema-locked 契约层,每条判断回链 `evidence_refs`)
-- **不是只看代码,而是把业务驱动力 + 系统演进放一起**(architecture_profile LLM 自动识别)
-- **不是单次对话,而是可复用 workflow + append-only 架构史**
+- 当前系统架构是什么？
+- 组件、依赖、接口、数据、部署、风险、技术债分别在哪里？
+- 这次变更会影响什么？
+- 哪些结论有证据？
+- 哪些知识已经过期或需要重新验证？
 
----
+## 设计原则
 
-## 设计三大支柱
+1. **specs 是稳定事实源**  
+   `arch/{project}/specs/` 必须足够完整。只读 specs，不重新扫描全仓，也应该能生成项目架构现状报告、风险与技术债审视、关键架构维度评估。
 
-1. **以交付件为中心** —— workflow 输出是可验收的产物组合(5 yaml + 6 wiki + diagrams + ADR + design-docs + 实施方案),不是"聊天对话有用结论"
-2. **5+1 YAML schema-locked 契约层** —— subagent 与主上下文之间**不通过自然语言**传递,而是结构化 yaml + 强制 evidence_refs
-3. **Governance 即 Moat** —— append-only ADR + 反合理化清单 + 企业知识库 + 验收 loop,**LLM 越能"乱产"越需要 governance**,这是套件**随 LLM 加宝**的关键
+2. **CR 记录变更 delta**  
+   `change-requests/CR-*` 不复制全量架构。它只记录一次变更相对 specs 的目标、影响面、依赖变化、数据变化、回滚策略、评审和 writeback 映射。
 
----
+3. **Wiki 是人类视图，不是事实源**  
+   人看 `overview.md` 和 generated wiki。Agent 看 schema-locked YAML。`overview.md` 是稳定的人类入口；`generated/wiki/` 是可重建的展开视图。长期事实以 YAML、ADR、traceability 为准。
 
-## 1. 架构师工作四层(理论框架)
+4. **同一事实只维护一次**  
+   不把同一个架构事实同时维护在 wiki、设计文档、图、报告、实施方案里。派生文档必须回链 source artifacts。
 
-高级架构师日常工作不只是"画图",分四层。每层映射到对应 skill:
+5. **Governance 即 Moat**  
+   证据链、append-only ADR、org KB、traceability、acceptance gate、writeback review 是本套件的核心价值。
 
-| 层 | 内容 | 映射 skill |
-|---|---|---|
-| **洞察(Insight)** | "这事为什么现在做"/"业务驱动是什么"/"哪些约束不可谈判"。把"表面诉求"翻译成"架构问题定义" | `arch-frame`、`arch-radar` |
-| **代码工程分析** | "现有系统怎么跑"/"真实模块边界"/"关键路径+脆弱点+耦合源"/"CI/CD 是否支持目标演进" | `arch-analyze`(4 档深度) |
-| **技术架构分析** | "current state"/"目标状态与演进原则"/"多备选+权衡"/"容量/可靠/安全/一致/可观测/可维护"/"迁移路径" | `arch-diff-judge`、`arch-options`、`arch-adr`、`arch-diagram` |
-| **架构交付件输出** | 架构师价值不在脑内模型,在可执行交付件 | `arch-pack`、`arch-review` |
+6. **用户可见交互中文优先**  
+   用户提示、阻塞原因、刷新建议、评审结论默认使用中文。必要时可在括号中保留英文术语，例如“架构基线可能已过期(stale)”。内部 schema key 可以使用英文以保持稳定。
 
----
+## 边界
 
-## 2. 业界对标(为什么这套件值得做)
+允许产物：
 
-截至 2026-05-22 GitHub 现状:
+- `*.md`
+- `*.yaml`
+- `*.mmd`
+- `*.svg|*.png` 图像渲染
 
-| 仓库 | ⭐ | 与架构的关系 |
-|---|---|---|
-| hesreallyhim/awesome-claude-code | 44.5k | 总清单,架构无独立分区 |
-| **wshobson/agents** | **35.8k** | **最值钱对标**。架构能力**散在各 plugin**(十几个 `*-architect` agent + c4-architecture plugin + ADR skill) |
-| VoltAgent/awesome-claude-code-subagents | 20.3k | 100+ subagent,架构 agent 散落各分类 |
-| 0xfurai/claude-code-subagents | 907 | 100+ dev subagent,同样散 |
-| LerianStudio/ring | 189 | 89 skill + 38 agent,工程实践强制,非架构专用 |
-| arango1988/ai-software-architect-agent-and-skills | 0 | 单 senior 架构师 subagent,强制 SOLID |
+禁止产物：
 
-**关键空白**:**没有人把架构师的完整工作流(洞察→代码工程分析→技术架构→交付件)做成 workflow 套件**。市场要么是角色 agent(act as architect),要么是孤立 point skill(ADR / C4 单干)。**差异化空间真实存在。**
+- Terraform / Helm / Pulumi
+- DDL / ORM migration
+- `.gitlab-ci.yml` / `.github/workflows/*`
+- 服务骨架
+- OpenAPI client code
+- 业务代码
 
-**已被验证的点 skill 形态**:ADR(wshobson)、C4(wshobson c4-architecture)。**借鉴形态,不重复造**——本套件复用 `fireworks-tech-graph` 渲染,参考 wshobson ADR 范式。
+遇到禁止产物请求时，skill 必须拒绝，并提示用户使用专门的 coding agent、IaC 工具或代码生成工具。
 
----
+## 用户交互语言
 
-## 3. v1.0 完整规格
+用户可见输出必须优先使用中文，避免让用户先理解英文术语再理解动作。
 
-### 3.1 Skill 总数
+推荐提示：
 
-**9 个 = 8 MVP + 1 按需**
-
-- MVP 必装:`arch-workflow / arch-frame / arch-analyze / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack`
-- 按需(MVP 不必):`arch-radar`
-
-### 3.2 命名与定位
-
-- 前缀 **`arch-*`**(无 ni- 前缀,与 harness track `agent-legible` 同款)
-- 目录 **`skills/`**,ni-skill 第 3 track(article / harness / architect)
-
-### 3.3 边界(只产描述类)
-
-| 类型 | 例 | 产? |
-|---|---|---|
-| 描述类 | `*.md`(ADR / RFC / wiki / 实施方案)、`*.yaml`(5+1 资产)、`*.mmd`、`*.svg/.png` | ✅ |
-| 可执行/可消费 | Terraform / Helm / DDL 迁移脚本 / `.gitlab-ci.yml` / `.github/workflows/*` / 服务骨架 / OpenAPI 客户端代码 / 业务代码 | ❌ |
-
-**判定原则**:「这产物是描述/解释架构,还是用来生成/运行系统?」前者产,后者不产。
-
----
-
-## 4. 9 个 Skill 详细定义
-
-### 4.1 `arch-workflow` —— 编排器
-
-- **角色**:纯调度,不做业务
-- **4 modes**:`onboard / audit / design / brief`
-- **触发**:`/arch` 主入口 / `/arch:onboard|audit|design|brief` 直接 mode / 自然语言
-
-| Mode | 自然触发 | 用途 |
-|---|---|---|
-| `onboard` | 接手 / 摸熟 / 全景 / 给个 overview / 这是个什么系统 | 新接手系统完整测绘 |
-| `audit` | 架构审计 / 体检 / 健康度 / 该不该重构 / **审视当前项目 / 审视架构** | 现状评估 + 改造建议 |
-| `design` | 这需求怎么设计 / 根据 PRD 设计架构 / 出 RFC / 出实施方案 / 迁移方案 | 需求/变更架构设计 |
-| `brief` | 准备汇报 / 给 CTO 一份 / 整理 PPT | 受众适配汇报材料 |
-
-- **职责**:状态机 + integrity check + prereq check + 验收 loop + 反合理化清单 + KB 加载 + architecture_profile 路由
-
-### 4.2 `arch-frame` —— 问题界定(forward-looking)
-
-- **回答**:"我们想干什么"
-- **输入**:brief / PRD / user story / change request + 用户对话
-- **输出**:`项目总览.yaml`(含 `design_intent` + `architecture_profile` + `org_constraints`)
-- **subagent**:否(对话型)
-- **核心机制**:
-  - **PRD HARD GATE**:命中 ≥3 个具体未答问题 → 产 `PM问题清单.md` → workflow 暂停在 `awaiting-pm-confirmation`,等用户填文件或对话回答
-  - **architecture_profile**:LLM 从代码 + 描述自动识别架构风格 + 主要关切 + 推荐加载的 references + 推荐插入的 phase(`internal/phases/` 里选)
-  - **加载企业 KB**(Gap A 落地):从 `~/.understand-arch/kb/` 读 banned-patterns 等 → 塞进 `org_constraints`
-
-### 4.3 `arch-analyze` —— 全面分析架构现状(backward-looking)
-
-- **回答**:"这系统是什么样、哪儿不对"
-- **输入**:代码库
-- **输出**:仓库清单 + 依赖图 + C4 现状 + 风险台账(按 depth 不同)
-- **subagent**:**必须**(整个代码库是输入)
-- **4 档深度**:
-
-| depth | 产出 | 何时用 |
-|---|---|---|
-| `manifest` | 仓库与组件清单.yaml + 依赖与链路图谱.yaml | 接手 baseline、design 前缀步 |
-| `model` | + C4 现状视图(.mmd) | onboard 完整、画现状架构 |
-| `risk` | + 风险与技术债台账.yaml | 审计、找耦合/热点 |
-| `full` | manifest + model + risk 全做 | onboard mode 默认 |
-
-- **mode 选择**:workflow 内部显式指定(80% 场景)/ 触发词推断 / 默认起 manifest;**所有深度 mode 启动前必须显式预算预告**
-
-### 4.4 `arch-diff-judge` —— 变更影响识别(假设性分析)
-
-- **回答**:"改 X 会动什么"
-- **输入**:变更诉求(**强制**) + analyze baseline
-- **输出**:`影响面.yaml`(受影响 services / modules / apis / data_models / events / permissions / deployments / configs)
-- **subagent**:**必须**
-- **特殊性**:必须有 change request 输入;没给就拒绝跑,要求先 frame
-
-### 4.5 `arch-options` —— 方案探索 + 权衡
-
-- **输入**:frame 输出 + analyze baseline + judge 影响面(design mode)
-- **输出**:`options.md`(≥2 方案 OR 单方案需说明"为什么不拆第二方案")+ 决策矩阵
-- **强制 4 列**:**影响面 / 模块依赖变化 / 数据模型变化 / 回滚策略**(模板硬约束,缺一拒绝交付)
-- **对照企业 KB**(Gap A):违反 banned-patterns → 方案降级或拒绝,标记冲突
-- **subagent**:可选
-
-### 4.6 `arch-adr` —— 决策记录
-
-- **输入**:决策 + 上下文(可独立用,可被 options 接力)
-- **输出**:`ADR-NNN-xxx.md`,**append-only,永不修改**
-- **7 段强制**:Status / Date / Context / Decision / Consequences(正反) / Alternatives(≥1) / Evidence
-- **v1.1**:加 optional `fitness_spec` 字段(可执行检查规格)
-- **subagent**:否
-
-### 4.7 `arch-diagram` —— 建模渲染
-
-- **输入**:设计描述 / 代码库 / analyze 模型产物
-- **输出**:Mermaid 文本 + 可选 SVG/PNG
-- **后端**:**fireworks-tech-graph 主,Mermaid 降级**(见 §8.3)
-- **图类型**:C4 context/container/component、deployment、sequence、data flow
-- **subagent**:否
-
-### 4.8 `arch-review` —— 评审(双模式)
-
-- **doc mode**:评设计文档质量 / readiness(主上下文)
-- **code mode**:评 PR / 架构漂移(**必须 subagent**)
-- **输入**:design doc 或 代码库/PR
-- **输出**:`arch-review.md`(风险按严重度排序 + 漂移偏差 + ATAM 权衡点 + **org-conformance 检查结果**)
-- **v1.1**:加 `fitness` mode(主动跑所有 ADR 的 `fitness_spec`)
-
-### 4.9 `arch-pack` —— 受众适配交付
-
-- **输入**:全部上游产物(汇编,不重新发明)
-- **输出**:audience × format 矩阵适配
-- **audience**:`onboarding / decision / dev-implementation / management`
-- **format**:`wiki / md / html / pptx`
-- **design mode 强制 9 产物**:4 强制 md + options + ADR + design-doc + **实施方案.md(SE 细化设计)** + 图规格
-- **`实施方案.md` 17 章固定结构**:需求摘要+验收 / 目标实现架构 / 受影响服务 / 接口设计 / 数据模型 / 权限安全 / 关键流程时序 / 错误降级 / 配置发布 / 数据迁移回填 / 测试计划 / 可观测性 / 实施任务拆解 / 联调发布顺序 / 兼容性 / 风险清单 / 研发注意事项
-- **subagent**:否
-
-### 4.10 (按需) `arch-radar` —— 行业对标
-
-- **触发场景**:新平台选型 / 大重构 / 现代化改造 / 行业 benchmark
-- **subagent**:**必须**(联网递归研究)
-- **输出**:外部研究摘要 yaml + 对标矩阵 + 推荐结论
-
----
-
-## 5. 5+1 YAML 资产契约
-
-### 5.1 Project-scoped(5 类)
-
-| Yaml | 谁产 | 内容 |
-|---|---|---|
-| 项目总览.yaml | `arch-frame` | 业务目标 / NFR / 约束 / 范围 / design_intent / architecture_profile / org_constraints |
-| 仓库与组件清单.yaml | `arch-analyze --depth=manifest` | 多仓清单 / owner / 入口 / 构建 / 部署 |
-| 依赖与链路图谱.yaml | `arch-analyze --depth=manifest` | 仓间 / 服务间 / 外部依赖 / 关键业务链路 |
-| 风险与技术债台账.yaml | `arch-analyze --depth=risk` | 风险 / 债务 / 影响范围 / 严重度 / 处置建议 |
-| 决策与证据索引.yaml | `arch-adr` + `arch-options` | ADR 索引 / 决策矩阵 / 待决策问题 / 假设 |
-| (design 专属)影响面.yaml | `arch-diff-judge` | 受影响 services/modules/apis/data/permissions/deployments |
-
-**所有 yaml 强制 `evidence_refs` 字段**(证据可追溯)。详细 schema 见 `internal/schemas/` + office-hours doc Appendix A。
-
-### 5.2 Org-scoped(第 6 类,Gap A 落地)
-
-位置:`~/.understand-arch/kb/`(用户级)或 `<org>/.arch-kb/`(团队级)
-
-| Yaml | 内容 |
-|---|---|
-| `banned-patterns.yaml` | 禁用模式 / 规则 / 严重度 |
-| `compliance-redlines.yaml` | 合规红线 |
-| `network-boundaries.yaml` | 网络边界规则 |
-| `naming-conventions.yaml` | 命名规范 |
-| `tech-radar.yaml` | 已批准 / 试验中 / 弃用的技术栈 |
-
-**加载机制**:`arch-frame` 启动时读 → 塞进 `项目总览.yaml.org_constraints`。`arch-options` 选方案时强制对照。`arch-review` 加 org-conformance 检查。
-
-**加载失败行为**:
-- 目录不存在 → degrade-with-warning,标 `not_configured`(让首次用户能跑通)
-- 文件 schema 不过 → **fail-loud**,暂停 workflow,告诉用户哪个文件哪行错
-- 部分缺失 → 加载存在的,缺的标 `not_loaded`,继续
-
----
-
-## 6. `arch/{project}/` 目录与生命周期
-
-```
-arch/{project-name}/
-├── state.yaml                     workflow 状态机 + baseline commits + overrides + integrity history
-├── evidence/                      ★ 智能体证据包(5 yaml,mutable,可重生成)
-├── wiki/                          ★ 人类知识库(6 页,mutable)
-│   ├── 首页.md
-│   ├── 01-系统全景.md
-│   ├── 02-现状架构.md
-│   ├── 03-关键业务链路.md
-│   ├── 04-风险与技术债.md
-│   └── 05-决策与待办.md
-├── diagrams/                      Mermaid 源 + 可选 SVG/PNG
-├── adr/                           ★ append-only,架构决策史
-├── design-docs/{change-name}/     ★ append-only,每次 design 一份
-│   ├── frame.yaml
-│   ├── 影响面.yaml
-│   ├── options.md
-│   ├── 4 强制 md(影响面清单 / 模块依赖变化 / 数据模型变更 / 回滚方案)
-│   ├── ADR-NNN-xxx.md             (同步进 ../adr/)
-│   ├── design-doc.md              RFC 级
-│   ├── 实施方案.md                SE 细化设计,研发可开工(17 章)
-│   └── eval-strategy.md           (AI 域 phase 产出)
-├── audits/{date}/                 ★ append-only,每次 audit 一份
-├── briefs/{audience}-{date}/      ★ append-only,每次汇报一份
-├── overrides/                     人工覆盖审计记录
-├── PM问题清单.md                  (HARD GATE 时产出,等用户/PM 答)
-└── .metrics.jsonl                 v1.0 必埋点(每个 skill 跑完 append 一行)
+```text
+当前架构基线可能已过期：上次扫描提交为 abc1234，当前提交为 def5678。
+本次变更命中了数据模型和接口契约相关文件，建议刷新 specs 后再继续设计。
 ```
 
-`.metrics.jsonl` 字段:`ts / skill / mode / inputs_summary / outputs_paths / duration_s / token_estimate / overrides_used / verify_passed`。**Premise 2 验证依赖此**,v1.0 必埋。
+不推荐：
 
-### 生命周期管理
+```text
+specs stale, run refresh?
+```
 
-- **首次运行**:建工作目录 + 跑 mode pipeline + 落产物
-- **二次运行**:
-  - `integrity check`:state.yaml + 文件完整性
-  - 缺失自动恢复:`evidence/wiki/diagrams` 派生产物静默重建;`ADR/design-docs` 缺失停止,要求 git restore
-  - `prereq check`:audit 无 baseline → 默认自动接 onboard
-  - manifest commit hash 漂移检测 → 提示是否刷新 baseline
-- **过期检测**:产物 frontmatter 记录 `baseline_commits`,与当前对比
+语言规则：
 
----
+- 用户提示、错误、gate、建议动作：中文。
+- 首次出现关键英文概念时可保留括号：`架构漂移(drift)`、`写回(writeback)`。
+- YAML/schema 字段：使用稳定英文 key。
+- 生成的人类文档：中文标题和解释为主，保留必要技术名词。
 
-## 7. 工程不变量
+## 核心信息架构
 
-| 不变量 | 体现 |
-|---|---|
-| 只产描述类 | markdown / yaml / mermaid / svg,不产 IaC/DDL/pipeline/骨架/src |
-| 5+1 yaml 是事实源 | 任何 LLM 判断必须回链 yaml 条目 |
-| 主上下文洁净 | 4 必/3 条件 heavy skill 用 subagent 隔离 |
-| 关键路口前预告 | 重操作前显式预算 + 等用户确认或中断 |
-| 整体性优先 | integrity check 不过就停,绝不在残缺 baseline 上跑 |
-| append-only 史 | ADR/design-docs/audits/briefs 永不改 |
-| 显式降级 | fireworks 没装 → mermaid + 标注;验收失败 → degraded + 原因 |
-| HARD GATE 量化 | ≥N 具体未答问题 = gate,evidence = `PM问题清单.md` |
+默认目录：
 
----
+```text
+arch/{project}/
+├── specs/                         # 稳定架构基线,长期维护;100% 事实层(yaml + diagram 源)
+│   ├── baseline.yaml              # 组件、依赖、接口、数据、部署、外部依赖
+│   ├── quality.yaml               # NFR、安全、合规、可观测性、运行约束
+│   ├── risks.yaml                 # 风险与技术债台账
+│   ├── decisions.yaml             # ADR 索引、key_assumptions、superseded 关系
+│   ├── traceability.yaml          # specs / CR / ADR / release 追溯链
+│   └── diagrams/                  # 稳定 Mermaid 图源
+│       ├── c4-context.mmd
+│       ├── c4-container.mmd
+│       └── c4-component-*.mmd
+├── decisions/                     # append-only ADR markdown(文件本身永不修改)
+│   └── ADR-001-*.md
+├── change-requests/               # 过程态变更知识
+│   └── CR-2026-001-{slug}/
+│       ├── cr.md                  # 人类入口:需求、设计、任务、风险摘要
+│       ├── impact.yaml            # 影响面、依赖变化、数据变化、回滚策略
+│       ├── review.yaml            # gate / findings / readiness
+│       ├── traceability.yaml      # 本 CR 内需求→设计→任务→证据→writeback
+│       └── options.md             # 条件生成:存在真实方案分歧时
+├── generated/                     # 派生人类视图,可删除重建
+│   ├── overview.md                # 1 页稳定入口(从 specs/CR/ADR 重组,200 行硬上限)
+│   ├── wiki/                      # 默认 5 页 onboarding 展开视图
+│   ├── diagrams/                  # 派生展示图(SVG/PNG 渲染输出)
+│   └── briefs/                    # 受众化摘要
+├── state.yaml                     # workflow 状态机(仅 arch-workflow 可写)
+└── .metrics.jsonl                 # 运行埋点
+```
 
-## 8. 关键机制详细
+**关键约束**:
 
-### 8.1 Goal-Driven Acceptance Loop
+- **`specs/` 100% 事实层** — 全是 schema-locked yaml + Mermaid diagram 源;**没有**任何 markdown 解释文件
+- **`generated/` 是派生视图**(含 `overview.md` 与 5 页 wiki)— 可重建;由 `arch-pack` 单独负责
+- **`decisions/ADR-*.md` 文件本身永不修改** — supersede 关系**全部**记录在 `specs/decisions.yaml#superseded[]`,markdown 文件 commit 后永远只读
+- **`state.yaml` 唯一可写者是 `arch-workflow`** — 其他 skill 通过返回 `state_delta` 给 workflow 合并写入
 
-两层验收:
+## specs 稳定资产标准
 
-- **Structural**(脚本 / JSON Schema,秒级):字段完整 / 引用闭合 / schema 通过 → **每 phase 结束跑**
-- **Semantic**(LLM 评分 subagent,**强制 rubric checklist 而非自由判断**,**review subagent ≠ 原产 subagent**避免自证)→ **workflow 结束跑**
+`specs/` 是项目架构现状的稳定资产。它必须覆盖足够多的架构维度，支持不扫全仓的架构审视。
 
-不达标行为:
-- 自动 retry ≤ 2 次
-- 第 3 次仍不过 → 显式用户裁判(retry with hints / manual fix / override skip / abort)
-- **不让 retry 进入空转**
+### `generated/overview.md`
 
-每 mode 的 acceptance checklist 存 `internal/acceptance/{mode}.yaml`。
+面向人类的架构入口,内容**完全来自** `specs/*.yaml` + `decisions/ADR-*.md` + 活跃 `change-requests/CR-*/cr.md`。
 
-#### 各 mode acceptance 要点
+**定位**:派生视图(在 `generated/`,不在 `specs/`)。由 `arch-pack` 重组事实,不独立维护新事实。可删可重建。
+**约束**: ≤ 200 行硬上限,11 段固定结构(详见 `skills/arch-pack/references/overview-template.md`)。
 
-| Mode | Structural | Semantic 阈值 |
-|---|---|---|
-| onboard | 5 yaml + 6 wiki + 3+ diagrams + state.yaml | 10 验收问题(基于研究 §13.7 思路)通过 7/8(允许 1 项 degraded) |
-| design | 4 强制 md + ADR 7 段齐 + 实施方案 17 章齐 | 全过(高风险输出,不允许 degraded)|
-| audit | 风险台账 + 技术债清单 + 评审报告 + 改造路线图 | 全过 |
-| brief | 汇报包 + 管理层摘要 ≤ 1 页 | 全过 |
+必须包含：
 
-### 8.2 PRD HARD GATE(量化触发)
+- 系统做什么、边界是什么、当前目标是什么。
+- C4 context/container/component 图链接。
+- 主要仓库与组件摘要。
+- 关键接口与依赖拓扑摘要。
+- 关键业务链路摘要。
+- 关键数据模型与数据所有权摘要。
+- 部署与运行时约束摘要。
+- Top 风险与 Top 技术债，且两者分开呈现。
+- 重要 ADR。
+- 最近活跃 CR。
+- specs 新鲜度与 known unknowns。
 
-`arch-frame` 解析 PRD 后,**命中 ≥3 个具体未答问题就 block**:
+### `generated/wiki/*`
 
-- 必填字段缺失(业务目标 / 验收标准 / 范围)
-- 验收标准不可量化("低延迟"无数字)
-- NFR 关键维度未表态
-- non-goals 模糊
-- 检测到歧义句
-- 关键依赖未明
+`generated/wiki/` 是给人看的展开式阅读视图，不是事实源。v1.0 推荐固定为 `1 + 5` 信息架构：
 
-产 `PM问题清单.md`(分 🔴 BLOCKING / 🟡 WARNING 两级),`state.yaml.phase=awaiting-pm-confirmation`。
+```text
+generated/overview.md                 # 稳定入口
+generated/wiki/
+├── 01-系统全景.md
+├── 02-组件与依赖.md
+├── 03-数据与关键链路.md
+├── 04-质量属性与运行约束.md
+└── 05-风险、决策与近期变更.md
+```
 
-两种返回路径:
-- 用户编辑文件填答案 → 用户说"继续" → frame 重读文件 → 重检
-- 用户对话直接答 → workflow 写答案到清单留底 → 同样重检
+页面职责：
 
-未全答完 → 重生成精简清单(只列剩余)→ 再等。
+- `01-系统全景.md`：系统边界、主要仓库、主要组件、C4 总览。
+- `02-组件与依赖.md`：组件职责、接口边界、关键依赖关系、主要外部依赖。
+- `03-数据与关键链路.md`：关键数据模型、数据所有权、关键业务链路、关键时序。
+- `04-质量属性与运行约束.md`：NFR、运行时约束、部署约束、组织红线。
+- `05-风险、决策与近期变更.md`：Top 风险、技术债、ADR、近期 CR、已知未知项。
 
-### 8.3 `arch-diagram` backend 选择
+格式要求：
 
-| 场景 | 默认 backend | 理由 |
-|---|---|---|
-| 汇报 / Wiki / 管理层摘要 | **fireworks** | publication-ready |
-| 设计文档 / RFC 正式版 | **fireworks** | 同 |
-| PR review / 代码库内 diff-able | **Mermaid** | 文本可 diff |
-| 设计中快速迭代 | **Mermaid** | 改 yaml 重生成 |
-| fireworks 不可用 | **Mermaid** | 降级,显式标注 |
+- 每页只回答一类问题，不做“大全页”。
+- 不直接转储 YAML 字段。
+- 所有关键结论必须能回链 specs / CR / ADR。
+- 允许删除重建，不接受手工维护成新的事实源。
 
-**style 映射**:
-- C4 Context / 系统全景 → fireworks style 1 (Flat Icon) 或 6 (Claude Official)
-- C4 Container / 微服务拓扑 → **style 3 (Blueprint)**(用户主战场)
-- Deployment 部署图 → style 3
-- Sequence → fireworks UML 或 Mermaid sequence
-- **Agent / LLM 架构 → style 5 (Glassmorphism)**(fireworks 强项域)
+### `specs/baseline.yaml`
 
-### 8.4 反合理化清单(workflow 硬规则)
+机器事实源，必须 schema-locked。
 
-封住 LLM 常见捷径:
+必须覆盖：
 
-| 捷径 | workflow 反驳 |
-|---|---|
-| 「先出报告,证据后补」 | 没证据 = 没产物。reject |
-| 「这仓看起来不重要」 | 没进 manifest 不许排除 |
-| 「图可以凭描述画」 | 必来自依赖图或目标设计资产 |
-| 「风险先写几个典型」 | 必有影响范围 / 严重度 / 证据 |
-| 「PPT 只是汇报,不严格」 | 必记录来源资产 + 生成时间 |
-| 「先帮我改 src 业务代码」 | 拒绝,提示用 Cline / aider 等 coding agent |
-
-### 8.5 `architecture_profile` LLM 路由(非 keyword)
-
-`arch-frame` 在分析阶段输出 architecture_profile 字段。**不靠 keyword 路由**(僵化、过时),靠 **LLM 读 `arch-library/MANIFEST.md` 自选** + 读 `internal/phases/MANIFEST.md` 自选 phase。
-
-profile 示例:
 ```yaml
-architecture_profile:
-  identified_styles: [微服务, REST API, LLM 应用 + RAG]
-  primary_concerns: [可靠性, 成本, RAG 召回质量]
-  recommended_references:
-    - microservices-patterns/service-decomposition.md
-    - agent-architecture/rag-patterns.md
-    - nfr-checklists/reliability.md
-  recommended_phases: [eval-design]
-  recommended_diagram_style: blueprint
-  user_override: null
+project:
+  name:
+  description:
+  owners:
+repositories:
+components:
+interfaces:
+  apis:
+  events:
+  messages:
+data_models:
+external_dependencies:
+deployment_units:
+runtime_configs:
+critical_flows:
+ownership:
+known_unknowns:
+last_verified:
+last_scanned_commit:
+current_commit_at_review:
+changed_files_since_scan:
+freshness_status:
+baseline_commits:
+evidence_refs:
 ```
 
-workflow 展示 profile 等用户确认/调整(关键路口),改完写回 `项目总览.yaml`,workflow 用最终版执行。
+关键要求：
 
-**未来扩展机制**:加新技术栈(如数据架构 / 边缘 / IoT)= **加一份 reference 到 MANIFEST**,workflow 不用改。
+- 组件、接口、数据模型、部署单元都必须有 owner 或 `unknown_owner` 原因。
+- 数据模型必须记录 owner、读写边界、兼容约束、迁移/回滚注意事项。
+- 接口契约必须记录兼容策略或变更敏感性。
+- 外部依赖必须记录 owner、SLA/风险、替代或降级路径。
+- 每条判断必须有 `evidence_refs`。
+- `last_scanned_commit` 记录最后一次代码扫描提交。
+- `freshness_status` 使用 `fresh|possibly_stale|stale|unknown`。
 
----
+### `specs/quality.yaml`
 
-## 9. 触发关键词全集(用户视角速查)
+记录架构质量属性与运行约束。
 
+必须覆盖：
+
+```yaml
+nfrs:
+  reliability:
+  latency:
+  performance:
+  cost:
+  security:
+  compliance:
+  observability:
+  maintainability:
+runtime_constraints:
+release_constraints:
+rollback_constraints:
+org_constraints:
+  banned_patterns:
+  compliance_redlines:
+  network_boundaries:
+  naming_conventions:
+  tech_radar:
+evidence_refs:
 ```
-# 整套用(workflow)
-接手 / 摸熟 / 全景 / 给个 overview         → /arch:onboard
-架构审计 / 体检 / 审视当前项目/架构        → /arch:audit
-根据 PRD 设计 / 出 RFC / 实施方案 / 迁移   → /arch:design
-准备汇报 / 给 CTO 一份 / 整理 PPT          → /arch:brief
-不确定 / 模糊                              → /arch(交互式问)
 
-# 零散调用(原子 skill)
-写 ADR / 记个决策                          → /arch-adr
-画 C4 / 出架构图 / 拓扑图                  → /arch-diagram
-测绘 / manifest / 服务清单                 → /arch-analyze --depth=manifest
-找风险 / 找耦合 / 找技术债                 → /arch-analyze --depth=risk
-画现状 C4                                   → /arch-analyze --depth=model
-影响面 / 改 X 会动什么                     → /arch-diff-judge
-评审设计 / 这设计能用吗                    → /arch-review --mode=doc
-PR review / 是不是偏离架构                 → /arch-review --mode=code
-业界都怎么做 / 选型调研                    → /arch-radar
-评估几个方案 / 技术选型                    → /arch-options
-界定一下 / 我们到底要解决什么              → /arch-frame
+`org_constraints` 来自用户级或团队级 KB：
+
+- `~/.understand-arch/kb/`
+- `<repo>/.arch-kb/`
+
+加载失败行为：
+
+- KB 目录不存在：`not_configured`，继续。
+- 文件缺失：对应项 `not_loaded`，继续。
+- 文件存在但 schema 不通过：fail-loud，workflow 暂停。
+
+### `specs/risks.yaml`
+
+记录风险与技术债，不是临时审计报告。
+
+每条风险必须包含：
+
+- severity
+- category
+- affected_scope
+- evidence_refs
+- mitigation
+- owner
+- status
+- last_reviewed
+
+每条技术债必须包含：
+
+- debt_type
+- affected_scope
+- cost_of_delay 或 impact
+- paydown_strategy
+- evidence_refs
+
+### `specs/decisions.yaml`
+
+索引长期架构决策，不替代 ADR。
+
+必须包含：
+
+- accepted ADR index
+- proposed/deprecated/superseded ADR index
+- key assumptions
+- pending decisions
+- decision-to-CR links
+- evidence_refs
+
+长期、跨 CR、会影响未来方案判断的决策必须写 ADR。局部实现取舍可只留在 CR。
+
+### `specs/traceability.yaml`
+
+追溯链是本套件的核心资产。
+
+必须能回答：
+
+- 某个需求来自哪个 CR？
+- 某个设计点写回了哪个 specs 字段？
+- 某个 ADR 影响哪些组件、接口或数据模型？
+- 某个风险由哪些 CR 或 evidence 支撑？
+- 某次 release 包含哪些 CR？
+
+建议结构：
+
+```yaml
+links:
+  - from:
+      type: cr
+      id: CR-2026-001
+    to:
+      type: specs
+      path: baseline.yaml#components.payment-service
+    relation: updates
+    evidence_refs: []
 ```
 
----
+### `specs/diagrams/*.mmd`
 
-## 10. 5 个借鉴模式(业界提炼,已落地)
+Mermaid 源是稳定资产。SVG/PNG 渲染结果放入 `generated/diagrams/`。
 
-1. **Research → Review → Revise → Publish**(GPT Researcher)→ `arch-radar` 递归研究
-2. **Plan → Act 分离**(aider / Cline)→ `arch-workflow` 编排 vs 原子 skill 执行
-3. **Role-specialized subagents**(Claude Code / OpenHands / Roo Code)→ heavy skill subagent 隔离
-4. **Trigger-based reusable micro-skills**(OpenHands microagents)→ 企业 KB(`~/.understand-arch/kb/`)的灵感来源
-5. **Architecture as code**(ADR / C4 / Structurizr)→ append-only ADR + Mermaid + 5+1 yaml + v1.1 fitness_spec
+必须包含：
 
----
+- C4 context
+- C4 container
+- 关键服务的 C4 component，按需
+- 图源 frontmatter，指向 baseline 或 CR evidence
 
-## 11. v1.1 Roadmap
+## CR 变更资产标准
 
-- **ADR `fitness_spec` 字段**(architecture-as-policy 闭环)
-- **`arch-review --mode=fitness`**(主动跑所有 ADR 的可执行约束)
-- **ADR 语义检索**(累积后召回相似旧决策)
-- **`arch-library/` 深度扩展**(超过 200 行/域,做成真正的架构手册)
-- **`internal/phases/` 库扩展**(capacity-planning / threat-modeling / migration-planning / data-governance)
-- **多模型 review subagent**(用别的模型评 Claude 产出,缓解自证问题)
+CR 是一次变更的过程态知识包。它不复制 specs，而是记录 delta。
 
----
+默认 CR 文件数控制在 4 个：
 
-## 12. Build Order(立即开工)
+```text
+CR-*/
+├── cr.md
+├── impact.yaml
+├── review.yaml
+└── traceability.yaml
+```
 
-1. ⭐ **`arch-workflow` SKILL.md 提纲** ← 立刻
-2. 5+1 yaml 资产 JSON Schema(`internal/schemas/`)
-3. `arch-frame` SKILL.md(含 PRD hard gate + 加载 KB + architecture_profile)
-4. `arch-analyze` SKILL.md(4 档 + subagent 触发阈值)
-5. `arch-diff-judge` SKILL.md
-6. `arch-options` SKILL.md(对照 KB)
-7. `arch-adr` SKILL.md
-8. `arch-diagram` SKILL.md(fireworks 集成 + Mermaid 降级)
-9. `arch-review` SKILL.md(doc/code 双模式 + org-conformance)
-10. `arch-pack` SKILL.md(audience × format 矩阵 + 实施方案 17 章模板)
-11. `arch-library/` **v1.0 seed**(每域 ≤200 行;深度扩展放 v1.1)
-12. `internal/phases/eval-design.md`(其它 phase 按 dogfood 反馈扩)
-13. `arch/{project}/` template + sample(可用 office-hours assignment #1 的 prototype 当 sample)
+复杂变更才允许生成：
 
----
+- `options.md`
+- CR-local diagrams
+- linked ADR
+- generated brief/wiki
 
-## 13. Premises(v1.0 必须验证)
+### `cr.md`
 
-来自 office-hours 诊断:
+面向人类的一页式变更入口。
 
-1. **Premise 1**:v1.0 发布后 30 天内拉到 5 个 first user 真用并反馈 — 否则 OSS 模式崩
-2. **Premise 2**:Governance 价值随 LLM 能力提升而加宝 — 跑 90 天靠 `.metrics.jsonl` 数据验证(决策追溯次数 / 漂移命中 / ADR 复用率)
-3. **Premise 3**:**Gap A(企业知识库 first-class)必须做进 v1.0**,Gap B(fitness function)v1.1 延后
+必须包含：
 
----
+- 变更目标与业务背景。
+- 验收标准。
+- in scope / non-goals。
+- 当前选定技术方案摘要。
+- 影响面摘要。
+- 模块依赖变化摘要。
+- 数据模型变化摘要。
+- API / event / permission 变化摘要。
+- 发布与回滚摘要。
+- 风险与缓解。
+- 任务拆解摘要。
+- writeback 计划。
 
-## 14. 文档关系
+`cr.md` 可以读起来像技术设计文档，但不能成为唯一事实源。结构化事实写入 `impact.yaml`。
 
-| 文档 | 用途 |
+### `impact.yaml`
+
+CR 的机器事实源。
+
+必须覆盖：
+
+```yaml
+change_request:
+affected:
+  services:
+  modules:
+  apis:
+  data_models:
+  events_messages:
+  permissions:
+  deployments:
+  configs:
+module_dependency_changes:
+data_model_changes:
+rollback_strategy:
+scope_boundary:
+  must_change:
+  may_change:
+  should_not_change:
+derived_risks:
+writeback_plan:
+evidence_refs:
+```
+
+四个硬门槛：
+
+- 影响面必须覆盖 services/modules/apis/data/events/permissions/deployments/configs。
+- 模块依赖变化必须说明新增、删除、反转、跨层、循环依赖风险。
+- 数据模型变化必须说明 owner、迁移、回填、兼容、数据回滚。
+- 回滚策略必须覆盖 code/config/data/deploy，不允许只写“revert PR”。
+
+### `review.yaml`
+
+记录 CR 是否可以进入实现或 writeback。
+
+必须包含：
+
+- readiness: `ready|degraded|blocked`
+- structural findings
+- semantic findings
+- org-conformance findings
+- unresolved assumptions
+- required fixes
+- reviewer identity or subagent marker
+- evidence_refs
+
+### `traceability.yaml`
+
+记录本 CR 内部链路：
+
+- requirement -> impact
+- impact -> design section
+- design -> tasks
+- tasks -> files or future PR references
+- review finding -> fix or override
+- CR -> specs writeback
+- CR -> ADR
+
+## 代码扫描算法
+
+`arch-analyze` 需要生成本套件自己的 specs 标准产物。v1.0 不强依赖 Understand-Anything，不要求用户安装它，也不把它的目录结构或 JSON 格式作为事实源。
+
+但代码扫描算法参考 Understand-Anything 的思路，吸收其“确定性扫描 + 文件分析 + 架构图谱 + 图审查 + 增量更新”的模式。
+
+### 不强依赖原则
+
+本套件不做以下事情：
+
+- 不要求安装 `Lum1104/Understand-Anything`。
+- 不读取 `.understand-anything/` 作为唯一事实源。
+- 不把 Understand-Anything 的 UI、CLI、目录结构暴露给用户。
+- 不把对方代码直接 vendoring 到本仓，除非后续明确处理 license、attribution 和维护策略。
+
+允许：
+
+- 参考其仓库扫描算法思想。
+- 自行实现扫描 pipeline。
+- 可选读取其已有 knowledge graph 作为外部输入，再转换为本套件 specs。
+
+### v1.0 扫描 Pipeline
+
+```text
+Project Scanner
+→ File Analyzer
+→ Architecture Analyzer
+→ Graph Reviewer
+→ Specs Writer
+```
+
+#### Project Scanner
+
+确定性扫描：
+
+- 文件树。
+- 语言与包管理器。
+- 入口文件。
+- 构建/测试配置。
+- 部署与运行配置。
+- API/事件/数据模型线索。
+- Git commit 与文件修改历史。
+
+#### File Analyzer
+
+对关键文件输出结构化摘要：
+
+- 文件职责。
+- imports/exports。
+- 路由与 handler。
+- 数据访问。
+- 外部调用。
+- 事件生产/消费。
+- 权限与安全检查。
+
+#### Architecture Analyzer
+
+聚合为 specs 结构：
+
+- repositories。
+- components。
+- interfaces。
+- data_models。
+- external_dependencies。
+- deployment_units。
+- critical_flows。
+- runtime_configs。
+
+#### Graph Reviewer
+
+检查架构图谱质量：
+
+- 孤立节点。
+- 悬挂边。
+- 循环依赖。
+- owner 缺失。
+- evidence_refs 缺失。
+- 命名不稳定。
+- 4+1 视图覆盖缺失。
+
+#### Specs Writer
+
+写入本套件标准资产：
+
+- `specs/baseline.yaml`
+- `specs/quality.yaml`
+- `specs/risks.yaml`
+- `specs/diagrams/*.mmd`
+- `generated/overview.md`
+- `specs/traceability.yaml`
+
+### 增量更新
+
+v1.0 必须支持基于 commit diff 的增量判断：
+
+1. 读取 `specs/baseline.yaml.last_scanned_commit`。
+2. 对比当前仓库 commit。
+3. 获取中间 changed files。
+4. 判断是否命中架构敏感文件。
+5. 只重扫受影响文件或建议 refresh。
+
+增量扫描的目标是减少全仓扫描频率，不是隐藏 specs 过期风险。
+
+## Specs 新鲜度与失效防护
+
+specs 不会自动永远有效。v1.0 必须让失效可检测、可解释、可修复。
+
+### Freshness 状态
+
+```yaml
+freshness:
+  last_scanned_commit: abc1234
+  current_commit: def5678
+  changed_files_since_scan:
+    - src/order/api.ts
+    - src/order/model.ts
+  freshness_status: fresh|possibly_stale|stale|unknown
+  reason: "Changed files include API and data model paths."
+```
+
+四档含义：
+
+| 状态 | 中文提示 | 含义 |
+|---|---|---|
+| `fresh` | 当前 specs 与代码提交一致。 | 无需刷新 |
+| `possibly_stale` | 代码有变化，但暂未发现影响架构基线的文件。 | 可继续，但 audit 应提示复核 |
+| `stale` | 代码变化命中架构敏感区域，建议刷新 specs。 | 默认建议 refresh |
+| `unknown` | 无法判断 specs 是否过期，建议轻量扫描或人工确认。 | Git 不可用或证据不足 |
+
+### 架构敏感文件
+
+命中以下文件变化时，通常应标记 `stale` 或建议 refresh：
+
+- 包依赖：`package.json`、`pyproject.toml`、`go.mod`、`pom.xml`、锁文件。
+- 入口/路由：routes、controllers、handlers、bootstrap。
+- 数据模型：models、entities、schema、migrations、Prisma、SQL。
+- 接口契约：OpenAPI、proto、GraphQL、RPC definitions。
+- 消息事件：events、topics、producers、consumers。
+- 部署运行：Dockerfile、compose、Helm、K8s、env templates。
+- 安全权限：auth、permission、policy、IAM。
+- 配置：feature flags、runtime config、model/provider config。
+- 架构资产：`arch/{project}/specs/`、ADR、CR writeback。
+
+以下变化通常可标记 `possibly_stale`：
+
+- 纯测试改动。
+- 局部业务实现且不改接口、依赖、数据、部署。
+- 注释或 README 小修。
+- 样式或文案改动。
+- 内部算法实现但边界不变。
+
+### 无 Git 或无 Commit 时
+
+如果无法读取 commit，workflow 不能通过 diff 判断 specs 是否过期。此时应提示：
+
+```text
+当前项目无法读取 Git 提交历史，因此不能通过代码差异判断 specs 是否过期。
+我会改用 specs 内容完整性检查：验证 4+1 视图覆盖、证据链接、风险更新时间和 known_unknowns。
+```
+
+检查项：
+
+- `last_verified` 是否存在。
+- evidence_refs 是否还能打开。
+- 4+1 coverage 是否缺项。
+- known_unknowns 是否过多或长期未处理。
+- owner 是否大量 unknown。
+- risks 是否长期未 reviewed。
+- external_dependencies 是否缺 owner/SLA。
+- data_models 是否缺 owner/compat/rollback。
+
+### 防失效机制
+
+1. **commit diff freshness**  
+   用 `last_scanned_commit` 与当前 commit 对比，并分类 changed files。
+
+2. **evidence_refs closure**  
+   evidence 指向的文件、行号、commit 不存在时，specs 标 degraded。
+
+3. **writeback gate**  
+   重要 specs 修改必须来自 baseline refresh 或 CR writeback。
+
+4. **known_unknowns 留痕**  
+   未知项不能被生成文档润色消失。
+
+5. **audit 建议 refresh**  
+   `audit` 发现 stale/incomplete 时，用中文建议用户刷新 specs。
+
+6. **drift audit 按需扫仓**  
+   默认 audit 不扫全仓。用户确认后才运行重型漂移扫描。
+
+## Wiki 与人类可读材料
+
+本套件同时服务人和 Agent，但维护对象必须分离。
+
+推荐关系：
+
+```text
+Agent facts: specs/*.yaml + CR/*.yaml
+Human baseline: generated/overview.md
+Human generated views: generated/wiki/01-05
+```
+
+规则：
+
+- Wiki 是从 specs、CR、ADR 生成的人类视图。
+- Wiki 不作为事实源。
+- `generated/overview.md` 是稳定入口，用户可以编辑，但新增事实必须回写 YAML 或引用 YAML。
+- `generated/wiki/` 只做展开解释，不承担“唯一入口”职责。
+- `generated/wiki/` 可以删除并重建。
+- `arch-pack` 只做按需导出，不在默认 workflow 强制生成大包文档。
+
+## Skill 套件
+
+保留 10 个 skill 名称，收敛职责。
+
+| Skill | v1.0 职责 |
 |---|---|
-| 本文件(`architect-skill-suite-research.md`)| **v1.0 完整规格,长期维护** |
-| `architect-skill-suite-office-hours-2026-05-24.md` | 诊断记录(Q&A + Premises + 8 founder signals + Assignment + Appendix A YAML schema sketch),不再更新 |
-| `internal/schemas/*.json` | yaml 资产的可执行 JSON Schema |
-| 每个 `arch-*/SKILL.md` | skill 实现规格 |
-| `arch-library/MANIFEST.md` | references 索引(LLM 用来挑) |
-| `internal/phases/MANIFEST.md` | phases 库索引 |
-| `internal/acceptance/{mode}.yaml` | 每 mode 的验收 checklist |
+| `arch-workflow` | baseline / CR / review / writeback 状态机 |
+| `arch-analyze` | 创建或刷新 specs baseline |
+| `arch-frame` | 创建 CR，澄清目标、范围、non-goals、验收、NFR |
+| `arch-diff-judge` | 基于 specs 生成 CR impact |
+| `arch-options` | 仅在存在真实架构分歧时生成 options |
+| `arch-adr` | 仅 durable decision 写 append-only ADR |
+| `arch-review` | specs review、CR review、writeback gate、可选 drift audit |
+| `arch-diagram` | 从 specs/CR 生成 Mermaid 与可选渲染图 |
+| `arch-pack` | 按需生成 wiki/brief/report |
+| `arch-radar` | 按需外部调研与选型，不进入默认链路 |
 
----
+用户可见入口第一版只暴露 4 个：
 
-## 附录:Supersedes 历史
+```text
+/arch:onboard
+/arch:design
+/arch:audit
+/arch:brief
+```
 
-- **2026-05-22**:原 `architect-skill-suite-research.md` v1 draft —— 15 skill 设计、5 用户可见 + 10 内部、`ni-arch-*` 命名、无 architecture_profile 机制、无 HARD GATE、无 6+ yaml org KB
-- **2026-05-22 → 2026-05-24**:15+ 轮深度迭代:
-  - form 选型(skill / workflow / agent → skill 主体 + subagent 隔离)
-  - subagent 分类(4 必 + 3 条件 + 8 主上下文)
-  - skill 收敛(15 → 9)
-  - `arch-recover` 拆 survey+assess 再合并为 analyze+judge(轴心从"描述 vs 评估"改为"现状 vs 变更")
-  - 移除 keyword routing 改 LLM-judged `architecture_profile`
-  - 加 PRD HARD GATE
-  - 加 prereq check
-  - 加 audit→onboard auto-chain
-  - 整理 PRD → 实施方案 17 章路径
-  - 触发词扩展(含「审视当前项目/架构」)
-- **2026-05-24**:office-hours 诊断 → APPROVED Approach 1 + Gap A in v1.0 + Gap B in v1.1 → **本文是当前完整方案**
+`arch-review` 不作为第一版用户入口暴露，而是收敛进 `onboard`、`design`、`audit`、`brief` 的内部 gate。
+
+内部 skill 可由 workflow 调度，用户不必直接理解全部 skill。
+
+## Workflow
+
+### 1. Baseline Init / Refresh
+
+用于首次接手项目或刷新架构基线。
+
+```text
+/arch:onboard
+/arch:baseline refresh
+
+arch-analyze
+→ write specs/baseline.yaml
+→ write specs/quality.yaml
+→ write specs/risks.yaml
+→ write specs/diagrams/*.mmd
+→ update generated/overview.md
+→ update specs/decisions.yaml
+→ update specs/traceability.yaml
+→ arch-review --mode=specs
+```
+
+验收目标：
+
+- 只读 specs 可以生成架构现状报告。
+- 组件、依赖、接口、数据、部署、NFR、风险、技术债、决策、追溯链闭合。
+- 每条关键判断有 evidence_refs。
+- `known_unknowns` 明确列出。
+
+用户可见提示示例：
+
+```text
+架构基线已生成，但发现 2 个未知 owner 和 1 个缺失的部署视图。
+建议先补齐这些 known_unknowns，再把 specs 作为团队基线使用。
+```
+
+### 2. Specs Review 内置于 Audit
+
+用于不扫全仓的架构审视。第一版不单独暴露 `/arch:review`，而是通过 `/arch:audit` 默认执行。
+
+```text
+/arch:audit
+
+read specs/*
+→ check schema
+→ check coverage
+→ check evidence closure
+→ check freshness
+→ check risk/debt quality
+→ suggest refresh when stale or incomplete
+→ output audit result
+```
+
+它回答：
+
+- 当前 specs 是否足以支撑架构判断？
+- 哪些维度缺失？
+- 哪些 evidence 过期？
+- 哪些风险无人负责？
+- 哪些 known unknowns 阻塞设计？
+
+不扫全仓的 review 不能证明代码没有漂移。它只能审视当前 specs 的质量。
+
+中文提示示例：
+
+```text
+当前 specs 可以支持架构审视，但可能已过期：上次扫描提交 abc1234，当前提交 def5678。
+变更文件命中了接口契约和数据模型，建议运行 /arch:onboard --refresh。
+```
+
+### 3. Drift Audit
+
+用于验证 specs 与代码现实是否偏离。
+
+```text
+/arch:audit --drift
+
+arch-analyze --depth=manifest/risk
+→ compare code facts with specs
+→ report drift findings
+→ propose specs refresh or CR
+```
+
+它可以扫仓，成本更高，应按需运行。
+
+当默认 audit 发现 `freshness_status=stale` 时，应先建议 refresh；只有用户确认需要验证代码漂移时，才运行 `--drift`。
+
+### 4. Change Request Design
+
+用于一次需求或架构变更。
+
+```text
+/arch:design "<PRD or change request>"
+
+arch-frame
+→ create change-requests/CR-*/
+→ check specs freshness
+→ arch-diff-judge based on specs
+→ write cr.md + impact.yaml
+→ arch-options if real alternatives exist
+→ arch-adr if durable decision exists
+→ arch-review --mode=cr
+→ writeback proposal
+```
+
+默认不生成 9 文件，不强制 ADR，不强制图，不强制 wiki。
+
+如果 specs stale 或 incomplete，design 应先提示：
+
+```text
+当前 specs 可能无法可靠支撑本次设计：缺少数据模型 owner，且上次扫描提交已落后当前代码。
+建议先 refresh specs；如果你确认继续，我会把该风险写入 CR review。
+```
+
+### 5. Writeback
+
+CR 通过 review 后，才能写回 specs。
+
+Writeback 必须说明：
+
+- 更新哪些 specs 字段。
+- 为什么更新。
+- 来自哪个 CR。
+- 是否新增 ADR。
+- 是否关闭或新增风险。
+- traceability 如何更新。
+
+禁止直接随意改 specs 基线。所有重要 specs 变更应来自 CR 或 baseline refresh。
+
+### 6. Brief / Wiki Generation
+
+用于人类阅读与汇报。
+
+```text
+/arch:brief --audience=management
+/arch:brief --audience=onboarding
+
+read specs + CR + ADR
+→ update generated/overview.md
+→ generate generated/wiki or generated/briefs
+```
+
+生成内容必须带 source artifacts。派生文档不是事实源。
+
+## 用户暴露面
+
+v1.0 第一版只向用户暴露四个主入口：
+
+| 入口 | 用户理解 | 内部调用 |
+|---|---|---|
+| `/arch:onboard` | 建立或刷新项目架构基线 specs | `arch-analyze` + `arch-diagram` + internal review |
+| `/arch:design` | 为一次需求创建 CR 并做架构设计 | `arch-frame` + `arch-diff-judge` + conditional `arch-options`/`arch-adr` + internal review |
+| `/arch:audit` | 审视 specs 是否完整、可信、过期；必要时建议 refresh | internal `arch-review`; optional `arch-analyze --drift` |
+| `/arch:brief` | 从 specs/CR/ADR 生成给人看的 wiki/report/brief | `arch-pack` + `arch-diagram` |
+
+不直接暴露：
+
+- `arch-review`：作为内部 gate。
+- `arch-options`：仅当存在真实方案分歧时运行。
+- `arch-adr`：仅当存在 durable decision 时运行。
+- `arch-radar`：高级按需能力，后续可作为显式 expert mode。
+- `arch-diagram` / `arch-pack`：由 brief/onboard/design 内部触发。
+
+这样用户心智保持为：
+
+```text
+onboard：建立 specs。
+design：创建 CR。
+audit：检查 specs 是否还可信，必要时提示 refresh。
+brief：生成给人看的材料。
+```
+
+## Acceptance
+
+### specs acceptance
+
+必须通过：
+
+- schema validation
+- required architecture dimension coverage
+- 4+1 view coverage: logical / development / process / physical / scenarios
+- evidence_refs closure
+- known_unknowns present
+- last_verified present
+- last_scanned_commit present or git unavailable reason present
+- freshness_status present
+- baseline_commits present or `git_unavailable`
+- C4 Mermaid sources exist
+- risks have severity / owner / mitigation / evidence
+- decisions index links to ADRs
+- traceability links are not dangling
+
+### CR acceptance
+
+必须通过：
+
+- `cr.md` exists and has scope/non-goals/acceptance.
+- `impact.yaml` covers all impact dimensions.
+- module dependency changes are explicit.
+- data model changes include migration/backfill/compat/rollback.
+- rollback covers code/config/data/deploy.
+- org KB violations are marked.
+- review.yaml readiness is not blocked.
+- traceability links CR to specs writeback.
+
+### generated view acceptance
+
+必须通过：
+
+- generated view lists source artifacts.
+- no new facts absent from specs/CR/ADR.
+- links resolve.
+- generated_at present.
+- degradation reason present when renderer unavailable.
+
+## Schema Strategy
+
+v1.0 schema set should match the reduced fact model:
+
+Project-scoped:
+
+- `spec-baseline.schema.json`
+- `spec-quality.schema.json`
+- `spec-risks.schema.json`
+- `spec-decisions.schema.json`
+- `spec-traceability.schema.json`
+- `cr-impact.schema.json`
+- `cr-review.schema.json`
+- `cr-traceability.schema.json`
+
+Org-scoped:
+
+- `banned-patterns.schema.json`
+- `compliance-redlines.schema.json`
+- `network-boundaries.schema.json`
+- `naming-conventions.schema.json`
+- `tech-radar.schema.json`
+
+Existing earlier schemas may be migrated or superseded, but v1.0 should not maintain both old and new contract families long term.
+
+## Metrics
+
+Every skill run appends:
+
+```json
+{"ts":"ISO-8601","skill":"arch-review","mode":"specs","inputs_summary":"specs review only","outputs_paths":["arch/foo/generated/briefs/spec-review.md"],"duration_s":12,"token_estimate":8000,"overrides_used":false,"verify_passed":true}
+```
+
+Metrics support 90-day validation of governance value:
+
+- specs review frequency
+- drift findings
+- ADR reuse
+- CR writeback count
+- traceability closure rate
+- generated wiki usage
+
+## Build Order
+
+New v1.0 build order:
+
+1. Rewrite schemas around specs/CR model.
+2. Rewrite `arch-workflow` around four user-visible entries: onboard / design / audit / brief.
+3. Rewrite `arch-analyze` to produce specs baseline.
+4. Implement Understand-Anything-inspired scanner pipeline without external hard dependency.
+5. Implement specs freshness checks based on commit diff and architecture-sensitive paths.
+6. Rewrite `arch-frame` to create CR and hard-gate unclear PRD.
+7. Rewrite `arch-diff-judge` to produce `cr-impact.yaml` from specs.
+8. Rewrite `arch-review` as an internal gate for onboard/design/audit/brief.
+9. Rewrite `arch-adr` to link ADRs into specs decisions and traceability.
+10. Rewrite `arch-diagram` to treat Mermaid as stable specs diagram source.
+11. Rewrite `arch-pack` as generated-view exporter only.
+12. Keep `arch-options` and `arch-radar` conditional.
+13. Add `arch/{project}/` template and sample.
+14. Add acceptance YAML for specs / CR / generated views.
+
+## Non-Goals for v1.0
+
+- No automated code modification.
+- No CI/IaC/DDL generation.
+- No full LLM wiki or RAG system.
+- No platform-specific PR integration requirement.
+- No mandatory PPTX/HTML renderer.
+- No deep external research in default workflow.
+
+## v1.1 Candidates
+
+- `arch-review --mode=fitness` for ADR fitness specs.
+- Drift audit automation against PR diffs.
+- LLM wiki over specs/CR/ADR after traceability is stable.
+- Domain-specific specs extensions for data platform, edge, IoT, or AI eval-heavy systems.
+- Release writeback automation.

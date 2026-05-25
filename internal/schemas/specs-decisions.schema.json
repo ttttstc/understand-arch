@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/specs-decisions.schema.json",
+  "title": "Specs Decisions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "adr_index",
+    "superseded",
+    "key_assumptions",
+    "pending_decisions",
+    "decision_links",
+    "evidence_refs"
+  ],
+  "properties": {
+    "adr_index": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/adrItem" },
+      "description": "Append-only ADR index. arch-adr 通过 state_delta.decisions_index_delta.accepted_append 由 arch-workflow 写入。"
+    },
+    "superseded": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/supersededLink" },
+      "description": "ADR supersede 关系。append-only。老 ADR markdown 文件本身永不修改;关系全部记在这里。arch-adr 通过 state_delta.decisions_index_delta.superseded_append 由 arch-workflow 写入。"
+    },
+    "key_assumptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/simpleRecord" }
+    },
+    "pending_decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/simpleRecord" }
+    },
+    "decision_links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decisionLink" }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "commit"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "commit": { "type": "string", "minLength": 1 }
+      }
+    },
+    "simpleRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "summary", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string" },
+        "status": { "type": "string" },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "adrItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adr_id", "title", "status", "path", "evidence_refs"],
+      "properties": {
+        "adr_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "related_crs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "decisionLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "target_id", "relation", "evidence_refs"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "target_id": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    },
+    "supersededLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["old_adr_id", "new_adr_id", "ts", "reason"],
+      "properties": {
+        "old_adr_id": { "type": "string", "minLength": 1, "description": "被取代的 ADR id;其 markdown 文件正文不变" },
+        "new_adr_id": { "type": "string", "minLength": 1, "description": "取代它的新 ADR id" },
+        "ts": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

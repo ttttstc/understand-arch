@@ -1,0 +1,65 @@
+mode: design
+purpose: "Turn one change request into a reviewable and writeback-ready CR package."
+
+structural_checks:
+  - id: cr-files
+    description: "core CR files exist"
+    check: files_exist
+    targets:
+      - change-requests/*/cr.md
+      - change-requests/*/impact.yaml
+      - change-requests/*/review.yaml
+      - change-requests/*/traceability.yaml
+  - id: cr-schemas
+    description: "CR yaml files pass schema"
+    check: schema_bundle
+    targets:
+      - file: change-requests/*/impact.yaml
+        schema: internal/schemas/cr-impact.schema.json
+      - file: change-requests/*/review.yaml
+        schema: internal/schemas/cr-review.schema.json
+      - file: change-requests/*/traceability.yaml
+        schema: internal/schemas/cr-traceability.schema.json
+  - id: no-writes-outside-scope
+    description: "design 链路所有 skill 落盘均在 write-scope 范围内;active_cr 一致"
+    check: scope_audit
+    contract: internal/tool-contracts/write-scope.yaml
+    against: .metrics.jsonl
+  - id: adr-append-only
+    description: "若本轮新增 ADR,既有 ADR 文件正文未被修改"
+    check: append_only
+    target: decisions/ADR-*.md
+
+semantic_checks:
+  - id: impact-depth
+    question: "这次变更的影响面是否足够细，能支撑实现前讨论？"
+    severity: required
+    rubric:
+      - impact.yaml 覆盖 services/modules/apis/data_models/events_messages/permissions/deployments/configs
+      - 无影响维度也必须显式写 no_impact
+  - id: dependency-and-data
+    question: "模块依赖变化和数据模型变化是否讲清楚了？"
+    severity: required
+    rubric:
+      - 依赖变化不是只写一句“会影响多个模块”
+      - 数据模型变化含 migration/backfill/compatibility/rollback_strategy
+  - id: rollback
+    question: "回滚策略是否可执行？"
+    severity: required
+    rubric:
+      - 至少说明代码、配置、数据中的相关回退路径
+      - 不允许只写 revert PR
+  - id: writeback-ready
+    question: "CR 是否已经为 writeback 做好准备？"
+    severity: required
+    rubric:
+      - review.yaml 给出 readiness
+      - traceability.yaml 指出将来要写回哪些 specs 资产
+
+threshold:
+  structural: 100%
+  semantic: 4/4
+
+retry_policy:
+  max_retries: 2
+  on_failure: "retry failed owning skill; third failure requires user judgment"

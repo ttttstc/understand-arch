@@ -1,0 +1,54 @@
+mode: audit
+purpose: "Assess whether the current specs baseline is complete, fresh enough, and safe to trust."
+
+structural_checks:
+  - id: core-specs-present
+    description: "audit has a baseline to read"
+    check: files_exist
+    targets:
+      - specs/baseline.yaml
+      - specs/quality.yaml
+      - specs/risks.yaml
+      - specs/traceability.yaml
+  - id: state-present
+    description: "workflow state exists"
+    check: file_exists
+    target: state.yaml
+  - id: audit-readonly
+    description: "audit 模式默认只读;若发生写入,必须落在 write-scope 允许范围内(eg. arch-pack 重生成 overview)"
+    check: scope_audit
+    contract: internal/tool-contracts/write-scope.yaml
+    against: .metrics.jsonl
+
+semantic_checks:
+  - id: freshness-decision
+    question: "audit 是否明确告诉用户 specs 现在是 fresh、possibly_stale、stale 还是 unknown？"
+    severity: required
+    rubric:
+      - 结论必须来自 commit diff 或内容完整性检查
+      - stale 或 unknown 时必须给出中文 refresh 建议
+  - id: drift-risk
+    question: "audit 是否区分了内容不完整与可能漂移？"
+    severity: required
+    rubric:
+      - 能指出是 specs 自身缺失还是代码变更导致可能过期
+      - 必要时建议运行 drift audit，而不是直接假设无事发生
+  - id: reviewability
+    question: "audit 是否只靠 specs 就能审视核心架构维度？"
+    severity: required
+    rubric:
+      - 风险、技术债、4+1 覆盖、关键依赖、关键数据模型都能被回答
+      - 缺项进入 known_unknowns 或 findings
+  - id: actionability
+    question: "audit 是否给出下一步动作？"
+    severity: required
+    rubric:
+      - 结论至少包含 continue、refresh、drift-audit 三类之一
+
+threshold:
+  structural: 100%
+  semantic: 4/4
+
+retry_policy:
+  max_retries: 2
+  on_failure: "retry arch-review or arch-analyze with verifier notes"

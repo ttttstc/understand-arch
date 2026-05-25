@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/cr-review.schema.json",
+  "title": "Change Request Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cr_id",
+    "review_mode",
+    "readiness",
+    "findings",
+    "recommendations",
+    "reviewed_at",
+    "evidence_refs"
+  ],
+  "properties": {
+    "cr_id": { "type": "string", "minLength": 1 },
+    "review_mode": { "type": "string", "enum": ["design_gate", "writeback_gate", "audit"] },
+    "readiness": { "type": "string", "enum": ["ready", "degraded", "blocked"] },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reviewed_at": { "type": "string", "minLength": 1 },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceRef" }
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "commit"],
+      "properties": {
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "commit": { "type": "string", "minLength": 1 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "severity",
+        "category",
+        "description",
+        "suggested_fix",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+        "category": { "type": "string", "minLength": 1 },
+        "location": { "type": "string" },
+        "description": { "type": "string", "minLength": 1 },
+        "suggested_fix": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
+    }
+  }
+}

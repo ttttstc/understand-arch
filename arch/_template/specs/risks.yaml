@@ -1,0 +1,7 @@
+risks: []
+tech_debts: []
+last_reviewed: TEMPLATE
+evidence_refs:
+  - file: arch/_template/specs/risks.yaml
+    line: 1
+    commit: template-scaffold

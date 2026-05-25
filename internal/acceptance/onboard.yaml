@@ -1,0 +1,84 @@
+mode: onboard
+purpose: "Create or refresh a trusted architecture baseline under specs/."
+
+structural_checks:
+  - id: specs-files
+    description: "specs baseline bundle exists (specs/ 100% 事实层,无 markdown)"
+    check: files_exist
+    targets:
+      - specs/baseline.yaml
+      - specs/quality.yaml
+      - specs/risks.yaml
+      - specs/decisions.yaml
+      - specs/traceability.yaml
+      - state.yaml
+  - id: overview-generated
+    description: "generated/overview.md 已由 arch-pack 产出(人类入口)"
+    check: file_exists
+    target: generated/overview.md
+  - id: no-writes-outside-scope
+    description: "本次 onboard 各 skill 落盘文件均在 write-scope contract 允许范围内"
+    check: scope_audit
+    contract: internal/tool-contracts/write-scope.yaml
+    against: .metrics.jsonl   # arch-workflow dispatch 时记录 allowed_writes
+  - id: specs-schemas
+    description: "all core specs yaml pass schema"
+    check: schema_bundle
+    targets:
+      - file: specs/baseline.yaml
+        schema: internal/schemas/specs-baseline.schema.json
+      - file: specs/quality.yaml
+        schema: internal/schemas/specs-quality.schema.json
+      - file: specs/risks.yaml
+        schema: internal/schemas/specs-risks.schema.json
+      - file: specs/decisions.yaml
+        schema: internal/schemas/specs-decisions.schema.json
+      - file: specs/traceability.yaml
+        schema: internal/schemas/specs-traceability.schema.json
+      - file: state.yaml
+        schema: internal/schemas/state.schema.json
+  - id: diagram-sources
+    description: "at least 2 stable Mermaid sources exist for current architecture"
+    check: file_count_gte
+    target: specs/diagrams/*.mmd
+    expected: 2
+
+semantic_checks:
+  - id: baseline-complete
+    question: "只读 specs，是否能讲清系统现在是什么样？"
+    severity: required
+    rubric:
+      - baseline.yaml 覆盖仓库、组件、接口、数据模型、部署、外部依赖
+      - overview.md 不引入脱离 YAML 的新事实
+  - id: four-plus-one
+    question: "4+1 视图覆盖是否达到可审视状态？"
+    severity: required
+    rubric:
+      - baseline.yaml.view_coverage 五个维度都存在
+      - 缺项必须显式标 partial 或 missing，并解释 known_unknowns
+  - id: freshness
+    question: "specs 是否带有新鲜度判断所需字段？"
+    severity: required
+    rubric:
+      - baseline.yaml 含 last_scanned_commit 和 freshness_status
+      - 无 Git 时必须显式说明 unknown 或 git_unavailable
+  - id: risks-and-debt
+    question: "风险与技术债是否足够支持架构审视？"
+    severity: required
+    rubric:
+      - risks.yaml 中风险按严重度可排序
+      - 技术债条目含影响与偿还策略
+  - id: traceability
+    question: "关键结论是否可回链 evidence？"
+    severity: required
+    rubric:
+      - YAML 顶层和关键条目包含 evidence_refs
+      - traceability.yaml 能把 specs 与 ADR 或其他资产连起来
+
+threshold:
+  structural: 100%
+  semantic: 5/5
+
+retry_policy:
+  max_retries: 2
+  on_failure: "retry arch-analyze or arch-workflow with verifier notes"

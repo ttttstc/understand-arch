@@ -1,0 +1,20 @@
+project:
+  name: TEMPLATE
+  root_path: arch/TEMPLATE
+public_entry: onboard
+current_phase: scaffold
+status: idle
+template_version: v1.0-specs-cr
+active_cr: null
+kb_loaded:
+  banned_patterns: not_configured
+  compliance_redlines: not_configured
+  network_boundaries: not_configured
+  naming_conventions: not_configured
+  tech_radar: not_configured
+history: []
+overrides: []
+pending_actions:
+  - "Run /arch:onboard to replace scaffold values."
+suggested_next_action: "Run /arch:onboard"
+last_updated: TEMPLATE

@@ -1,0 +1,50 @@
+mode: brief
+purpose: "Generate a human-facing brief or wiki view from trusted source artifacts."
+
+structural_checks:
+  - id: generated-brief
+    description: "brief output exists under generated/briefs OR overview/wiki refresh"
+    check: file_count_gte
+    target: generated/briefs/*.md
+    expected: 1
+  - id: overview-line-budget
+    description: "generated/overview.md (若存在) 不超过 200 行硬上限"
+    check: file_line_count_lte
+    target: generated/overview.md
+    expected: 200
+    optional: true   # 仅 audience=onboarding 时强制
+  - id: no-writes-outside-scope
+    description: "arch-pack 落盘文件均在 write-scope 范围内"
+    check: scope_audit
+    contract: internal/tool-contracts/write-scope.yaml
+    against: .metrics.jsonl
+
+semantic_checks:
+  - id: audience-fit
+    question: "brief 是否符合目标受众的阅读方式？"
+    severity: required
+    rubric:
+      - 管理层摘要不应堆砌实现细节
+      - onboarding/wiki 应解释系统现状而不是只贴 YAML
+      - 若产 onboarding wiki，应遵循 01-05 固定页面结构
+  - id: source-faithful
+    question: "brief 是否忠实于 specs / CR / ADR，而不是重新发明事实？"
+    severity: required
+    rubric:
+      - 关键结论可回链 source artifacts
+      - 不得出现 source 中不存在的数字或判断
+  - id: content-complete
+    question: "如果产的是 onboarding wiki，内容是否足以支撑架构接手？"
+    severity: required
+    rubric:
+      - 能回答系统边界、组件依赖、数据链路、运行约束、风险决策与近期变更
+      - 风险与技术债分开呈现
+      - 明确 freshness 与 known unknowns
+
+threshold:
+  structural: 100%
+  semantic: 3/3
+
+retry_policy:
+  max_retries: 2
+  on_failure: "retry arch-pack with verifier notes"

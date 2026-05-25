@@ -1,178 +1,135 @@
 # understand-arch
 
-> A workflow skill suite for software architects — Claude Code plugin.
+> A Docs-as-Code architecture knowledge suite for Claude Code.
 
-[中文](./README.zh.md) | [Spec](./docs/spec-v1.0.md) | [Contributing](./CONTRIBUTING.md)
-
-**Currently supports: Claude Code.**
+[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md) · [Contributing](./CONTRIBUTING.md)
 
 ---
 
-## What it does
+## What it is
 
-Productizes 4 daily architect activities:
+`understand-arch` is **not** another doc-generator that produces a fresh wall of markdown every time you ask. It maintains a **trusted, versioned, agent-readable architecture baseline** for a project, and records every change as a delta against that baseline.
 
-### Onboard an unfamiliar system
+At any point in time, the suite can answer:
 
-```
-You say:  "帮我接手 ./order-system" / "take over this system"
-You get:
-  - 5 structured YAML evidence files (repos / dependencies / risks / decisions / overview)
-  - 6-page Wiki (start from index, target 60–90 min to understand)
-  - C4 current-state architecture diagrams (Mermaid + optional SVG/PNG)
-```
+- What does the system look like right now? *(specs)*
+- What does this change touch, and how do we roll it back? *(CR)*
+- Which conclusions have evidence? *(traceability)*
+- What might be out of date? *(freshness state machine)*
 
-### Audit current state
+## Public commands
 
-```
-You say:  "审视一下 order-system" / "audit this system"
-You get:
-  - Risk ledger sorted by severity
-  - Technical debt list with blast radius
-  - Refactoring roadmap (short / mid / long term)
-```
+v1.0 exposes only **four user-facing entries**. Everything else is internal orchestration.
 
-### Design from PRD
+| Command | What you'd say | What happens |
+|---|---|---|
+| `/arch:onboard` | "Help me understand this codebase" / "Build a baseline" | Scans the repo, produces `specs/` (5 schema-locked YAMLs + Mermaid diagrams) |
+| `/arch:design` | "Design this PRD" / "Open a CR for X" | Creates `change-requests/CR-*/` with impact / options / ADR / review |
+| `/arch:audit` | "Is the baseline still trustworthy?" | Reviews `specs/` without re-scanning; flags freshness; optionally runs drift audit |
+| `/arch:brief` | "Make a wiki for new joiners" / "Brief for the CTO" | Re-organizes existing facts into `generated/overview.md`, 5-page wiki, or audience-tailored briefs |
 
-```
-You say:  "根据 ./prd.md 设计架构" / "design architecture from this PRD"
-You get:
-  - 2–3 candidate options with tradeoff matrix (impact / dependencies / data model / rollback)
-  - ADR (architecture decision record)
-  - Full RFC design document
-  - 17-chapter SE implementation plan (dev-actionable)
-  - Target architecture diagrams
-```
+`arch-review`, `arch-options`, `arch-adr`, `arch-diagram`, `arch-pack`, `arch-radar` are all internal — invoked by the four entries above when needed.
 
-**If the PRD is ambiguous**, the workflow automatically halts and produces `PM问题清单.md` for you to confirm with PM before continuing.
+## Workspace layout
 
-### Prepare presentation
-
-```
-You say:  "给 CTO 出一份汇报" / "prepare a brief for CTO"
-You get:
-  - Audience-tailored deliverable (HTML / PPT / markdown)
-  - Management summary (≤1 page, decisions linked to evidence)
-```
-
----
-
-## Quick start
-
-### Install
-
-```bash
-/plugin marketplace add ttttstc/understand-arch
-/plugin install understand-arch
+```text
+arch/{project}/
+├── specs/                            # 100% fact layer (yaml + Mermaid only, no markdown)
+│   ├── baseline.yaml                 # components, interfaces, data models, deployments
+│   ├── quality.yaml                  # NFRs, org KB, runtime/release/rollback constraints
+│   ├── risks.yaml                    # risks + tech debt ledger
+│   ├── decisions.yaml                # ADR index + superseded[] relationships
+│   ├── traceability.yaml             # CR ↔ specs ↔ ADR ↔ release links
+│   └── diagrams/                     # stable C4 Mermaid sources
+├── decisions/                        # append-only ADR markdown (files NEVER modified)
+│   └── ADR-NNN-*.md
+├── change-requests/
+│   └── CR-YYYY-NNN-{slug}/
+│       ├── cr.md
+│       ├── impact.yaml
+│       ├── review.yaml
+│       ├── traceability.yaml
+│       └── options.md                # conditional, only if real architectural choice exists
+├── generated/                        # derived human views — deletable, regeneratable
+│   ├── overview.md                   # 1-page stable entry (11 sections, ≤200 lines)
+│   ├── wiki/01-..05-*.md             # 5-page onboarding wiki
+│   ├── diagrams/                     # rendered SVG/PNG
+│   └── briefs/                       # audience-tailored summaries
+├── state.yaml                        # workflow state machine (only arch-workflow writes)
+└── .metrics.jsonl                    # per-skill-run telemetry
 ```
 
-### Use
+## Governance pillars
 
-**Natural language** (recommended):
+These are what make the suite stand up over time, especially as LLMs get more capable at producing prose:
 
-| You say | Mode |
+1. **Specs are the only fact source** — `specs/*.yaml` is schema-locked. Anything in `generated/`, `cr.md`, an ADR body, or a brief that contradicts specs is a bug.
+2. **Append-only history** — `decisions/ADR-*.md` files are never modified after commit. Supersede relationships are recorded in `specs/decisions.yaml#superseded[]`. `state.yaml.history` and `state.yaml.overrides` are append-only too.
+3. **Freshness state machine** — every baseline carries `freshness_status: fresh|possibly_stale|stale|unknown`, computed from commit diff against architecture-sensitive paths. Stale baselines block design with a Chinese refresh prompt.
+4. **Single-writer state** — only `arch-workflow` writes `state.yaml`. Other skills return a `state_delta` for the workflow to merge. Eliminates concurrent-state corruption.
+5. **Write-scope contract** — `internal/tool-contracts/write-scope.yaml` declares, per skill, which paths are writable. `arch-pack` cannot write `specs/`; `arch-review` cannot write anything except `review.yaml`; `arch-analyze` cannot write `decisions/` — and so on. v1.0 enforces via acceptance audit; v1.1 will enforce via PreToolUse hook.
+6. **Trace closure** — every assertion in a YAML must carry `evidence_refs`. Every prose claim in `overview.md` or wiki must trace back to a YAML field or an ADR/CR path. No weasel words.
+
+## What it produces / refuses to produce
+
+| ✅ Allowed | ❌ Refused |
 |---|---|
-| 接手 / 摸熟 / 全景 / take over / overview | `onboard` |
-| 架构审计 / 体检 / 审视架构 / audit | `audit` |
-| 根据 PRD 设计 / 出 RFC / 出实施方案 / design | `design` |
-| 准备汇报 / 给 CTO 一份 / brief | `brief` |
+| `*.md` (overview, wiki, ADR, CR, briefs) | Terraform / Helm / Pulumi |
+| `*.yaml` (schema-locked facts) | DDL / ORM migrations |
+| `*.mmd` (Mermaid sources) | `.github/workflows/*` / `.gitlab-ci.yml` |
+| `*.svg` / `*.png` (rendered diagrams) | service scaffolds / OpenAPI client code |
+|   | business code |
 
-**Slash commands**:
+Tool-level safety: the write-scope contract refuses any of the forbidden patterns even if a skill is somehow prompted to produce them.
 
-```bash
-/arch                          # Interactive mode picker
-/arch:onboard ./my-system
-/arch:audit
-/arch:design --prd=./prd.md
-/arch:brief --audience=cto
-```
+## What's bundled
 
-**Single capabilities** (skip the full workflow):
+| Layer | Contents |
+|---|---|
+| 10 skills | `arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar` — each with `SKILL.md` + executable `references/` (rubrics, templates, playbooks) |
+| Schemas | 5 specs schemas + 3 CR schemas + state schema + 5 org KB schemas |
+| Acceptance | 4 per-entry YAMLs with `structural_checks` + `semantic_checks` + `scope_audit` |
+| Tool contracts | `internal/tool-contracts/write-scope.yaml` — per-skill write/read/forbidden matrix |
+| Templates | `arch/_template/` workspace skeleton + `arch/sample/` worked example |
+| KB seeds (`arch-library/`) | 8 domain seeds, all under 200 lines: `typescript-patterns/` × 4 · `microservices-patterns/` × 3 · `devops-patterns/` × 3 · `migration-patterns/` × 3 · `nfr-checklists/` × 4 · `anti-patterns/` × 1 |
 
-```bash
-/arch-adr                      # Write a single ADR
-/arch-diagram                  # Render one diagram
-/arch-analyze --depth=manifest # Survey one repo
-/arch-diff-judge               # Impact analysis only
-/arch-options                  # Evaluate candidate options
-/arch-review                   # Review a design doc / PR drift
-/arch-radar                    # Industry benchmark / tech selection
-```
+AI/agent architecture KB (`arch-library/agent-architecture/`) is intentionally deferred — re-add when AI-domain support lands.
 
----
+## Architecture-sensitive language
 
-## Where outputs live
+User-facing prompts default to **Chinese first** (e.g., "当前架构基线可能已过期"), with English technical terms in parentheses when first introduced. YAML keys and schema fields stay in stable English.
 
-Default: `arch/{project-name}/` under Claude Code's working directory.
-
-```
-arch/my-system/
-├── evidence/         5 structured YAML files (fact source)
-├── wiki/             6 human-readable pages
-├── diagrams/         architecture diagrams
-├── adr/              decision records (append-only, never modified)
-├── design-docs/      one folder per design iteration
-├── audits/           one folder per audit
-└── briefs/           one folder per presentation
-```
-
-Configurable via `output_path`.
-
----
-
-## Enterprise knowledge base (optional, recommended)
-
-If your team has constraints (banned patterns / compliance redlines / naming conventions / network boundaries), place them under `~/.understand-arch/kb/`:
-
-```
-~/.understand-arch/kb/
-├── banned-patterns.yaml
-├── compliance-redlines.yaml
-├── network-boundaries.yaml
-├── naming-conventions.yaml
-└── tech-radar.yaml
-```
-
-The workflow auto-loads them and flags any violation when generating designs. **Skip configuration and it still works** (graceful degradation).
-
----
-
-## Diagram rendering upgrade (optional)
-
-Default: Mermaid (text, rendered natively by GitHub / GitLab / VSCode).
-
-For publication-ready SVG/PNG, install [`fireworks-tech-graph`](https://github.com/yizhiyanhua-ai/fireworks-tech-graph):
+## How to start
 
 ```bash
-/plugin install fireworks-tech-graph
+# In Claude Code, with the plugin installed:
+/arch:onboard
 ```
 
-The workflow will automatically use it. **Not installed → falls back to Mermaid.**
-
----
-
-## Boundaries
-
-**Only produces architecture description artifacts**: `*.md` / `*.yaml` / `*.mmd` / `*.svg+png`.
-
-**Does NOT generate**: business source code / IaC scripts / DDL migration scripts / CI pipeline templates / service scaffolds. Architecture is cognition; implementation is for dedicated code-generation tools.
-
----
-
-## Docs
-
-- [Full spec](./docs/spec-v1.0.md)
-- [Design diagnostic record](./docs/office-hours-2026-05-24.md)
-- [Contributing](./CONTRIBUTING.md)
-
----
+The first run scans your repo, writes a `specs/` baseline, computes `freshness_status`, and surfaces any `known_unknowns` (e.g., components without owners) in Chinese. Subsequent `/arch:design`, `/arch:audit`, `/arch:brief` work against the same workspace.
 
 ## Status
 
-v0.2.0 (full skeleton). All 10 skill skeletons written; full implementation pending. See [CONTRIBUTING.md](./CONTRIBUTING.md) for build order.
+**v1.0 specs-CR model is in place**, including:
 
----
+- Spec + 10 skills + 13 JSON schemas + 4 acceptance gates + write-scope contract + 16 reference playbooks/rubrics + 18 KB seed documents
+- `arch/_template/` scaffold and `arch/sample/` worked example
 
-## License
+What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
 
-MIT
+- Multi-agent parallel scanner (sketched in the spec but not orchestrated yet)
+- `arch-review --mode=fitness` for ADR fitness specs
+- PreToolUse hook for write-scope hard enforcement
+- LLM-rendered wiki / RAG over specs
+- AI/agent architecture KB seeds
+
+## License & attribution
+
+License: see [LICENSE](./LICENSE).
+
+We borrow design ideas from but do **not** depend on:
+
+- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)** — scanner pipeline shape (project → file → architecture → review → write)
+- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)** — optional render backend (fall back gracefully to Mermaid if absent)
+
+Neither is required at runtime.

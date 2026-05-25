@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/kb-tech-radar.schema.json",
+  "title": "tech-radar",
+  "description": "企业知识库：组织技术雷达，约束方案探索和架构评审。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "owner", "updated_at", "entries"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "owner": { "$ref": "#/$defs/nonEmptyString" },
+    "updated_at": { "type": "string", "format": "date" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "technology",
+        "category",
+        "status",
+        "rationale",
+        "allowed_use",
+        "review_required"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^TR-[A-Z0-9-]+$" },
+        "technology": { "$ref": "#/$defs/nonEmptyString" },
+        "category": {
+          "type": "string",
+          "enum": ["language", "framework", "database", "messaging", "cloud", "observability", "security", "ai", "tooling", "other"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["adopt", "trial", "assess", "hold", "approved", "experimental", "deprecated"]
+        },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "allowed_use": { "$ref": "#/$defs/nonEmptyString" },
+        "review_required": { "type": "boolean" },
+        "replacement": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

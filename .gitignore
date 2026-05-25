@@ -12,7 +12,13 @@ Thumbs.db
 *.log
 
 # Users' local working directories (when running this plugin against their projects)
-arch/
+arch/*
+# ... but ship the canonical template + sample as part of the OSS package
+!arch/README.md
+!arch/_template/
+!arch/_template/**
+!arch/sample/
+!arch/sample/**
 .metrics.jsonl
 
 # Tooling (future)

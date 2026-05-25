@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/kb-banned-patterns.schema.json",
+  "title": "banned-patterns",
+  "description": "企业知识库：禁止或需豁免的架构/工程模式。arch-frame 加载，arch-options 与 arch-review 强制对照。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "owner", "updated_at", "patterns"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+    "owner": { "$ref": "#/$defs/nonEmptyString" },
+    "updated_at": { "type": "string", "format": "date" },
+    "patterns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pattern" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "pattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "rationale",
+        "applies_to",
+        "detection_hints",
+        "exceptions"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^BP-[A-Z0-9-]+$" },
+        "rule": { "$ref": "#/$defs/nonEmptyString" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "applies_to": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "detection_hints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["condition", "approval_required"],
+            "properties": {
+              "condition": { "$ref": "#/$defs/nonEmptyString" },
+              "approval_required": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
