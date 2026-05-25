@@ -2,7 +2,7 @@
 
 > A Docs-as-Code architecture knowledge suite for Claude Code.
 
-[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md) · [Contributing](./CONTRIBUTING.md)
+[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md)
 
 ---
 
@@ -35,7 +35,8 @@ v1.0 exposes only **four user-facing entries**. Everything else is internal orch
 ```text
 arch/{project}/
 ├── specs/                            # 100% fact layer (yaml + Mermaid only, no markdown)
-│   ├── baseline.yaml                 # components, interfaces, data models, deployments
+│   ├── baseline.yaml                 # components, interfaces, data models, deployments, capabilities_index
+│   ├── capabilities.yaml             # business capability map (capability × maturity × importance × supporting components × gaps)
 │   ├── quality.yaml                  # NFRs, org KB, runtime/release/rollback constraints
 │   ├── risks.yaml                    # risks + tech debt ledger
 │   ├── decisions.yaml                # ADR index + superseded[] relationships
@@ -52,7 +53,8 @@ arch/{project}/
 │       └── options.md                # conditional, only if real architectural choice exists
 ├── generated/                        # derived human views — deletable, regeneratable
 │   ├── overview.md                   # 1-page stable entry (11 sections, ≤200 lines)
-│   ├── wiki/01-..05-*.md             # 5-page onboarding wiki
+│   ├── wiki/01-..06-*.md             # 6-page onboarding wiki (incl. 06-capability radar)
+│   ├── audit/                        # {date}-健康度.md (audit-emitted integrated problem view)
 │   ├── diagrams/                     # rendered SVG/PNG
 │   └── briefs/                       # audience-tailored summaries
 ├── state.yaml                        # workflow state machine (only arch-workflow writes)
@@ -112,24 +114,19 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 
 **v1.0 specs-CR model is in place**, including:
 
-- Spec + 10 skills + 13 JSON schemas + 4 acceptance gates + write-scope contract + 16 reference playbooks/rubrics + 18 KB seed documents
+- Spec + 10 skills + **15 JSON schemas** + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
 - `arch/_template/` scaffold and `arch/sample/` worked example
+- **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
+- **Business capability map** (`specs/capabilities.yaml`) — capability × maturity × importance × supporting components × gaps, as a first-class specs citizen for business-axis reporting and gap analysis
+- **Integrated health-check view** (`generated/audit/{date}-健康度.md`) — audit-emit aggregation of risks/debt/open_questions/KB drift/anti-patterns/drift findings, 10 sections ≤250 lines, one-stop project health snapshot
 
 What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
 
-- Multi-agent parallel scanner (sketched in the spec but not orchestrated yet)
 - `arch-review --mode=fitness` for ADR fitness specs
 - PreToolUse hook for write-scope hard enforcement
-- LLM-rendered wiki / RAG over specs
+- True LLM-rendered wiki / RAG over specs/CR (overview.md is a 1-page index, not a Q&A entry)
 - AI/agent architecture KB seeds
 
-## License & attribution
+## License
 
 License: see [LICENSE](./LICENSE).
-
-We borrow design ideas from but do **not** depend on:
-
-- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)** — scanner pipeline shape (project → file → architecture → review → write)
-- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)** — optional render backend (fall back gracefully to Mermaid if absent)
-
-Neither is required at runtime.

@@ -2,7 +2,7 @@
 
 > Updated: 2026-05-24  
 > Status: REDESIGNED DRAFT  
-> Supersedes: the earlier deliverable-factory v1.0 spec.
+> Supersedes: 早期原型 spec。
 
 ## 一句话定位
 
@@ -87,7 +87,8 @@ specs stale, run refresh?
 ```text
 arch/{project}/
 ├── specs/                         # 稳定架构基线,长期维护;100% 事实层(yaml + diagram 源)
-│   ├── baseline.yaml              # 组件、依赖、接口、数据、部署、外部依赖
+│   ├── baseline.yaml              # 组件、依赖、接口、数据、部署、外部依赖、capabilities_index
+│   ├── capabilities.yaml          # 业务能力地图(能力 × 成熟度 × 重要度 × 承载组件 × gaps)
 │   ├── quality.yaml               # NFR、安全、合规、可观测性、运行约束
 │   ├── risks.yaml                 # 风险与技术债台账
 │   ├── decisions.yaml             # ADR 索引、key_assumptions、superseded 关系
@@ -107,7 +108,8 @@ arch/{project}/
 │       └── options.md             # 条件生成:存在真实方案分歧时
 ├── generated/                     # 派生人类视图,可删除重建
 │   ├── overview.md                # 1 页稳定入口(从 specs/CR/ADR 重组,200 行硬上限)
-│   ├── wiki/                      # 默认 5 页 onboarding 展开视图
+│   ├── wiki/                      # 默认 6 页 onboarding 展开视图(含 06-能力雷达)
+│   ├── audit/                     # /arch:audit 收尾产 {date}-健康度.md(问题集成视图)
 │   ├── diagrams/                  # 派生展示图(SVG/PNG 渲染输出)
 │   └── briefs/                    # 受众化摘要
 ├── state.yaml                     # workflow 状态机(仅 arch-workflow 可写)
@@ -217,6 +219,36 @@ evidence_refs:
 - 每条判断必须有 `evidence_refs`。
 - `last_scanned_commit` 记录最后一次代码扫描提交。
 - `freshness_status` 使用 `fresh|possibly_stale|stale|unknown`。
+
+### `specs/capabilities.yaml`
+
+业务能力地图,specs/ 一等公民。把"业务能力"层显式建模,**与组件维度互为正交**:同一能力可由多个组件承载,同一组件可服务多个能力。
+
+每条能力必须含:
+
+```yaml
+capabilities:
+  - id: CAP-NNN              # 三位连续编号
+    name:                    # 中文优先,2-6 字
+    description:             # ≤30 字,对外视角
+    category:                # 可选,业务域分组
+    importance:              # core | supporting | peripheral
+    maturity:                # mature | evolving | experimental | deprecated | missing
+    supporting_components:
+      - component:           # 必须存在于 baseline.yaml#components
+        role:                # primary | secondary | shared
+    user_facing:             # 最终用户能否感知
+    gaps:                    # 关联 R-NNN / Q-NNN
+    external_dependencies:   # 必须存在于 baseline.yaml#external_dependencies
+    evidence_refs:
+```
+
+关键约束:
+
+- **`specs/baseline.yaml#capabilities_index` 必须与本文件 `(id, name)` 集合一致**(索引同步)。
+- 能力是长期事实(半年内变化不大)。onboard 首跑由 `arch-analyze` 按 `capabilities-rubric.md` 抽取候选,需要**人工 review** 后才正式落,后续 CR 引入新能力时增量更新。
+- `maturity: missing` 表示能力被识别但未实现,**必须配套 gaps 描述**(为何 missing + 业务影响)。
+- 抽取规则、判定标准、反模式见 `skills/arch-analyze/references/capabilities-rubric.md`。
 
 ### `specs/quality.yaml`
 
@@ -528,6 +560,26 @@ Project Scanner
 - `generated/overview.md`
 - `specs/traceability.yaml`
 
+### 多 agent 并行扫描(上下文溢出防护)
+
+v1.0 必须支持大仓的多 agent 切片扫描,避免主上下文一次塞下整个代码仓导致溢出或质量下降。
+
+**启用门槛**(`Project Scanner` 阶段估算后强制分流):
+
+| 项目规模 | 策略 |
+|---|---|
+| `src 文件数 ≥ 60` 或 `估算 token ≥ 50k` | 必须多 agent |
+| 30-60 文件且 < 50k token | 主上下文单跑;撞 token 上限再回退切片 |
+| < 30 文件 / `targeted-refresh` / `drift-audit` | 主上下文单跑 |
+
+**切片维度**按项目类型固定:monorepo 按 package;微服务按 service;单仓单应用按顶层 src 子目录;Electron 按进程边界。单片 ≤50 文件且 ≤30k token。
+
+**子任务返回契约**:`internal/schemas/scan-shard.schema.json`(shard_id / shard_scope / components / interfaces / data_models_seen / external_calls / owner_signals / risk_signals / completion_status)。**主上下文永远不读原始代码**,只读子任务返回 yaml,这是上下文洁净度的硬约束。
+
+**并发上限**:同时活跃子任务 ≤5;主上下文 token 余量 <30% 时暂停 spawn。
+
+完整规约见 `skills/arch-analyze/references/subagent-orchestration.md`。
+
 ### 增量更新
 
 v1.0 必须支持基于 commit diff 的增量判断：
@@ -783,7 +835,7 @@ arch-frame
 → writeback proposal
 ```
 
-默认不生成 9 文件，不强制 ADR，不强制图，不强制 wiki。
+默认 CR 控制在 4 个核心文件(cr.md / impact.yaml / review.yaml / traceability.yaml),不强制 ADR、不强制图、不强制 wiki — 只在确有需要时按需追加。
 
 如果 specs stale 或 incomplete，design 应先提示：
 

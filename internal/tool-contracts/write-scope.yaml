@@ -82,12 +82,25 @@ skills:
 
   # -----------------------------------------------------------
   # arch-analyze: baseline-refresh 产 specs;drift-audit 只读
+  # 大仓自动启用多 agent 切片(详见
+  # skills/arch-analyze/references/subagent-orchestration.md)
   # -----------------------------------------------------------
   arch-analyze:
+    subagent_policy:
+      contract_schema: "internal/schemas/scan-shard.schema.json"
+      child_write: "none"           # 子任务一律不写盘,只返 yaml
+      child_read: "限本片 paths 列表 + arch-library/"
+      max_concurrent_children: 5
+      enable_when:
+        - "src_files >= 60"
+        - "OR estimated_tokens >= 50k"
     modes:
       baseline-refresh:
         write:
-          - "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+          - path: "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+            constraints:
+              - "capabilities_index 字段必须与 specs/capabilities.yaml 的 (id,name) 集合一致"
+          - "${ARCH_PROJECT_DIR}/specs/capabilities.yaml"
           - "${ARCH_PROJECT_DIR}/specs/quality.yaml"
           - "${ARCH_PROJECT_DIR}/specs/risks.yaml"
           - path: "${ARCH_PROJECT_DIR}/specs/decisions.yaml"
@@ -105,7 +118,9 @@ skills:
             - "current_phase: baseline_refresh"
             - "status: idle|running|completed|blocked"
             - "kb_loaded: {...}"
-            - "history append: {at, action, result}"
+            - "history append: {ts, skill: arch-analyze, action, status}"
+          metrics_append:
+            - "subagent_orchestration: {shards_total, shards_ok, shards_partial, shards_failed, total_files_scanned, main_context_tokens_used}"
 
       drift-audit:
         write: []          # 不直接落盘
@@ -288,7 +303,8 @@ skills:
   arch-pack:
     write:
       - "${ARCH_PROJECT_DIR}/generated/overview.md"        # 注意:overview 已移到 generated/
-      - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"
+      - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"          # 6 页(含 06-能力雷达)
+      - "${ARCH_PROJECT_DIR}/generated/audit/*-健康度.md"  # /arch:audit 收尾产
       - "${ARCH_PROJECT_DIR}/generated/briefs/*.md"
       - "${ARCH_PROJECT_DIR}/generated/diagrams/*"         # arch-pack 嵌入图时
     read:

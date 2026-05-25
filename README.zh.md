@@ -2,7 +2,7 @@
 
 > 面向 Claude Code 的 Docs-as-Code 架构知识套件。
 
-[English](./README.md) · [完整规格](./docs/spec-v1.0.md) · [贡献指南](./CONTRIBUTING.md)
+[English](./README.md) · [完整规格](./docs/spec-v1.0.md)
 
 ---
 
@@ -17,7 +17,7 @@
 - 哪些结论有证据支撑? *(traceability)*
 - 哪些知识可能过期了? *(freshness 状态机)*
 
-## 用户入口(只暴露 4 个)
+## 用户入口
 
 | 命令 | 你会怎么说 | 实际发生 |
 |---|---|---|
@@ -33,7 +33,8 @@
 ```text
 arch/{项目名}/
 ├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源,无 markdown 解释)
-│   ├── baseline.yaml                 # 组件、接口、数据模型、部署单元
+│   ├── baseline.yaml                 # 组件、接口、数据模型、部署单元、capabilities_index
+│   ├── capabilities.yaml             # 业务能力地图(能力 × 成熟度 × 重要度 × 承载组件 × gaps)
 │   ├── quality.yaml                  # NFR、组织 KB、运行/发布/回滚约束
 │   ├── risks.yaml                    # 风险 + 技术债台账
 │   ├── decisions.yaml                # ADR 索引 + superseded[] 关系
@@ -50,7 +51,8 @@ arch/{项目名}/
 │       └── options.md                # 条件产出,仅当存在真实方案分歧时
 ├── generated/                        # 派生人类视图,可删可重建
 │   ├── overview.md                   # 1 页稳定入口(11 段固定结构,≤200 行硬上限)
-│   ├── wiki/01-..05-*.md             # 5 页 onboarding 展开
+│   ├── wiki/01-..06-*.md             # 6 页 onboarding 展开(含 06-能力雷达)
+│   ├── audit/                        # {date}-健康度.md(audit 收尾产,问题集成视图)
 │   ├── diagrams/                     # 渲染后的 SVG/PNG
 │   └── briefs/                       # 受众化摘要
 ├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)
@@ -110,24 +112,19 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 **v1.0 specs-CR 模型已落地**,含:
 
-- spec + 10 skill + 13 JSON schema + 4 acceptance gate + write-scope 契约 + 16 份 reference playbook/rubric + 18 份 KB seed
+- spec + 10 skill + **15 JSON schema** + 4 acceptance gate + write-scope 契约 + **19 份 reference 文档** + 18 份知识库 seed
 - `arch/_template/` 骨架 + `arch/sample/` 演示工作区
+- **多 agent 并行扫描编排**(`scan-shard` 契约 + 切片规则 + 主上下文聚合)— 解决大仓上下文溢出
+- **业务能力地图**(`specs/capabilities.yaml`)— 能力 × 成熟度 × 重要度 × 承载组件 × gaps,作为 specs 一等公民,支撑业务能力维度的汇报与差距分析
+- **系统问题集成视图**(`generated/audit/{date}-健康度.md`)— audit 收尾聚合 risks/debt/open_questions/KB 漂移/反模式/drift,10 段 ≤250 行,一份表掌握项目健康度
 
 未进 v1.0(见 [v1.1 候选](./docs/spec-v1.0.md#v11-candidates)):
 
-- 多 agent 并行扫描器(spec 已勾勒方向,未编排实装)
 - `arch-review --mode=fitness`(ADR fitness spec 兜底)
 - PreToolUse hook 硬拦截 write-scope
-- LLM 渲染 wiki / 基于 specs/CR 的 RAG
-- AI / agent 架构 KB seed
+- 真正的 LLM 渲染 wiki / 基于 specs/CR 的 RAG 问答(overview.md 只是 1 页索引,不是问答入口)
+- AI / agent 架构知识库 seed
 
-## License 与致谢
+## License 
 
 License 见 [LICENSE](./LICENSE)。
-
-我们借鉴但**不依赖**:
-
-- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)** — 扫描 pipeline 思路(project → file → architecture → review → write)
-- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)** — 可选渲染后端,不装时自动降级到 Mermaid
-
-两者都不是运行时硬依赖。

@@ -14,8 +14,13 @@ structural_checks:
     description: "workflow state exists"
     check: file_exists
     target: state.yaml
+  - id: health-check-view
+    description: "audit 收尾产 generated/audit/{date}-健康度.md(系统问题集成视图)"
+    check: file_count_gte
+    target: generated/audit/*-健康度.md
+    expected: 1
   - id: audit-readonly
-    description: "audit 模式默认只读;若发生写入,必须落在 write-scope 允许范围内(eg. arch-pack 重生成 overview)"
+    description: "audit 模式默认只读;若发生写入,必须落在 write-scope 允许范围内(eg. arch-pack 产健康度视图)"
     check: scope_audit
     contract: internal/tool-contracts/write-scope.yaml
     against: .metrics.jsonl
@@ -44,10 +49,19 @@ semantic_checks:
     severity: required
     rubric:
       - 结论至少包含 continue、refresh、drift-audit 三类之一
+  - id: health-check-integration
+    question: "generated/audit/{date}-健康度.md 是否真聚合了 5 个事实源,且 0 新事实？"
+    severity: required
+    rubric:
+      - 10 段固定结构齐全(评分 / blocking / high / medium 摘要 / open questions / KB 漂移 / 反模式 / drift / 改造路线图 / non-recommendations)
+      - 每个数字/表格行可追溯到 risks.yaml / decisions.yaml / quality.yaml#org_constraints / arch-library/anti-patterns 或 drift findings
+      - 风险与技术债分开呈现(不混表)
+      - blocking 项数 = risks.yaml 中 severity=critical 的子集
+      - 全文 ≤ 250 行
 
 threshold:
   structural: 100%
-  semantic: 4/4
+  semantic: 5/5
 
 retry_policy:
   max_retries: 2

@@ -29,7 +29,8 @@ description: |
 | 路径 | 何时产 |
 |---|---|
 | `generated/overview.md` | 任何 audience 都更新(1 页稳定入口) |
-| `generated/wiki/01-05.md` | audience=onboarding |
+| `generated/wiki/01-06.md` | audience=onboarding(6 页,新增 06-能力雷达) |
+| `generated/audit/{date}-健康度.md` | `/arch:audit` 收尾时(系统问题集成视图) |
 | `generated/briefs/{audience}-{date}.md` | audience=management|engineering |
 | `generated/diagrams/*` | 给 wiki/brief 嵌图时(委托 arch-diagram) |
 
@@ -55,19 +56,24 @@ description: |
 
 ### 展开视图:`generated/wiki/`
 
-audience=onboarding 时默认生成固定 5 页(`references/wiki-pages-template/01-05`):
+audience=onboarding 时默认生成固定 6 页(`references/wiki-pages-template/`):
 
 1. `01-系统全景.md`
 2. `02-组件与依赖.md`
 3. `03-数据与关键链路.md`
 4. `04-质量属性与运行约束.md`
 5. `05-风险、决策与近期变更.md`
+6. `06-能力雷达.md`(业务能力地图视图,从 `specs/capabilities.yaml` 重组)
 
 每页规则:
 1. 每页只回答一类问题
 2. 先结论,后细节
 3. 允许引用图,但图不是唯一表达
 4. source 不足时显式写 `known unknowns`,不脑补
+
+### 系统问题集成视图:`generated/audit/{date}-健康度.md`
+
+`/arch:audit` 收尾时由 arch-pack 聚合产出:risks / debt / open_questions / KB 漂移 / drift findings / 业界反模式命中,**零新事实**,固定 10 段(评分 / blocking / high / medium 摘要 / open questions / KB 漂移 / 反模式命中 / drift 结果 / 改造路线图 / non-recommendations),全文 ≤ 250 行硬上限。详见 `references/health-check-template.md`。
 
 ### 受众化摘要:`generated/briefs/`
 
@@ -92,7 +98,8 @@ audience=management|engineering 时产 `{date}-{audience}.md`。
 
 - ✅ 可写:
   - `generated/overview.md`(11 段固定结构,≤200 行硬上限)
-  - `generated/wiki/*.md`
+  - `generated/wiki/*.md`(onboarding 时 6 页)
+  - `generated/audit/{date}-健康度.md`(/arch:audit 收尾时,≤250 行)
   - `generated/briefs/*.md`
   - `generated/diagrams/*`(委托 arch-diagram 时)
 - ❌ **严格禁写** `specs/**`(关键边界 — arch-pack 不动事实层)
@@ -124,3 +131,5 @@ state_delta:
 - `references/wiki-pages-template/03-数据与关键链路.md`
 - `references/wiki-pages-template/04-质量属性与运行约束.md`
 - `references/wiki-pages-template/05-风险、决策与近期变更.md`
+- `references/wiki-pages-template/06-能力雷达.md`
+- `references/health-check-template.md`
