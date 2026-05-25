@@ -5,13 +5,13 @@
     "email": "423310463@qq.com"
   },
   "metadata": {
-    "description": "给软件架构师的 Claude Code 工作流套件。接手新系统 / 现状审计 / 根据 PRD 设计架构 / 准备汇报。产架构知识库 + ADR + 设计文档 + 17 章实施方案 + 架构图(Mermaid / SVG)。只产架构描述类产物,不生成业务代码。",
+    "description": "面向软件架构师的 Claude Code 知识底座。维护项目 specs 基线 + 单次变更 CR + append-only ADR + 派生人类视图(overview / wiki / brief)。只产架构描述类产物,不生成业务代码 / IaC / DDL / CI。",
     "version": "0.2.0-skeleton"
   },
   "plugins": [
     {
       "name": "understand-arch",
-      "description": "架构师工作流:onboard(接手新系统)/ audit(现状审计)/ design(根据 PRD 设计)/ brief(准备汇报)四个场景。10 个 skill 可组合使用。产架构知识库 + 决策记录 + 设计文档 + 实施方案 + 架构图。",
+      "description": "架构师工作流:onboard(建立或刷新 specs 基线)/ design(创建 CR 设计单次变更)/ audit(审视基线可信度与新鲜度)/ brief(从 specs/CR/ADR 生成人类视图)。4 个用户入口 + 6 个内部 skill。",
       "source": "./",
       "strict": false,
       "skills": [

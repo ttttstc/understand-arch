@@ -2,7 +2,7 @@
 
 > A Docs-as-Code architecture knowledge suite for Claude Code.
 
-[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md) · [Contributing](./CONTRIBUTING.md)
+[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md)
 
 ---
 
@@ -112,24 +112,17 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 
 **v1.0 specs-CR model is in place**, including:
 
-- Spec + 10 skills + 13 JSON schemas + 4 acceptance gates + write-scope contract + 16 reference playbooks/rubrics + 18 KB seed documents
+- Spec + 10 skills + 14 JSON schemas + 4 acceptance gates + write-scope contract + 17 references + 18 KB seed documents
 - `arch/_template/` scaffold and `arch/sample/` worked example
+- **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
 
 What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
 
-- Multi-agent parallel scanner (sketched in the spec but not orchestrated yet)
 - `arch-review --mode=fitness` for ADR fitness specs
 - PreToolUse hook for write-scope hard enforcement
-- LLM-rendered wiki / RAG over specs
+- True LLM-rendered wiki / RAG over specs/CR (overview.md is a 1-page index, not a Q&A entry)
 - AI/agent architecture KB seeds
 
-## License & attribution
+## License
 
 License: see [LICENSE](./LICENSE).
-
-We borrow design ideas from but do **not** depend on:
-
-- **[Understand-Anything](https://github.com/Lum1104/Understand-Anything)** — scanner pipeline shape (project → file → architecture → review → write)
-- **[fireworks-tech-graph](https://github.com/yizhiyanhua-ai/fireworks-tech-graph)** — optional render backend (fall back gracefully to Mermaid if absent)
-
-Neither is required at runtime.

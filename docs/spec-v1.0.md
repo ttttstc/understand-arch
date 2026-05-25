@@ -2,7 +2,7 @@
 
 > Updated: 2026-05-24  
 > Status: REDESIGNED DRAFT  
-> Supersedes: the earlier deliverable-factory v1.0 spec.
+> Supersedes: 早期原型 spec。
 
 ## 一句话定位
 
@@ -528,6 +528,26 @@ Project Scanner
 - `generated/overview.md`
 - `specs/traceability.yaml`
 
+### 多 agent 并行扫描(上下文溢出防护)
+
+v1.0 必须支持大仓的多 agent 切片扫描,避免主上下文一次塞下整个代码仓导致溢出或质量下降。
+
+**启用门槛**(`Project Scanner` 阶段估算后强制分流):
+
+| 项目规模 | 策略 |
+|---|---|
+| `src 文件数 ≥ 60` 或 `估算 token ≥ 50k` | 必须多 agent |
+| 30-60 文件且 < 50k token | 主上下文单跑;撞 token 上限再回退切片 |
+| < 30 文件 / `targeted-refresh` / `drift-audit` | 主上下文单跑 |
+
+**切片维度**按项目类型固定:monorepo 按 package;微服务按 service;单仓单应用按顶层 src 子目录;Electron 按进程边界。单片 ≤50 文件且 ≤30k token。
+
+**子任务返回契约**:`internal/schemas/scan-shard.schema.json`(shard_id / shard_scope / components / interfaces / data_models_seen / external_calls / owner_signals / risk_signals / completion_status)。**主上下文永远不读原始代码**,只读子任务返回 yaml,这是上下文洁净度的硬约束。
+
+**并发上限**:同时活跃子任务 ≤5;主上下文 token 余量 <30% 时暂停 spawn。
+
+完整规约见 `skills/arch-analyze/references/subagent-orchestration.md`。
+
 ### 增量更新
 
 v1.0 必须支持基于 commit diff 的增量判断：
@@ -783,7 +803,7 @@ arch-frame
 → writeback proposal
 ```
 
-默认不生成 9 文件，不强制 ADR，不强制图，不强制 wiki。
+默认 CR 控制在 4 个核心文件(cr.md / impact.yaml / review.yaml / traceability.yaml),不强制 ADR、不强制图、不强制 wiki — 只在确有需要时按需追加。
 
 如果 specs stale 或 incomplete，design 应先提示：
 

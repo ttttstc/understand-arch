@@ -42,10 +42,13 @@ description: |
 
 1. `project scanner`
    - 扫仓库树、语言、包管理、入口、配置、测试、部署线索
+   - **同时估算规模**: 文件数 + token 估算,据此决定是否启用多 agent(见下)
 2. `file analyzer`
    - 对关键文件产结构化摘要
+   - **大仓必须多 agent 切片**(详见 `references/subagent-orchestration.md`)
 3. `architecture analyzer`
    - 聚合组件、依赖、接口、数据模型、部署单元、关键链路
+   - 多 agent 模式下,本阶段只读子任务返回的 `scan-shard.schema.json` yaml,不读原始代码
 4. `graph reviewer`
    - 检查孤立节点、悬挂边、命名不稳定、证据缺失
 5. `specs writer`
@@ -56,6 +59,18 @@ description: |
 - 确定性工作优先
 - LLM 只做分层、归纳、命名、风险解释
 - 不依赖外部工具目录、CLI 或 JSON 格式
+- **子任务和主上下文之间只走 schema-locked yaml**,不传自然语言摘要
+
+## 多 agent 启用门槛(防上下文溢出)
+
+| 项目规模 | 策略 |
+|---|---|
+| `src 文件数 ≥ 60` 或 `估算 token ≥ 50k` | **必须**多 agent;`Project Scanner` 阶段就按项目类型切片(monorepo 按 package / 单仓按顶层子目录),每片 ≤50 文件且 ≤30k token |
+| 30-60 文件且 < 50k token | 主上下文单跑;中途撞 token 上限再回退到切片 |
+| < 30 文件 | 主上下文单跑;切片反而开销大于收益 |
+| `targeted-refresh` / `drift-audit` | 主上下文单跑 |
+
+具体切片规则、子任务 prompt 模板、主上下文聚合算法、并发上限、失败降级,见 `references/subagent-orchestration.md`。
 
 ## Freshness 判定
 
@@ -138,3 +153,5 @@ state_delta:
 - `references/freshness-rules.md`
 - `references/architecture-composition-rubric.md`
 - `references/risk-and-debt-rubric.md`
+- `references/subagent-orchestration.md`
+- `internal/schemas/scan-shard.schema.json`

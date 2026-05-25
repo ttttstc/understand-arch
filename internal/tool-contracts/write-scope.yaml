@@ -82,8 +82,18 @@ skills:
 
   # -----------------------------------------------------------
   # arch-analyze: baseline-refresh 产 specs;drift-audit 只读
+  # 大仓自动启用多 agent 切片(详见
+  # skills/arch-analyze/references/subagent-orchestration.md)
   # -----------------------------------------------------------
   arch-analyze:
+    subagent_policy:
+      contract_schema: "internal/schemas/scan-shard.schema.json"
+      child_write: "none"           # 子任务一律不写盘,只返 yaml
+      child_read: "限本片 paths 列表 + arch-library/"
+      max_concurrent_children: 5
+      enable_when:
+        - "src_files >= 60"
+        - "OR estimated_tokens >= 50k"
     modes:
       baseline-refresh:
         write:
@@ -105,7 +115,9 @@ skills:
             - "current_phase: baseline_refresh"
             - "status: idle|running|completed|blocked"
             - "kb_loaded: {...}"
-            - "history append: {at, action, result}"
+            - "history append: {ts, skill: arch-analyze, action, status}"
+          metrics_append:
+            - "subagent_orchestration: {shards_total, shards_ok, shards_partial, shards_failed, total_files_scanned, main_context_tokens_used}"
 
       drift-audit:
         write: []          # 不直接落盘

@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/scan-shard.schema.json",
+  "title": "Scan Shard Result",
+  "description": "arch-analyze 把代码仓切片后,每个并行子任务(subagent)返回的结构化摘要契约。主上下文只读这个 yaml,不读原始代码,避免上下文溢出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "shard_id",
+    "shard_scope",
+    "scanned_files",
+    "components",
+    "interfaces",
+    "data_models_seen",
+    "external_calls",
+    "owner_signals",
+    "risk_signals",
+    "evidence_refs",
+    "completion_status"
+  ],
+  "properties": {
+    "shard_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "切片唯一标识(eg. 'shard-001-src-api')"
+    },
+    "shard_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paths", "file_count", "token_estimate"],
+      "properties": {
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "description": "本切片负责的路径范围(glob 或目录)"
+        },
+        "file_count": {"type": "integer", "minimum": 1},
+        "token_estimate": {"type": "integer", "minimum": 0}
+      }
+    },
+    "scanned_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "role": {
+            "type": "string",
+            "enum": ["entry", "route", "controller", "service", "model", "schema", "config", "infra", "test", "docs", "other"]
+          },
+          "summary": {"type": "string"}
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "description": "本切片识别到的 component 候选(主上下文聚合时去重 / 合并)",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "responsibility", "entrypoints"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "kind": {
+            "type": "string",
+            "enum": ["service", "library", "job", "frontend", "infra", "docs", "tests"]
+          },
+          "responsibility": {"type": "string", "minLength": 1},
+          "entrypoints": {"type": "array", "items": {"type": "string"}},
+          "owner_hint": {"type": "string"}
+        }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apis", "events", "messages"],
+      "properties": {
+        "apis": {"type": "array", "items": {"type": "object"}},
+        "events": {"type": "array", "items": {"type": "object"}},
+        "messages": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "data_models_seen": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "source_file"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "source_file": {"type": "string", "minLength": 1},
+          "owner_candidate": {"type": "string"}
+        }
+      }
+    },
+    "external_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "target", "kind"],
+        "properties": {
+          "from": {"type": "string"},
+          "target": {"type": "string"},
+          "kind": {
+            "type": "string",
+            "enum": ["http", "grpc", "mq", "db", "cache", "external-api", "filesystem", "rpc", "unknown"]
+          },
+          "sync": {"type": "boolean"}
+        }
+      }
+    },
+    "owner_signals": {
+      "type": "array",
+      "description": "本切片发现的 ownership 线索(CODEOWNERS / package.json author / git blame top)",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scope", "owner_hint", "source"],
+        "properties": {
+          "scope": {"type": "string"},
+          "owner_hint": {"type": "string"},
+          "source": {"type": "string", "description": "owner 线索来源,eg. 'CODEOWNERS:L12'"}
+        }
+      }
+    },
+    "risk_signals": {
+      "type": "array",
+      "description": "本切片闻到的风险线索;不直接落 risks.yaml,聚合后由 graph reviewer 决定。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "summary", "evidence_refs"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["reliability", "security", "scalability", "maintainability", "cost", "compliance"]
+          },
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/$defs/evidenceRef"}
+          }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evidenceRef"}
+    },
+    "completion_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["ok", "partial", "failed"]
+        },
+        "reason": {"type": "string", "description": "partial / failed 时必填"},
+        "unread_files": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "因 token 超额跳过的文件(主上下文据此决定是否重切)"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "commit"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "line": {"type": ["integer", "null"], "minimum": 1},
+        "commit": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
