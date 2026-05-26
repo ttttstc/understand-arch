@@ -74,14 +74,14 @@ description: |
 ## 验收
 
 - `cr.md` 已建立，且最小结构完整
-- `state.yaml.active_cr` 已通过 state_delta 请求更新(arch-workflow 实际写入)
+- `state.yaml.active_cr` 已通过 state_delta 请求更新(arch-user-facing skill 实际写入)
 - `kb_loaded` 状态准确
 - 阻塞时给出具体中文问题，不给空泛建议
 
 ## 降级
 
 - 输入只有一句自然语言：允许先建轻量 CR，再提示用户补充
-- 用户坚持不回答：允许继续，但在 `cr.md` 内部留痕,并通过 state_delta.overrides_append 请求 workflow 写入
+- 用户坚持不回答：允许继续，但在 `cr.md` 内部留痕,并通过 state_delta.overrides_append 请求 user-facing skill 写入
 
 ## Write Scope
 
@@ -90,7 +90,7 @@ description: |
 - ✅ 可写: `change-requests/${active_cr}/cr.md`(仅当前 active_cr)
 - ❌ 禁写: `state.yaml`(走 state_delta) · `specs/**` · `decisions/**` · `generated/**` · 其他 CR 目录
 
-### state_delta(返 workflow)
+### state_delta(返当前 user-facing skill)
 
 字段对齐 `internal/schemas/state.schema.json`(`history[]` 必填 `ts/skill/action`,可选 `phase/status/summary/ref`;`overrides[]` 必填 `ts/scope/reason`,可选 `by`)。
 

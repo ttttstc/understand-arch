@@ -11,11 +11,14 @@
   "plugins": [
     {
       "name": "understand-arch",
-      "description": "架构师工作流:onboard(建立或刷新 specs 基线)/ design(创建 CR 设计单次变更)/ audit(审视基线可信度与新鲜度)/ brief(从 specs/CR/ADR 生成人类视图)。4 个用户入口 + 6 个内部 skill。",
+      "description": "架构师工作流:onboard(建立或刷新 specs 基线)/ design(创建 CR 设计单次变更)/ audit(审视基线可信度与新鲜度)/ brief(从 specs/CR/ADR 生成人类视图)。4 个用户入口 + 9 个内部 skill。",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/arch-workflow",
+        "./skills/arch-onboard",
+        "./skills/arch-design",
+        "./skills/arch-audit",
+        "./skills/arch-brief",
         "./skills/arch-frame",
         "./skills/arch-analyze",
         "./skills/arch-diff-judge",

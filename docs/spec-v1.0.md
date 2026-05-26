@@ -111,7 +111,7 @@ arch/{project}/
 │   ├── audit/                     # /arch:audit 收尾产 {date}-健康度.md(问题集成视图)
 │   ├── diagrams/                  # 派生展示图(SVG/PNG 渲染输出)
 │   └── briefs/                    # 受众化摘要
-├── state.yaml                     # workflow 状态机(仅 arch-workflow 可写)
+├── state.yaml                     # workflow 状态机(writer = 当前活跃的 user-facing skill)
 └── .metrics.jsonl                 # 运行埋点
 ```
 
@@ -120,7 +120,7 @@ arch/{project}/
 - **`specs/` 100% 事实层** — 全是 schema-locked yaml + Mermaid diagram 源;**没有**任何 markdown 解释文件
 - **`generated/` 是派生视图**(含 `overview.md` 与 5 页 wiki)— 可重建;由 `arch-pack` 单独负责
 - **`decisions/ADR-*.md` 文件本身永不修改** — supersede 关系**全部**记录在 `specs/decisions.yaml#superseded[]`,markdown 文件 commit 后永远只读
-- **`state.yaml` 唯一可写者是 `arch-workflow`** — 其他 skill 通过返回 `state_delta` 给 workflow 合并写入
+- **`state.yaml` 唯一可写者是**当前活跃的 user-facing skill**(`arch-onboard` / `arch-design` / `arch-audit` / `arch-brief`)** — 其他 skill 通过返回 `state_delta` 给当前 user-facing skill 合并写入
 
 ## specs 稳定资产标准
 
@@ -745,31 +745,34 @@ Human generated views: generated/wiki/01-05
 
 ## Skill 套件
 
-保留 10 个 skill 名称，收敛职责。
+**13 个 skill**:4 个用户入口(user-facing)+ 9 个内部(internal)。v1.0 取消 `arch-workflow` 中间层,4 个用户入口各自完整 + 共享 `internal/orchestration/playbook.md` 公共编排逻辑。
+
+### 用户入口(4 个,暴露 slash command)
+
+| Skill | v1.0 职责 | Slash command |
+|---|---|---|
+| `arch-onboard` | 建立或刷新 specs/ baseline + 7 step 链路 + acceptance | `/arch-onboard` |
+| `arch-design` | 创建 CR + 8 维 impact + 条件 options/ADR + writeback | `/arch-design` |
+| `arch-audit` | 审视 specs 可信度 + freshness + 健康度集成视图 | `/arch-audit` |
+| `arch-brief` | 从 specs/CR/ADR 生成 overview / wiki / brief(零新事实) | `/arch-brief` |
+
+### 内部 skill(9 个,不暴露 slash;由用户入口 dispatch)
 
 | Skill | v1.0 职责 |
 |---|---|
-| `arch-workflow` | baseline / CR / review / writeback 状态机 |
-| `arch-analyze` | 创建或刷新 specs baseline |
-| `arch-frame` | 创建 CR，澄清目标、范围、non-goals、验收、NFR |
-| `arch-diff-judge` | 基于 specs 生成 CR impact |
+| `arch-analyze` | 代码扫描 → specs baseline(支持多 agent 切片 + UA 集成) |
+| `arch-frame` | 加载 KB + PRD HARD GATE + 创建 CR.md |
+| `arch-diff-judge` | 基于 specs 生成 CR impact.yaml(8 维) |
 | `arch-options` | 仅在存在真实架构分歧时生成 options |
 | `arch-adr` | 仅 durable decision 写 append-only ADR |
-| `arch-review` | specs review、CR review、writeback gate、可选 drift audit |
+| `arch-review` | specs review / CR review / drift audit(只识别问题不修问题) |
 | `arch-diagram` | 从 specs/CR 生成 Mermaid 与可选渲染图 |
-| `arch-pack` | 按需生成 wiki/brief/report |
-| `arch-radar` | 按需外部调研与选型，不进入默认链路 |
+| `arch-pack` | 按需生成 overview / wiki / brief / 健康度.md |
+| `arch-radar` | 按需外部调研与选型,不进入默认链路 |
 
-用户可见入口第一版只暴露 4 个：
+### 公共编排逻辑
 
-```text
-/arch:onboard
-/arch:design
-/arch:audit
-/arch:brief
-```
-
-`arch-review` 不作为第一版用户入口暴露，而是收敛进 `onboard`、`design`、`audit`、`brief` 的内部 gate。
+`internal/orchestration/playbook.md` 含 12 段共享规约,4 个用户入口各自引用对应章节:state.yaml 状态机 / state_delta merge / dispatch 契约 / KB 加载 / freshness 状态机 / integrity check / acceptance loop / 反合理化清单 / HARD GATE / 中文模板 / 禁止行为 / 断点续跑。
 
 内部 skill 可由 workflow 调度，用户不必直接理解全部 skill。
 
@@ -1034,7 +1037,7 @@ Metrics support 90-day validation of governance value:
 New v1.0 build order:
 
 1. Rewrite schemas around specs/CR model.
-2. Rewrite `arch-workflow` around four user-visible entries: onboard / design / audit / brief.
+2. Rewrite 当前活跃 user-facing skill(arch-onboard/design/audit/brief) around four user-visible entries: onboard / design / audit / brief.
 3. Rewrite `arch-analyze` to produce specs baseline.
 4. Implement Understand-Anything-inspired scanner pipeline without external hard dependency.
 5. Implement specs freshness checks based on commit diff and architecture-sensitive paths.

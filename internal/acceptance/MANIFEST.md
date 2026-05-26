@@ -1,6 +1,6 @@
 # internal/acceptance/ — Per-Entry Acceptance Checklists
 
-> `arch-workflow` 在 `onboard / design / audit / brief` 结束时读取这些 YAML，先跑结构检查，再跑语义检查。
+> 当前活跃 user-facing skill(arch-onboard/design/audit/brief) 在 `onboard / design / audit / brief` 结束时读取这些 YAML，先跑结构检查，再跑语义检查。
 
 ## 文件
 

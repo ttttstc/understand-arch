@@ -56,7 +56,7 @@
     },
     "history": {
       "type": "array",
-      "description": "Append-only event log. 同时容纳 skill 事件(skill+action,可选 ref)与 phase 转换(可选 phase+status+summary)。仅 arch-workflow 写入,其他 skill 通过 state_delta.history_append 请求追加。",
+      "description": "Append-only event log. 同时容纳 skill 事件(skill+action,可选 ref)与 phase 转换(可选 phase+status+summary)。仅 arch-user-facing skill 写入,其他 skill 通过 state_delta.history_append 请求追加。",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -66,7 +66,10 @@
           "skill": {
             "type": "string",
             "enum": [
-              "arch-workflow",
+              "arch-onboard",
+              "arch-design",
+              "arch-audit",
+              "arch-brief",
               "arch-analyze",
               "arch-frame",
               "arch-diff-judge",
@@ -104,7 +107,7 @@
     },
     "overrides": {
       "type": "array",
-      "description": "Append-only override log。仅 arch-workflow 写入,其他 skill 通过 state_delta.overrides_append 请求追加。",
+      "description": "Append-only override log。仅 arch-user-facing skill 写入,其他 skill 通过 state_delta.overrides_append 请求追加。",
       "items": {
         "type": "object",
         "additionalProperties": false,

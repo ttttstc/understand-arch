@@ -1,7 +1,7 @@
 ---
 name: arch-adr
 description: |
-  严格 append-only 的 ADR 记录器。只在某个决策值得长期保留时**新建** `decisions/ADR-NNN-*.md` 文件。**老 ADR markdown 文件本身永不修改** — supersede 关系全部记在 `specs/decisions.yaml#superseded[]`,由 arch-workflow 写入。不记录每一次实现细节,只记录 durable decision。
+  严格 append-only 的 ADR 记录器。只在某个决策值得长期保留时**新建** `decisions/ADR-NNN-*.md` 文件。**老 ADR markdown 文件本身永不修改** — supersede 关系全部记在 `specs/decisions.yaml#superseded[]`,由 arch-user-facing skill 写入。不记录每一次实现细节,只记录 durable decision。
 
   触发词: 记个 ADR / 这个决定值得留下来 / 架构决策记录
 
@@ -27,7 +27,7 @@ description: |
 仅以下两件:
 
 1. **新文件**: `decisions/ADR-NNN-{slug}.md`(NNN 三位连续编号)
-2. **state_delta + decisions.yaml delta**(交给 workflow 写入,本 skill 不直接写 `specs/decisions.yaml`)
+2. **state_delta + decisions.yaml delta**(交给当前 user-facing skill 写入,本 skill 不直接写 `specs/decisions.yaml`)
 
 ## 硬规则
 
@@ -38,7 +38,7 @@ description: |
 5. supersede 时:
    - 新 ADR 自身记录 `Supersedes: ADR-OLD`(在新文件 frontmatter)
    - 老 ADR markdown 文件 **不动**
-   - arch-adr 在返回值里带 `decisions_index_delta.superseded_append`,workflow 写入 `decisions.yaml`
+   - arch-adr 在返回值里带 `decisions_index_delta.superseded_append`,user-facing skill 写入 `decisions.yaml`
 
 ## ADR 模板
 
@@ -66,10 +66,10 @@ description: |
 
 - ✅ **只能新建** `decisions/ADR-NNN-*.md`(三位连续编号)
 - ❌ **严格禁修改** 任何已存在的 `decisions/ADR-*.md` 文件正文(append-only 真意)
-- ❌ 禁写 `specs/decisions.yaml`(supersede 关系走 state_delta.decisions_index_delta,workflow 实际写入)
+- ❌ 禁写 `specs/decisions.yaml`(supersede 关系走 state_delta.decisions_index_delta,user-facing skill 实际写入)
 - ❌ 禁写 `state.yaml` / 其他 `specs/*` / `generated/**` / `change-requests/**`
 
-### state_delta(返 workflow)
+### state_delta(返当前 user-facing skill)
 
 ```yaml
 state_delta:
@@ -80,7 +80,7 @@ state_delta:
     action: adr_added
     status: ok
     ref: {adr_id: "ADR-NNN", cr_id: "${active_cr}"}
-  decisions_index_delta:           # workflow 写入 specs/decisions.yaml
+  decisions_index_delta:           # user-facing skill 写入 specs/decisions.yaml
     accepted_append:
       - adr_id: "ADR-NNN"
         title: "..."

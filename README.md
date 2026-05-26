@@ -56,7 +56,7 @@ arch/{project}/
 │   ├── audit/                        # {date}-健康度.md (audit-emitted integrated problem view)
 │   ├── diagrams/                     # rendered SVG/PNG
 │   └── briefs/                       # audience-tailored summaries
-├── state.yaml                        # workflow state machine (only arch-workflow writes)
+├── state.yaml                        # workflow state machine (writer = the active user-facing skill)
 └── .metrics.jsonl                    # per-skill-run telemetry
 ```
 
@@ -67,7 +67,7 @@ These are what make the suite stand up over time, especially as LLMs get more ca
 1. **Specs are the only fact source** — `specs/*.yaml` is schema-locked. Anything in `generated/`, `cr.md`, an ADR body, or a brief that contradicts specs is a bug.
 2. **Append-only history** — `decisions/ADR-*.md` files are never modified after commit. Supersede relationships are recorded in `specs/decisions.yaml#superseded[]`. `state.yaml.history` and `state.yaml.overrides` are append-only too.
 3. **Freshness state machine** — every baseline carries `freshness_status: fresh|possibly_stale|stale|unknown`, computed from commit diff against architecture-sensitive paths. Stale baselines block design with a Chinese refresh prompt.
-4. **Single-writer state** — only `arch-workflow` writes `state.yaml`. Other skills return a `state_delta` for the workflow to merge. Eliminates concurrent-state corruption.
+4. **Single-writer state** — only the currently active user-facing skill (`arch-onboard` / `arch-design` / `arch-audit` / `arch-brief`) writes `state.yaml`. Internal skills return a `state_delta` for it to merge (protocol shared in `internal/orchestration/playbook.md`). Eliminates concurrent-state corruption.
 5. **Write-scope contract** — `internal/tool-contracts/write-scope.yaml` declares, per skill, which paths are writable. `arch-pack` cannot write `specs/`; `arch-review` cannot write anything except `review.yaml`; `arch-analyze` cannot write `decisions/` — and so on. v1.0 enforces via acceptance audit; v1.1 will enforce via PreToolUse hook.
 6. **Trace closure** — every assertion in a YAML must carry `evidence_refs`. Every prose claim in `overview.md` or wiki must trace back to a YAML field or an ADR/CR path. No weasel words.
 
@@ -87,7 +87,7 @@ Tool-level safety: the write-scope contract refuses any of the forbidden pattern
 
 | Layer | Contents |
 |---|---|
-| 10 skills | `arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar` — each with `SKILL.md` + executable `references/` (rubrics, templates, playbooks) |
+| 13 skills (4 user-facing + 9 internal) | `arch-onboard / arch-design / arch-audit / arch-brief (user-facing) + arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar (internal)` — each with `SKILL.md` + executable `references/` (rubrics, templates, playbooks) |
 | Schemas | 5 specs schemas + 3 CR schemas + state schema + 5 org KB schemas |
 | Acceptance | 4 per-entry YAMLs with `structural_checks` + `semantic_checks` + `scope_audit` |
 | Tool contracts | `internal/tool-contracts/write-scope.yaml` — per-skill write/read/forbidden matrix |
@@ -113,7 +113,7 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 
 **v1.0 specs-CR model is in place**, including:
 
-- Spec + 10 skills + **14 JSON schemas** (v1.0 收敛:capabilities inlined into baseline) + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
+- Spec + 13 skills (4 user-facing + 9 internal) + **14 JSON schemas** (v1.0 收敛:capabilities inlined into baseline) + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
 - `arch/_template/` scaffold and `arch/sample/` worked example
 - **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
 - **Business capability map** (`specs/baseline.yaml#capabilities[]`, v1.0 inlined into baseline) — capability × maturity × importance × supporting components × gaps, for business-axis reporting and gap analysis

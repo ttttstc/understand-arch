@@ -20,7 +20,7 @@ structural_checks:
     description: "本次 onboard 各 skill 落盘文件均在 write-scope contract 允许范围内"
     check: scope_audit
     contract: internal/tool-contracts/write-scope.yaml
-    against: .metrics.jsonl   # arch-workflow dispatch 时记录 allowed_writes
+    against: .metrics.jsonl   # 当前活跃 user-facing skill dispatch 时记录 allowed_writes
   - id: specs-schemas
     description: "all core specs yaml pass schema"
     check: schema_bundle
@@ -97,4 +97,4 @@ threshold:
 
 retry_policy:
   max_retries: 2
-  on_failure: "retry arch-analyze or arch-workflow with verifier notes"
+  on_failure: "retry arch-analyze or current user-facing skill with verifier notes"

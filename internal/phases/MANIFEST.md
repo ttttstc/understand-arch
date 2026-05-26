@@ -1,6 +1,6 @@
 # internal/phases/ — Optional Workflow Phases
 
-> phases 不是默认主链，而是 `arch-workflow` 在特定上下文下注入的补充能力。
+> phases 不是默认主链，而是 当前活跃 user-facing skill(arch-onboard/design/audit/brief) 在特定上下文下注入的补充能力。
 
 ## v1.0 可用 phase
 

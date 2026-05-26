@@ -16,12 +16,12 @@
     "adr_index": {
       "type": "array",
       "items": { "$ref": "#/$defs/adrItem" },
-      "description": "Append-only ADR index. arch-adr 通过 state_delta.decisions_index_delta.accepted_append 由 arch-workflow 写入。"
+      "description": "Append-only ADR index. arch-adr 通过 state_delta.decisions_index_delta.accepted_append 由 arch-user-facing skill 写入。"
     },
     "superseded": {
       "type": "array",
       "items": { "$ref": "#/$defs/supersededLink" },
-      "description": "ADR supersede 关系。append-only。老 ADR markdown 文件本身永不修改;关系全部记在这里。arch-adr 通过 state_delta.decisions_index_delta.superseded_append 由 arch-workflow 写入。"
+      "description": "ADR supersede 关系。append-only。老 ADR markdown 文件本身永不修改;关系全部记在这里。arch-adr 通过 state_delta.decisions_index_delta.superseded_append 由 arch-user-facing skill 写入。"
     },
     "key_assumptions": {
       "type": "array",
