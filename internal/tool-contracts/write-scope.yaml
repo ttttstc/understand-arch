@@ -2,7 +2,7 @@
 #
 # 用法:
 #   1. v1.0: 每个 SKILL.md 头部 "## Write Scope" 段引用本文,LLM 跑时遵守
-#   2. v1.0: arch-workflow dispatch 子 skill 前在 .metrics.jsonl 写
+#   2. v1.0: 当前活跃 user-facing skill dispatch 子 skill 前在 .metrics.jsonl 写
 #      {"skill":"arch-X","allowed_writes":[...],"dispatched_at":"..."}
 #   3. v1.0: acceptance 的 no_writes_outside_scope check 用 git diff 与
 #      dispatch 记录对比,任何越界 = 验收失败
@@ -45,7 +45,7 @@ global_forbidden_writes:
   - description: "change-requests/CR-*/ 一旦 review.yaml.readiness=ready,整目录禁重写"
     rule: |
       只能新建一个新 CR(下一个连续编号);或者由用户授权后,
-      调用 skill 通过 state_delta.overrides_append 让 arch-workflow
+      调用 skill 通过 state_delta.overrides_append 让当前 user-facing skill
       把一条 {ts, scope: "CR-NNN-...", reason} 追加进 state.yaml.overrides[]。
       所有 override 痕迹**仅存在于 state.yaml.overrides**,绝无独立文件。
     enforcement: "git diff 检测已 ready 的 CR 目录文件被 Modify → 拒绝"
@@ -60,25 +60,90 @@ global_forbidden_writes:
 skills:
 
   # -----------------------------------------------------------
-  # arch-workflow: 编排器,唯一可写 state.yaml
+  # 4 个 user-facing skill: 各自完整 + 共享 internal/orchestration/playbook.md
+  # 都是 state.yaml 的 writer(同一时间只有 1 个 user skill 活跃 → 实际是单 writer)
+  # 不直接写业务产物,而是 dispatch 内部 skill 间接产
   # -----------------------------------------------------------
-  arch-workflow:
+
+  arch-onboard:
     write:
       - path: "${ARCH_PROJECT_DIR}/state.yaml"
         constraints:
           - "history 字段仅 append"
           - "overrides 字段仅 append"
-          - "其他 skill 通过返回 state_delta 给 workflow,workflow 合并写入"
+          - "内部 skill 通过 state_delta 返,本 skill 合并写入"
       - path: "${ARCH_PROJECT_DIR}/.metrics.jsonl"
         constraints: ["append-only,每行一条 JSON"]
     read:
       - "${ARCH_PROJECT_DIR}/**"
+      - "${CODE_REPO}/**"
       - "${KB_DIR}/**"
+    indirect_writes_via_dispatch:        # 子 skill 落盘,本 skill dispatch 时记录 allowed_writes
+      - "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/quality.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/risks.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/decisions.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/traceability.yaml"
+      - "${ARCH_PROJECT_DIR}/specs/diagrams/*.mmd"
+      - "${ARCH_PROJECT_DIR}/generated/overview.md"
+      - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+
+  arch-design:
+    write:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/.metrics.jsonl"
+    read:
+      - "${ARCH_PROJECT_DIR}/**"
+      - "${KB_DIR}/**"
+    indirect_writes_via_dispatch:
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/cr.md"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/impact.yaml"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/options.md"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/review.yaml"
+      - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/traceability.yaml"
+      - "${ARCH_PROJECT_DIR}/decisions/ADR-NNN-*.md"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/generated/**"
+
+  arch-audit:
+    write:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/.metrics.jsonl"
+    read:
+      - "${ARCH_PROJECT_DIR}/**"
+      - "${CODE_REPO}/**"                # 仅 --drift 时
+      - "${KB_DIR}/**"
+    indirect_writes_via_dispatch:
+      - "${ARCH_PROJECT_DIR}/generated/audit/*-健康度.md"
     forbidden_writes:
       - "${ARCH_PROJECT_DIR}/specs/**"
       - "${ARCH_PROJECT_DIR}/decisions/**"
       - "${ARCH_PROJECT_DIR}/change-requests/**"
-      - "${ARCH_PROJECT_DIR}/generated/**"
+      - "${ARCH_PROJECT_DIR}/generated/overview.md"
+      - "${ARCH_PROJECT_DIR}/generated/wiki/**"
+      - "${ARCH_PROJECT_DIR}/generated/briefs/**"
+
+  arch-brief:
+    write:
+      - "${ARCH_PROJECT_DIR}/state.yaml"
+      - "${ARCH_PROJECT_DIR}/.metrics.jsonl"
+    read:
+      - "${ARCH_PROJECT_DIR}/**"
+      - "${KB_DIR}/**"
+    indirect_writes_via_dispatch:
+      - "${ARCH_PROJECT_DIR}/generated/overview.md"
+      - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"
+      - "${ARCH_PROJECT_DIR}/generated/briefs/*.md"
+      - "${ARCH_PROJECT_DIR}/generated/diagrams/*"
+    forbidden_writes:
+      - "${ARCH_PROJECT_DIR}/specs/**"
+      - "${ARCH_PROJECT_DIR}/decisions/**"
+      - "${ARCH_PROJECT_DIR}/change-requests/**"
+      - "${ARCH_PROJECT_DIR}/generated/audit/**"
 
   # -----------------------------------------------------------
   # arch-analyze: baseline-refresh 产 specs;drift-audit 只读
@@ -229,7 +294,7 @@ skills:
     returns_to_workflow:
       supersede_index_update:
         - "specs/decisions.yaml#superseded 加一条 {old_adr_id, new_adr_id, at}"
-        - "由 arch-workflow 实际写入 decisions.yaml(arch-adr 只 build delta)"
+        - "由当前活跃 user-facing skill 实际写入 decisions.yaml(arch-adr 只 build delta)"
       state_delta:
         - "history append: {at, action: 'adr_added', adr_id}"
     read:
@@ -288,7 +353,7 @@ skills:
           - path: "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/review.yaml"
             constraints:
               - "schema validate pass"
-              - "若已 readiness=ready 禁重写(改走新 CR;或经用户授权后由 arch-workflow 通过 state_delta.overrides_append 追加到 state.yaml.overrides[])"
+              - "若已 readiness=ready 禁重写(改走新 CR;或经用户授权后由当前 user-facing skill 通过 state_delta.overrides_append 追加到 state.yaml.overrides[])"
         read:
           - "${ARCH_PROJECT_DIR}/specs/**"
           - "${ARCH_PROJECT_DIR}/change-requests/${active_cr}/**"
@@ -353,7 +418,7 @@ skills:
 enforcement:
   v1.0:
     - "skill prompt 自律(每个 SKILL.md 头部 '## Write Scope' 段)"
-    - "arch-workflow dispatch 时 .metrics.jsonl 记录 allowed_writes"
+    - "当前活跃 user-facing skill dispatch 时 .metrics.jsonl 记录 allowed_writes"
     - "acceptance 加 no_writes_outside_scope structural check(用 git diff)"
 
   v1.1:

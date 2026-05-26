@@ -73,7 +73,7 @@ Mode: Builder(OSS dev tool;诊断走 Startup 模式,因用户使用「护城河�
 ## Constraints
 
 - **只产描述类交付件**,不产可执行/可消费(IaC / DDL / pipeline / 骨架 / src 业务代码)
-- **skill 总数 = 9**(含 `arch-radar` 按需)。**MVP 必跑 = 8**(不含 arch-radar)。`arch-workflow` 是其中第 1 个 = 编排器型 skill,不是单独"workflow 层"。
+- **skill 总数 = 9**(含 `arch-radar` 按需)。**MVP 必跑 = 8**(不含 arch-radar)。当前活跃 user-facing skill(arch-onboard/design/audit/brief) 是其中第 1 个 = 编排器型 skill,不是单独"workflow 层"。
 - **主上下文洁净**:heavy skill(analyze / judge / radar / review code 模式)**必须 subagent 隔离**
 - 默认产物目录 **`arch/{project}/`**
 - **5 类 project-scoped yaml + 1 类 org-scoped(含 5 个 yaml)** 是 schema 化契约层
@@ -86,14 +86,14 @@ Mode: Builder(OSS dev tool;诊断走 Startup 模式,因用户使用「护城河�
 | `architecture_profile` | `arch-frame` 输出的字段:LLM 从代码+描述识别出的架构风格、主要关切、推荐加载的 references、推荐插入的 phase |
 | `fitness_spec` | (v1.1)ADR 上的 optional 字段,把决策约束转译成可执行检查规格(grep / 文件路径 / AST 检测) |
 | `fireworks-tech-graph` | 外部 Claude Code skill(7k⭐,github.com/yizhiyanhua-ai/fireworks-tech-graph),把自然语言描述渲染成 SVG/PNG 技术图,7 styles。`arch-diagram` 可选后端,不装则降级 Mermaid |
-| `反合理化清单` | `arch-workflow` 内置的硬规则集,封住 LLM 常见捷径(「先出报告证据后补」「这个仓看起来不重要」等),违反则拒绝继续 |
+| `反合理化清单` | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) 内置的硬规则集,封住 LLM 常见捷径(「先出报告证据后补」「这个仓看起来不重要」等),违反则拒绝继续 |
 | `internal/phases/` | 预定义的 workflow phase 库,LLM 根据 `architecture_profile` 从库中挑选要插入的阶段(如 `eval-design` 给 AI 域),不让 LLM 现编 phase |
 | `预算预告` | workflow 在执行 heavy phase(subagent 启动)前显式告诉用户:**预计 token 数 + 预计耗时 + 并行 subagent 数 + 涉及仓**。用户回车继续 / 输入缩小范围 / abort |
 | `integrity check` | workflow 启动时检查 `arch/{project}/` 的文件完整性(state.yaml / evidence / wiki / diagrams 是否存在且通过 schema) |
 | `prereq check` | workflow 启动时检查必要的前置产物是否就绪(audit 需要 baseline → 没就先 onboard) |
 | `baseline` | `arch-analyze --depth=manifest` 产出的现状证据(仓库清单 + 依赖图谱),其它 mode/skill 都基于它工作 |
 | `hard gate` | workflow 的强制门禁,不满足条件**禁止**进入下一 phase。例:PRD 检测出 ≥3 个未答问题时,frame 必须暂停产 `PM问题清单.md` |
-| `mode` | `arch-workflow` 的运行模式(`onboard` / `audit` / `design` / `brief`),每个 mode 对应一个状态机 pipeline |
+| `mode` | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) 的运行模式(`onboard` / `audit` / `design` / `brief`),每个 mode 对应一个状态机 pipeline |
 
 ---
 
@@ -153,7 +153,7 @@ Mode: Builder(OSS dev tool;诊断走 Startup 模式,因用户使用「护城河�
 
 | # | Skill | 角色 | Subagent? |
 |---|---|---|---|
-| 1 | `arch-workflow` | 编排器,4 modes(onboard / audit / design / brief)| 否(spawn 子) |
+| 1 | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) | 编排器,4 modes(onboard / audit / design / brief)| 否(spawn 子) |
 | 2 | `arch-frame` | 问题界定 + 加载企业 KB | 否 |
 | 3 | `arch-analyze` | 全面分析架构现状(4 档:manifest / model / risk / full)| **必须** |
 | 4 | `arch-diff-judge` | 变更影响识别 | **必须** |
@@ -264,7 +264,7 @@ arch/{project-name}/
 
 ## Build Order(立刻开工的顺序)
 
-1. ⭐ **`arch-workflow` SKILL.md 提纲** ← 立刻开始,这是骨架
+1. ⭐ **当前活跃 user-facing skill(arch-onboard/design/audit/brief) SKILL.md 提纲** ← 立刻开始,这是骨架
 2. 5 + 1 yaml 资产的 JSON schema(`internal/schemas/`)
 3. `arch-frame` SKILL.md(含加载企业 KB 机制 + PRD hard gate)
 4. `arch-analyze` SKILL.md(4 档深度 + subagent 触发阈值)
@@ -421,4 +421,4 @@ verify_passed:                       # acceptance loop 写入
 
 ## 下一步(本次 session 后)
 
-立刻开始 **`arch-workflow` SKILL.md 提纲**,我会按 frontmatter / 角色定位 / 4 mode 状态机 / integrity + prereq check / architecture_profile 流程 / acceptance loop / 反合理化清单 / 硬规则+验收+降级 这几段分别写。
+立刻开始 **当前活跃 user-facing skill(arch-onboard/design/audit/brief) SKILL.md 提纲**,我会按 frontmatter / 角色定位 / 4 mode 状态机 / integrity + prereq check / architecture_profile 流程 / acceptance loop / 反合理化清单 / 硬规则+验收+降级 这几段分别写。

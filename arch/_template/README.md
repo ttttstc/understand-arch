@@ -1,6 +1,6 @@
 # `_template/` — Workspace Skeleton
 
-`arch-workflow` 首次为某个项目建立工作区时，会把本目录复制到 `arch/{project}/`。
+当前活跃 user-facing skill(arch-onboard/design/audit/brief) 首次为某个项目建立工作区时，会把本目录复制到 `arch/{project}/`。
 
 **不要直接对 `_template/` 运行 skill。**
 

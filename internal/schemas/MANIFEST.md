@@ -6,12 +6,12 @@
 
 | 文件 | 验证什么 | 主要写入方 |
 |---|---|---|
-| `state.schema.json` | `arch/{project}/state.yaml` | `arch-workflow` |
+| `state.schema.json` | `arch/{project}/state.yaml` | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) |
 | `specs-baseline.schema.json` | `arch/{project}/specs/baseline.yaml` | `arch-analyze` |
 | `specs-quality.schema.json` | `arch/{project}/specs/quality.yaml` | `arch-analyze` + `arch-frame` |
 | `specs-risks.schema.json` | `arch/{project}/specs/risks.yaml` | `arch-analyze` |
 | `specs-decisions.schema.json` | `arch/{project}/specs/decisions.yaml` | `arch-adr` + `arch-options` |
-| `specs-traceability.schema.json` | `arch/{project}/specs/traceability.yaml` | `arch-workflow` + writeback |
+| `specs-traceability.schema.json` | `arch/{project}/specs/traceability.yaml` | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) + writeback |
 
 ## Change request schemas
 
@@ -19,7 +19,7 @@
 |---|---|---|
 | `cr-impact.schema.json` | `arch/{project}/change-requests/CR-*/impact.yaml` | `arch-diff-judge` |
 | `cr-review.schema.json` | `arch/{project}/change-requests/CR-*/review.yaml` | `arch-review` |
-| `cr-traceability.schema.json` | `arch/{project}/change-requests/CR-*/traceability.yaml` | `arch-workflow` + writeback |
+| `cr-traceability.schema.json` | `arch/{project}/change-requests/CR-*/traceability.yaml` | 当前活跃 user-facing skill(arch-onboard/design/audit/brief) + writeback |
 
 ## Org-scoped schemas
 

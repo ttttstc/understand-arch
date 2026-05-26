@@ -54,7 +54,7 @@ arch/{项目名}/
 │   ├── audit/                        # {date}-健康度.md(audit 收尾产,问题集成视图)
 │   ├── diagrams/                     # 渲染后的 SVG/PNG
 │   └── briefs/                       # 受众化摘要
-├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)
+├── state.yaml                        # workflow 状态机(writer = 当前活跃的 user-facing skill)
 └── .metrics.jsonl                    # 每次 skill 运行的埋点
 ```
 
@@ -65,7 +65,7 @@ arch/{项目名}/
 1. **specs 是唯一事实源** — `specs/*.yaml` schema-locked。任何 `generated/`、`cr.md`、ADR 正文或汇报里出现的事实如果与 specs 矛盾,就是 bug。
 2. **Append-only 历史** — `decisions/ADR-*.md` commit 后永不修改;supersede 关系记在 `specs/decisions.yaml#superseded[]`。`state.yaml.history` 与 `state.yaml.overrides` 同样仅追加。
 3. **新鲜度状态机** — 每份 baseline 带 `freshness_status: fresh|possibly_stale|stale|unknown`,基于 commit diff 命中架构敏感文件计算。`stale` 时 design 会用中文给 refresh 建议,不让用户在过期基线上做决定。
-4. **state.yaml 单 writer** — 唯一可写者是 `arch-workflow`,其他 skill 通过返 `state_delta` 让 workflow 合并。杜绝并发状态污染。
+4. **state.yaml 单 writer** — 唯一可写者是**当前活跃的 user-facing skill**(`arch-onboard` / `arch-design` / `arch-audit` / `arch-brief`)。内部 skill 通过返 `state_delta` 让其合并(协议见 `internal/orchestration/playbook.md`)。杜绝并发状态污染。
 5. **Write-scope 契约** — `internal/tool-contracts/write-scope.yaml` 声明每个 skill 的可写/可读/禁写路径。`arch-pack` 不能动 `specs/`、`arch-review` 除了 `review.yaml` 全只读、`arch-analyze` 不能写 `decisions/`。v1.0 靠 acceptance 审计,v1.1 上 PreToolUse hook 硬拦截。
 6. **证据闭合** — YAML 里每条断言带 `evidence_refs`;`overview.md` 与 wiki 里每条结论必须回链到 YAML 字段或 ADR/CR 路径。**禁止**"应该 / 大概 / 通常"等弱化词。
 
@@ -85,7 +85,7 @@ Write-scope 契约在 tool 层强化:即便 prompt 上来要求,也会被拦截�
 
 | 层 | 内容 |
 |---|---|
-| 10 个 skill | `arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar`,每个含 `SKILL.md` + 可执行 `references/`(rubric / template / playbook) |
+| 13 个 skill(4 用户入口 + 9 内部) | `arch-onboard / arch-design / arch-audit / arch-brief (用户入口) + arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar (内部)`,每个含 `SKILL.md` + 可执行 `references/`(rubric / template / playbook) |
 | Schema | 5 个 specs schema + 3 个 CR schema + state schema + 5 个组织 KB schema |
 | Acceptance | 4 入口各一份 YAML,含 `structural_checks` + `semantic_checks` + `scope_audit` |
 | Tool 契约 | `internal/tool-contracts/write-scope.yaml` — 每 skill write/read/forbidden 矩阵 |

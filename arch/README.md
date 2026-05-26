@@ -28,7 +28,7 @@ arch/{project}/
 │   ├── audit/                        # {date}-健康度.md(audit 收尾产)
 │   ├── diagrams/                     # 渲染图(SVG/PNG)
 │   └── briefs/                       # 受众化摘要
-├── state.yaml                        # workflow 状态机(仅 arch-workflow 可写)
+├── state.yaml                        # workflow 状态机(writer = 当前活跃的 user-facing skill)
 └── .metrics.jsonl
 ```
 
@@ -38,7 +38,7 @@ arch/{project}/
 - **`decisions/` append-only ADR** — markdown 文件 commit 后永远只读;supersede 关系全记在 `specs/decisions.yaml#superseded[]`
 - **`change-requests/`**: 单次变更的 delta,不复制全量架构
 - **`generated/` 可删可重建** — 含 `overview.md`(1 页稳定入口)+ 5 页 wiki + 渲染图 + briefs
-- **`state.yaml`**: workflow 状态机、history、overrides、freshness 建议、下一步动作。**唯一可写者是 `arch-workflow`**;其他 skill 通过 `state_delta` 走 workflow merge
+- **`state.yaml`**: workflow 状态机、history、overrides、freshness 建议、下一步动作。**唯一可写者是 当前活跃 user-facing skill(arch-onboard/design/audit/brief)**;其他 skill 通过 `state_delta` 走 workflow merge
 
 ## 给人看的视图
 
@@ -54,7 +54,7 @@ arch/{project}/
 ## 工作区如何创建
 
 1. 用户运行 `/arch:onboard`
-2. `arch-workflow` 创建 `arch/{project}/`
+2. 当前活跃 user-facing skill(arch-onboard/design/audit/brief) 创建 `arch/{project}/`
 3. 从 `_template/` 复制基础结构
 4. `arch-analyze` 产出第一版 specs
 5. 之后的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量更新

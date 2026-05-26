@@ -139,7 +139,7 @@ description: |
 - 完全只读:`${CODE_REPO}/**` + `specs/**`
 - 不落盘任何文件;findings 通过 returns_to_workflow 传给 arch-review
 
-### state_delta(返 workflow 合并)
+### state_delta(返当前 user-facing skill 合并)
 
 ```yaml
 state_delta:
