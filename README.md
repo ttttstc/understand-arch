@@ -100,6 +100,50 @@ AI/agent architecture KB (`arch-library/agent-architecture/`) is intentionally d
 
 User-facing prompts default to **Chinese first** (e.g., "当前架构基线可能已过期"), with English technical terms in parentheses when first introduced. YAML keys and schema fields stay in stable English.
 
+## Installation
+
+### Prerequisites
+
+- Claude Code with plugin marketplace support
+- Access to this repository, either from GitHub or a local clone
+
+### Install from GitHub
+
+In Claude Code:
+
+```text
+/plugin marketplace add https://github.com/ttttstc/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+### Install from a local clone
+
+If you are developing or testing the plugin locally:
+
+```text
+/plugin marketplace add D:/AI/workspace/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+Claude Code reads the plugin definition from [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json).
+
+### Optional: Understand-Anything integration
+
+`understand-arch` does **not** require Understand-Anything. If you already have that plugin installed and it has produced `.understand-anything/knowledge-graph.json`, `arch-analyze` will auto-detect it and switch to `ua-augmented` mode.
+
+If you do not install it, the suite falls back to its standalone scanner with no command-surface change.
+
+### Verify the install
+
+After reload, these four user-facing entries should be available:
+
+- `/arch:onboard`
+- `/arch:design`
+- `/arch:audit`
+- `/arch:brief`
+
 ## How to start
 
 ```bash

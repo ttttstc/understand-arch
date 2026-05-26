@@ -98,6 +98,50 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 用户可见提示**默认中文**(eg. "当前架构基线可能已过期"),首次出现关键英文术语时加括号(eg. "架构漂移(drift)"、"写回(writeback)")。YAML key 与 schema 字段保持稳定英文。
 
+## 安装指南
+
+### 前置条件
+
+- 已安装支持插件市场的 Claude Code
+- 可以访问本仓库,无论是 GitHub 远端还是本地 clone
+
+### 从 GitHub 安装
+
+在 Claude Code 中执行:
+
+```text
+/plugin marketplace add https://github.com/ttttstc/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+### 从本地仓库安装
+
+如果你是在本地开发或调试:
+
+```text
+/plugin marketplace add D:/AI/workspace/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+Claude Code 会从 [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) 读取插件定义。
+
+### 可选: Understand-Anything 联动
+
+`understand-arch` **不强依赖** Understand-Anything。若你已经装好了该插件,并且它产出了 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 `ua-augmented` 模式。
+
+如果没有安装,本套件会继续使用自带扫描链路,用户入口和用法都不变。
+
+### 安装后如何验证
+
+`/reload-plugins` 后,应能看到这 4 个用户入口:
+
+- `/arch:onboard`
+- `/arch:design`
+- `/arch:audit`
+- `/arch:brief`
+
 ## 怎么开始
 
 ```bash
