@@ -118,6 +118,7 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 - **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
 - **Business capability map** (`specs/baseline.yaml#capabilities[]`, v1.0 inlined into baseline) — capability × maturity × importance × supporting components × gaps, for business-axis reporting and gap analysis
 - **Integrated health-check view** (`generated/audit/{date}-健康度.md`) — audit-emit aggregation of risks/debt/open_questions/KB drift/anti-patterns/drift findings, 10 sections ≤250 lines, one-stop project health snapshot
+- **Understand-Anything integration** (optional) — if [UA plugin](https://github.com/Lum1104/Understand-Anything) (31K+ ⭐) is installed, `arch-analyze` auto-detects `.understand-anything/knowledge-graph.json` and switches to ua-augmented mode, converting UA's nodes/edges directly into our specs; not installed = falls back to standalone with no capability loss
 
 What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
 
