@@ -15,6 +15,10 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/arch-onboard",
+        "./skills/arch-design",
+        "./skills/arch-audit",
+        "./skills/arch-brief",
         "./skills/arch-workflow",
         "./skills/arch-frame",
         "./skills/arch-analyze",

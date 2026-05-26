@@ -1,6 +1,6 @@
 # 健康度集成视图模板 (`generated/audit/{date}-健康度.md`)
 
-> 由 `arch-pack` 在 `/arch:audit` 收尾时聚合多个事实源产出。
+> 由 `arch-pack` 在 `/arch-audit` 收尾时聚合多个事实源产出。
 >
 > **核心:零新事实**。本视图只重组下面 5 个来源,任何不能追溯到来源的句子都不允许:
 >
@@ -112,7 +112,7 @@
   - {一句话} — 建议 refresh {specs 文件名}
 
 若未跑,本段写:
-> 本次 audit 未跑 drift 校验。如需验证 specs 是否真与代码偏离,运行 `/arch:audit --drift`。
+> 本次 audit 未跑 drift 校验。如需验证 specs 是否真与代码偏离,运行 `/arch-audit --drift`。
 
 ## 9. 改造路线图
 
@@ -150,5 +150,5 @@
 
 ## 与其他产物的关系
 
-- 本视图是 `/arch:audit` 的**主输出**;`generated/overview.md` 不重复本视图详情,只在第 11 段写"上次 audit: {date},总分 {X/5},详情见 audit/{date}-健康度.md"
+- 本视图是 `/arch-audit` 的**主输出**;`generated/overview.md` 不重复本视图详情,只在第 11 段写"上次 audit: {date},总分 {X/5},详情见 audit/{date}-健康度.md"
 - 本视图**不替代** `risks.yaml` 等 specs 事实源;删了本视图无所谓(下次 audit 重生成)

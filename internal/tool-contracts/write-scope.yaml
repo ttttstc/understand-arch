@@ -317,7 +317,7 @@ skills:
     write:
       - "${ARCH_PROJECT_DIR}/generated/overview.md"        # 注意:overview 已移到 generated/
       - "${ARCH_PROJECT_DIR}/generated/wiki/*.md"          # 6 页(含 06-能力雷达)
-      - "${ARCH_PROJECT_DIR}/generated/audit/*-健康度.md"  # /arch:audit 收尾产
+      - "${ARCH_PROJECT_DIR}/generated/audit/*-健康度.md"  # /arch-audit 收尾产
       - "${ARCH_PROJECT_DIR}/generated/briefs/*.md"
       - "${ARCH_PROJECT_DIR}/generated/diagrams/*"         # arch-pack 嵌入图时
     read:

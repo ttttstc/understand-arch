@@ -228,7 +228,7 @@ arch/{project-name}/
 ### 触发方式
 
 - **自然语言**:每个 mode/skill 有触发词集(详见各 SKILL.md description)。包含「审视当前项目/架构」「根据 PRD 设计架构和实现方案」等
-- **Slash command**(plugin commands/):`/arch` 主入口 + `/arch:onboard/audit/design/brief` 直接 mode + `/arch-frame/analyze/judge/options/adr/diagram/review/pack/radar` 单 skill
+- **Slash command**(plugin commands/):`/arch` 主入口 + `/arch-onboard/audit/design/brief` 直接 mode + `/arch-frame/analyze/judge/options/adr/diagram/review/pack/radar` 单 skill
 
 ### v1.1 Roadmap
 

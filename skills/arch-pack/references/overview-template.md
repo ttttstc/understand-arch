@@ -135,7 +135,7 @@
   - [Q-NNN] {一句话}
 
 {如果 status != fresh,**必须**给中文 refresh 建议:}
-> 当前架构基线可能已过期。代码变化命中了 {命中类型},建议运行 `/arch:onboard --refresh` 后再继续设计或审计。
+> 当前架构基线可能已过期。代码变化命中了 {命中类型},建议运行 `/arch-onboard --refresh` 后再继续设计或审计。
 
 **必答**: freshness + commit 对照 + 命中文件数 + known_unknowns 数量 + (非 fresh 时)refresh 建议?
 **来源**: `baseline.yaml#freshness_status` + `#changed_files_since_scan` + `#known_unknowns`
@@ -152,7 +152,7 @@
 若某段 source 不足,该段写:
 ```markdown
 > 当前 baseline 暂未覆盖本段。原因见 `baseline.yaml#known_unknowns.Q-NNN`,
-> 建议运行 `/arch:onboard --refresh` 后再补。
+> 建议运行 `/arch-onboard --refresh` 后再补。
 ```
 
 **禁止**:

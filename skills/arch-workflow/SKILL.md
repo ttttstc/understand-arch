@@ -23,7 +23,7 @@ description: |
 
 ## 用户可见入口
 
-### `/arch:onboard`
+### `/arch-onboard`
 
 目标：建立或刷新 `specs/`。
 
@@ -34,7 +34,7 @@ description: |
 4. 跑内部 `arch-review --mode=specs`
 5. 需要人类视图时，调 `arch-pack --audience=onboarding`
 
-### `/arch:design`
+### `/arch-design`
 
 目标：围绕一次需求创建 `change-requests/CR-*`。
 
@@ -48,7 +48,7 @@ description: |
 7. `arch-review --mode=cr`
 8. 产出 writeback proposal
 
-### `/arch:audit`
+### `/arch-audit`
 
 目标：在不默认扫描全仓的前提下，审视当前 `specs` 是否可信。
 
@@ -57,7 +57,7 @@ description: |
 2. 如果 `freshness_status=stale|unknown`，用中文提示建议 refresh
 3. 只有用户确认时才调 `arch-analyze --mode=drift-audit`
 
-### `/arch:brief`
+### `/arch-brief`
 
 目标：从已有 `specs / CR / ADR` 生成给人看的视图。
 
@@ -113,7 +113,7 @@ description: |
 ## 降级
 
 - `org KB` 不存在：继续，但在 `state.yaml.kb_loaded` 里标 `not_configured`
-- `specs` 缺文件：提示先跑 `/arch:onboard`
+- `specs` 缺文件：提示先跑 `/arch-onboard`
 - Git 不可用：`freshness_status=unknown`，降级为内容完整性审视
 - fireworks 不可用：图降级为 Mermaid
 

@@ -21,12 +21,14 @@
 
 | 命令 | 你会怎么说 | 实际发生 |
 |---|---|---|
-| `/arch:onboard` | "帮我看懂这套系统" / "建一份基线" | 扫代码,产 `specs/`(5 份 schema-locked YAML + Mermaid 图源) |
-| `/arch:design` | "根据 PRD 设计 X" / "开个 CR" | 建 `change-requests/CR-*/`,产影响面 / 方案权衡 / ADR / 评审 |
-| `/arch:audit` | "现在的基线还能信么" | 只读 `specs/`,审视完整度 + 新鲜度;必要时建议 refresh 或 drift audit |
-| `/arch:brief` | "给新人写个 wiki" / "给 CTO 一份汇报" | 重组已有事实成 `generated/overview.md`、5 页 wiki、或受众化摘要 |
+| `/arch-onboard` | "帮我看懂这套系统" / "建一份基线" | 扫代码,产 `specs/`(5 份 schema-locked YAML + Mermaid 图源) |
+| `/arch-design` | "根据 PRD 设计 X" / "开个 CR" | 建 `change-requests/CR-*/`,产影响面 / 方案权衡 / ADR / 评审 |
+| `/arch-audit` | "现在的基线还能信么" | 只读 `specs/`,审视完整度 + 新鲜度;必要时建议 refresh 或 drift audit |
+| `/arch-brief` | "给新人写个 wiki" / "给 CTO 一份汇报" | 重组已有事实成 `generated/overview.md`、6 页 wiki、或受众化摘要 |
 
-`arch-review`、`arch-options`、`arch-adr`、`arch-diagram`、`arch-pack`、`arch-radar` 都是内部 skill,由上面 4 个入口按需调度。
+`arch-workflow`、`arch-review`、`arch-options`、`arch-adr`、`arch-diagram`、`arch-pack`、`arch-frame`、`arch-diff-judge`、`arch-analyze`、`arch-radar` 都是内部 skill,由上面 4 个入口按需调度。
+
+> 也可以直接用自然语言触发,LLM 会自动识别该走哪个入口 — 不必记命令。
 
 ## 工作区结构
 
@@ -85,7 +87,7 @@ Write-scope 契约在 tool 层强化:即便 prompt 上来要求,也会被拦截�
 
 | 层 | 内容 |
 |---|---|
-| 10 个 skill | `arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar`,每个含 `SKILL.md` + 可执行 `references/`(rubric / template / playbook) |
+| 14 个 skill | 4 个用户入口(`arch-onboard / arch-design / arch-audit / arch-brief`)+ 10 个内部(`arch-workflow / arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar`),每个含 `SKILL.md` + 可执行 `references/`(rubric / template / playbook) |
 | Schema | 5 个 specs schema + 3 个 CR schema + state schema + 5 个组织 KB schema |
 | Acceptance | 4 入口各一份 YAML,含 `structural_checks` + `semantic_checks` + `scope_audit` |
 | Tool 契约 | `internal/tool-contracts/write-scope.yaml` — 每 skill write/read/forbidden 矩阵 |
@@ -102,12 +104,11 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 ### 前置条件
 
-- 已安装支持插件市场的 Claude Code
-- 可以访问本仓库,无论是 GitHub 远端还是本地 clone
+- 支持 plugin marketplace 的 Claude Code
 
-### 从 GitHub 安装
+### 从 GitHub 安装(推荐)
 
-在 Claude Code 中执行:
+在 Claude Code 里依次执行:
 
 ```text
 /plugin marketplace add https://github.com/ttttstc/understand-arch
@@ -115,41 +116,47 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 /reload-plugins
 ```
 
-### 从本地仓库安装
-
-如果你是在本地开发或调试:
-
-```text
-/plugin marketplace add D:/AI/workspace/understand-arch
-/plugin install understand-arch@understand-arch
-/reload-plugins
-```
-
 Claude Code 会从 [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) 读取插件定义。
 
-### 可选: Understand-Anything 联动
+### 安装后验证
 
-`understand-arch` **不强依赖** Understand-Anything。若你已经装好了该插件,并且它产出了 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 `ua-augmented` 模式。
+`/reload-plugins` 之后,在 Claude Code 任意 prompt 里输入 `/arch-` ,**应出现 4 个补全提示**:
 
-如果没有安装,本套件会继续使用自带扫描链路,用户入口和用法都不变。
+- `/arch-onboard`
+- `/arch-design`
+- `/arch-audit`
+- `/arch-brief`
 
-### 安装后如何验证
+### 装完没看到 `/arch-*` 命令?
 
-`/reload-plugins` 后,应能看到这 4 个用户入口:
+按这个顺序排查:
 
-- `/arch:onboard`
-- `/arch:design`
-- `/arch:audit`
-- `/arch:brief`
+1. **执行了 `/reload-plugins` 吗?** 没执行的话 Claude Code 不会扫到新 skill
+2. **检查插件是否真装上**:输入 `/plugin list`,应看到 `understand-arch`
+3. **检查命令格式**:命令是 `/arch-onboard`(短横线连接),**不是** `/arch:onboard`(冒号语法不被 Claude Code 支持)
+4. **强制重载**:重启 Claude Code(关闭再打开),再 `/reload-plugins`
+5. **从仓库直接克隆**:若 marketplace 拉不到,本地 clone 后用 `/plugin marketplace add /path/to/local/clone`
+
+### 可选:Understand-Anything 联动
+
+`understand-arch` **不强依赖** [Understand-Anything](https://github.com/Lum1104/Understand-Anything)。若你装了它并跑过 `/understand`,产出了 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 ua-augmented mode,扫描更快更准。
+
+不装时,本套件走自带扫描链路,用户入口和用法不变。
 
 ## 怎么开始
 
-```bash
-# 在 Claude Code 里装好本 plugin 后:
-/arch:onboard
+```text
+/arch-onboard
 ```
 
-首次运行扫代码 → 写 `specs/` 基线 → 计算 `freshness_status` → 用中文列出 `known_unknowns`(例如未识别 owner 的组件)。后续的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量演进。
+首次运行扫代码 → 写 `specs/` 基线 → 计算 `freshness_status` → 用中文列出 `known_unknowns`(例如未识别 owner 的组件)。后续的 `/arch-design`、`/arch-audit`、`/arch-brief` 都在同一工作区上增量演进。
+
+也可以用自然语言触发,例如:
+
+- "帮我看懂这个项目" → 自动走 `/arch-onboard`
+- "根据这份 PRD 设计架构" → 自动走 `/arch-design`
+- "现在的 specs 还能信么" → 自动走 `/arch-audit`
+- "给 CTO 整一份汇报" → 自动走 `/arch-brief`
 
 ## 当前状态
 

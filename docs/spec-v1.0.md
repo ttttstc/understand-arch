@@ -108,7 +108,7 @@ arch/{project}/
 ├── generated/                     # 派生人类视图,可删除重建
 │   ├── overview.md                # 1 页稳定入口(从 specs/CR/ADR 重组,200 行硬上限)
 │   ├── wiki/                      # 默认 6 页 onboarding 展开视图(含 06-能力雷达)
-│   ├── audit/                     # /arch:audit 收尾产 {date}-健康度.md(问题集成视图)
+│   ├── audit/                     # /arch-audit 收尾产 {date}-健康度.md(问题集成视图)
 │   ├── diagrams/                  # 派生展示图(SVG/PNG 渲染输出)
 │   └── briefs/                    # 受众化摘要
 ├── state.yaml                     # workflow 状态机(仅 arch-workflow 可写)
@@ -763,10 +763,10 @@ Human generated views: generated/wiki/01-05
 用户可见入口第一版只暴露 4 个：
 
 ```text
-/arch:onboard
-/arch:design
-/arch:audit
-/arch:brief
+/arch-onboard
+/arch-design
+/arch-audit
+/arch-brief
 ```
 
 `arch-review` 不作为第一版用户入口暴露，而是收敛进 `onboard`、`design`、`audit`、`brief` 的内部 gate。
@@ -780,8 +780,8 @@ Human generated views: generated/wiki/01-05
 用于首次接手项目或刷新架构基线。
 
 ```text
-/arch:onboard
-/arch:baseline refresh
+/arch-onboard
+/arch-onboard --refresh
 
 arch-analyze
 → write specs/baseline.yaml
@@ -810,10 +810,10 @@ arch-analyze
 
 ### 2. Specs Review 内置于 Audit
 
-用于不扫全仓的架构审视。第一版不单独暴露 `/arch:review`，而是通过 `/arch:audit` 默认执行。
+用于不扫全仓的架构审视。第一版不单独暴露 `arch-review`(它是内部 skill),而是通过 `/arch-audit` 默认执行。
 
 ```text
-/arch:audit
+/arch-audit
 
 read specs/*
 → check schema
@@ -839,7 +839,7 @@ read specs/*
 
 ```text
 当前 specs 可以支持架构审视，但可能已过期：上次扫描提交 abc1234，当前提交 def5678。
-变更文件命中了接口契约和数据模型，建议运行 /arch:onboard --refresh。
+变更文件命中了接口契约和数据模型，建议运行 /arch-onboard --refresh。
 ```
 
 ### 3. Drift Audit
@@ -847,7 +847,7 @@ read specs/*
 用于验证 specs 与代码现实是否偏离。
 
 ```text
-/arch:audit --drift
+/arch-audit --drift
 
 arch-analyze --depth=manifest/risk
 → compare code facts with specs
@@ -864,7 +864,7 @@ arch-analyze --depth=manifest/risk
 用于一次需求或架构变更。
 
 ```text
-/arch:design "<PRD or change request>"
+/arch-design "<PRD or change request>"
 
 arch-frame
 → create change-requests/CR-*/
@@ -906,8 +906,8 @@ Writeback 必须说明：
 用于人类阅读与汇报。
 
 ```text
-/arch:brief --audience=management
-/arch:brief --audience=onboarding
+/arch-brief --audience=management
+/arch-brief --audience=onboarding
 
 read specs + CR + ADR
 → update generated/overview.md
@@ -922,10 +922,10 @@ v1.0 第一版只向用户暴露四个主入口：
 
 | 入口 | 用户理解 | 内部调用 |
 |---|---|---|
-| `/arch:onboard` | 建立或刷新项目架构基线 specs | `arch-analyze` + `arch-diagram` + internal review |
-| `/arch:design` | 为一次需求创建 CR 并做架构设计 | `arch-frame` + `arch-diff-judge` + conditional `arch-options`/`arch-adr` + internal review |
-| `/arch:audit` | 审视 specs 是否完整、可信、过期；必要时建议 refresh | internal `arch-review`; optional `arch-analyze --drift` |
-| `/arch:brief` | 从 specs/CR/ADR 生成给人看的 wiki/report/brief | `arch-pack` + `arch-diagram` |
+| `/arch-onboard` | 建立或刷新项目架构基线 specs | `arch-analyze` + `arch-diagram` + internal review |
+| `/arch-design` | 为一次需求创建 CR 并做架构设计 | `arch-frame` + `arch-diff-judge` + conditional `arch-options`/`arch-adr` + internal review |
+| `/arch-audit` | 审视 specs 是否完整、可信、过期；必要时建议 refresh | internal `arch-review`; optional `arch-analyze --drift` |
+| `/arch-brief` | 从 specs/CR/ADR 生成给人看的 wiki/report/brief | `arch-pack` + `arch-diagram` |
 
 不直接暴露：
 

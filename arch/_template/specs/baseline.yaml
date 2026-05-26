@@ -33,12 +33,12 @@ capabilities: []
 #   evidence_refs: []
 view_coverage:
   status: missing               # complete | partial | missing
-  note: "Template scaffold; run /arch:onboard to populate"
+  note: "Template scaffold; run /arch-onboard to populate"
 known_unknowns:
   - id: TEMPLATE-UNKNOWN-001
     question: "Project baseline has not been generated yet."
     impact: "Current specs are scaffold-only."
-    next_action: "Run /arch:onboard"
+    next_action: "Run /arch-onboard"
 last_verified: TEMPLATE
 last_scanned_commit: git_unavailable
 changed_files_since_scan: []

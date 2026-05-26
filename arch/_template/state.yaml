@@ -15,6 +15,6 @@ kb_loaded:
 history: []
 overrides: []
 pending_actions:
-  - "Run /arch:onboard to replace scaffold values."
-suggested_next_action: "Run /arch:onboard"
+  - "Run /arch-onboard to replace scaffold values."
+suggested_next_action: "Run /arch-onboard"
 last_updated: TEMPLATE

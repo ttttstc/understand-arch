@@ -6,10 +6,10 @@
 
 | 文件 | 用户入口 | 关注点 |
 |---|---|---|
-| `onboard.yaml` | `/arch:onboard` | specs 是否完整、4+1 是否覆盖、freshness 字段是否齐 |
-| `audit.yaml` | `/arch:audit` | 当前 specs 是否可信，是否需要 refresh 或 drift audit |
-| `design.yaml` | `/arch:design` | CR 是否足够支撑实现与 writeback |
-| `brief.yaml` | `/arch:brief` | 导出视图是否忠实于 specs / CR / ADR，且适合目标受众 |
+| `onboard.yaml` | `/arch-onboard` | specs 是否完整、4+1 是否覆盖、freshness 字段是否齐 |
+| `audit.yaml` | `/arch-audit` | 当前 specs 是否可信，是否需要 refresh 或 drift audit |
+| `design.yaml` | `/arch-design` | CR 是否足够支撑实现与 writeback |
+| `brief.yaml` | `/arch-brief` | 导出视图是否忠实于 specs / CR / ADR，且适合目标受众 |
 
 ## 检查理念
 

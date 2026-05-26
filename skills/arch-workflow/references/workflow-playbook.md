@@ -67,7 +67,7 @@
 
 ```text
 当前架构基线缺少关键信息：{missing_sections}。
-建议先运行 /arch:onboard 刷新 baseline，或补齐对应 specs 文件。
+建议先运行 /arch-onboard 刷新 baseline，或补齐对应 specs 文件。
 ```
 
 ### drift audit 确认
@@ -79,7 +79,7 @@
 
 ## 5. 禁止行为
 
-- 不暴露 `/arch:pack`、`/arch:review` 作为 v1.0 用户主入口。
+- 不暴露 `arch-pack`、`arch-review` 作为 v1.0 用户主入口(它们是内部 skill,由 4 个用户入口按需调度)。
 - 不在 `audit` 默认扫全仓。
 - 不允许 brief 生成新事实。
 - 不允许在 `design` 忽略 `stale|unknown` 直接装作基线可信。

@@ -2,7 +2,7 @@
 
 这是任何人进入项目后应先读的一页。它是稳定的人类入口，不是自由发挥的长文。
 
-首次 `/arch:onboard` 后，应由 `arch-analyze` 和 `arch-pack` 刷新为正式内容；新增事实必须来自 `specs/*.yaml`、`change-requests/*` 或 `decisions/*`。
+首次 `/arch-onboard` 后，应由 `arch-analyze` 和 `arch-pack` 刷新为正式内容；新增事实必须来自 `specs/*.yaml`、`change-requests/*` 或 `decisions/*`。
 
 ## 1. 系统是什么
 

@@ -53,11 +53,11 @@ arch/{project}/
 
 ## 工作区如何创建
 
-1. 用户运行 `/arch:onboard`
+1. 用户运行 `/arch-onboard`
 2. `arch-workflow` 创建 `arch/{project}/`
 3. 从 `_template/` 复制基础结构
 4. `arch-analyze` 产出第一版 specs
-5. 之后的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量更新
+5. 之后的 `/arch-design`、`/arch-audit`、`/arch-brief` 都在同一工作区上增量更新
 
 ## 版本治理
 

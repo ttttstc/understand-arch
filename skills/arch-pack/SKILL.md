@@ -30,7 +30,7 @@ description: |
 |---|---|
 | `generated/overview.md` | 任何 audience 都更新(1 页稳定入口) |
 | `generated/wiki/01-06.md` | audience=onboarding(6 页,新增 06-能力雷达) |
-| `generated/audit/{date}-健康度.md` | `/arch:audit` 收尾时(系统问题集成视图) |
+| `generated/audit/{date}-健康度.md` | `/arch-audit` 收尾时(系统问题集成视图) |
 | `generated/briefs/{audience}-{date}.md` | audience=management|engineering |
 | `generated/diagrams/*` | 给 wiki/brief 嵌图时(委托 arch-diagram) |
 
@@ -73,7 +73,7 @@ audience=onboarding 时默认生成固定 6 页(`references/wiki-pages-template/
 
 ### 系统问题集成视图:`generated/audit/{date}-健康度.md`
 
-`/arch:audit` 收尾时由 arch-pack 聚合产出:risks / debt / open_questions / KB 漂移 / drift findings / 业界反模式命中,**零新事实**,固定 10 段(评分 / blocking / high / medium 摘要 / open questions / KB 漂移 / 反模式命中 / drift 结果 / 改造路线图 / non-recommendations),全文 ≤ 250 行硬上限。详见 `references/health-check-template.md`。
+`/arch-audit` 收尾时由 arch-pack 聚合产出:risks / debt / open_questions / KB 漂移 / drift findings / 业界反模式命中,**零新事实**,固定 10 段(评分 / blocking / high / medium 摘要 / open questions / KB 漂移 / 反模式命中 / drift 结果 / 改造路线图 / non-recommendations),全文 ≤ 250 行硬上限。详见 `references/health-check-template.md`。
 
 ### 受众化摘要:`generated/briefs/`
 
@@ -99,7 +99,7 @@ audience=management|engineering 时产 `{date}-{audience}.md`。
 - ✅ 可写:
   - `generated/overview.md`(11 段固定结构,≤200 行硬上限)
   - `generated/wiki/*.md`(onboarding 时 6 页)
-  - `generated/audit/{date}-健康度.md`(/arch:audit 收尾时,≤250 行)
+  - `generated/audit/{date}-健康度.md`(/arch-audit 收尾时,≤250 行)
   - `generated/briefs/*.md`
   - `generated/diagrams/*`(委托 arch-diagram 时)
 - ❌ **严格禁写** `specs/**`(关键边界 — arch-pack 不动事实层)
