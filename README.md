@@ -23,10 +23,10 @@ v1.0 exposes only **four user-facing entries**. Everything else is internal orch
 
 | Command | What you'd say | What happens |
 |---|---|---|
-| `/arch:onboard` | "Help me understand this codebase" / "Build a baseline" | Scans the repo, produces `specs/` (5 schema-locked YAMLs + Mermaid diagrams) |
-| `/arch:design` | "Design this PRD" / "Open a CR for X" | Creates `change-requests/CR-*/` with impact / options / ADR / review |
-| `/arch:audit` | "Is the baseline still trustworthy?" | Reviews `specs/` without re-scanning; flags freshness; optionally runs drift audit |
-| `/arch:brief` | "Make a wiki for new joiners" / "Brief for the CTO" | Re-organizes existing facts into `generated/overview.md`, 5-page wiki, or audience-tailored briefs |
+| `/arch-onboard` | "Help me understand this codebase" / "Build a baseline" | Scans the repo, produces `specs/` (5 schema-locked YAMLs + Mermaid diagrams) |
+| `/arch-design` | "Design this PRD" / "Open a CR for X" | Creates `change-requests/CR-*/` with impact / options / ADR / review |
+| `/arch-audit` | "Is the baseline still trustworthy?" | Reviews `specs/` without re-scanning; flags freshness; optionally runs drift audit |
+| `/arch-brief` | "Make a wiki for new joiners" / "Brief for the CTO" | Re-organizes existing facts into `generated/overview.md`, 5-page wiki, or audience-tailored briefs |
 
 `arch-review`, `arch-options`, `arch-adr`, `arch-diagram`, `arch-pack`, `arch-radar` are all internal — invoked by the four entries above when needed.
 
@@ -105,11 +105,10 @@ User-facing prompts default to **Chinese first** (e.g., "当前架构基线可�
 ### Prerequisites
 
 - Claude Code with plugin marketplace support
-- Access to this repository, either from GitHub or a local clone
 
 ### Install from GitHub
 
-In Claude Code:
+In Claude Code, run in order:
 
 ```text
 /plugin marketplace add https://github.com/ttttstc/understand-arch
@@ -117,41 +116,44 @@ In Claude Code:
 /reload-plugins
 ```
 
-### Install from a local clone
-
-If you are developing or testing the plugin locally:
-
-```text
-/plugin marketplace add D:/AI/workspace/understand-arch
-/plugin install understand-arch@understand-arch
-/reload-plugins
-```
-
 Claude Code reads the plugin definition from [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json).
+
+### Verify
+
+After `/reload-plugins`, type `/arch-` at any prompt — autocompletion should suggest:
+
+- `/arch-onboard`
+- `/arch-design`
+- `/arch-audit`
+- `/arch-brief`
+
+### Don't see `/arch-*` commands?
+
+Troubleshoot in order:
+
+1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new skills.
+2. **Is the plugin installed?** Run `/plugin list` and check for `understand-arch`.
+3. **Command format**: it's `/arch-onboard` (dash), **not** `/arch:onboard` (colon syntax isn't supported by Claude Code).
+4. **Force reload**: restart Claude Code, then `/reload-plugins` again.
 
 ### Optional: Understand-Anything integration
 
-`understand-arch` does **not** require Understand-Anything. If you already have that plugin installed and it has produced `.understand-anything/knowledge-graph.json`, `arch-analyze` will auto-detect it and switch to `ua-augmented` mode.
-
-If you do not install it, the suite falls back to its standalone scanner with no command-surface change.
-
-### Verify the install
-
-After reload, these four user-facing entries should be available:
-
-- `/arch:onboard`
-- `/arch:design`
-- `/arch:audit`
-- `/arch:brief`
+`understand-arch` does **not** require [Understand-Anything](https://github.com/Lum1104/Understand-Anything). If you already installed it and ran `/understand`, producing `.understand-anything/knowledge-graph.json`, `arch-analyze` will auto-detect it and switch to ua-augmented mode (faster + more accurate scanning). Without UA, the suite falls back to its standalone scanner with no capability loss.
 
 ## How to start
 
-```bash
-# In Claude Code, with the plugin installed:
-/arch:onboard
+```text
+/arch-onboard
 ```
 
-The first run scans your repo, writes a `specs/` baseline, computes `freshness_status`, and surfaces any `known_unknowns` (e.g., components without owners) in Chinese. Subsequent `/arch:design`, `/arch:audit`, `/arch:brief` work against the same workspace.
+The first run scans your repo, writes a `specs/` baseline, computes `freshness_status`, and surfaces any `known_unknowns` (e.g., components without owners) in Chinese. Subsequent `/arch-design`, `/arch-audit`, `/arch-brief` work against the same workspace.
+
+Natural language works too:
+
+- "Help me understand this codebase" → auto-routes to `/arch-onboard`
+- "Design this PRD" → `/arch-design`
+- "Are the specs still trustworthy?" → `/arch-audit`
+- "Brief for the CTO" → `/arch-brief`
 
 ## Status
 
