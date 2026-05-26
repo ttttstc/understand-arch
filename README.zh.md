@@ -21,10 +21,10 @@
 
 | 命令 | 你会怎么说 | 实际发生 |
 |---|---|---|
-| `/arch:onboard` | "帮我看懂这套系统" / "建一份基线" | 扫代码,产 `specs/`(5 份 schema-locked YAML + Mermaid 图源) |
-| `/arch:design` | "根据 PRD 设计 X" / "开个 CR" | 建 `change-requests/CR-*/`,产影响面 / 方案权衡 / ADR / 评审 |
-| `/arch:audit` | "现在的基线还能信么" | 只读 `specs/`,审视完整度 + 新鲜度;必要时建议 refresh 或 drift audit |
-| `/arch:brief` | "给新人写个 wiki" / "给 CTO 一份汇报" | 重组已有事实成 `generated/overview.md`、5 页 wiki、或受众化摘要 |
+| `/arch-onboard` | "帮我看懂这套系统" / "建一份基线" | 扫代码,产 `specs/`(5 份 schema-locked YAML + Mermaid 图源) |
+| `/arch-design` | "根据 PRD 设计 X" / "开个 CR" | 建 `change-requests/CR-*/`,产影响面 / 方案权衡 / ADR / 评审 |
+| `/arch-audit` | "现在的基线还能信么" | 只读 `specs/`,审视完整度 + 新鲜度;必要时建议 refresh 或 drift audit |
+| `/arch-brief` | "给新人写个 wiki" / "给 CTO 一份汇报" | 重组已有事实成 `generated/overview.md`、5 页 wiki、或受众化摘要 |
 
 `arch-review`、`arch-options`、`arch-adr`、`arch-diagram`、`arch-pack`、`arch-radar` 都是内部 skill,由上面 4 个入口按需调度。
 
@@ -98,16 +98,15 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 用户可见提示**默认中文**(eg. "当前架构基线可能已过期"),首次出现关键英文术语时加括号(eg. "架构漂移(drift)"、"写回(writeback)")。YAML key 与 schema 字段保持稳定英文。
 
-## 安装指南
+## 安装
 
 ### 前置条件
 
-- 已安装支持插件市场的 Claude Code
-- 可以访问本仓库,无论是 GitHub 远端还是本地 clone
+- 支持 plugin marketplace 的 Claude Code
 
 ### 从 GitHub 安装
 
-在 Claude Code 中执行:
+在 Claude Code 里依次执行:
 
 ```text
 /plugin marketplace add https://github.com/ttttstc/understand-arch
@@ -115,41 +114,44 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 /reload-plugins
 ```
 
-### 从本地仓库安装
+Claude Code 从 [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) 读取插件定义。
 
-如果你是在本地开发或调试:
+### 验证
 
-```text
-/plugin marketplace add D:/AI/workspace/understand-arch
-/plugin install understand-arch@understand-arch
-/reload-plugins
-```
+`/reload-plugins` 之后,在任意 prompt 输入 `/arch-`,应出现 4 个补全:
 
-Claude Code 会从 [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) 读取插件定义。
+- `/arch-onboard`
+- `/arch-design`
+- `/arch-audit`
+- `/arch-brief`
 
-### 可选: Understand-Anything 联动
+### 装完没看到 `/arch-*` 命令?
 
-`understand-arch` **不强依赖** Understand-Anything。若你已经装好了该插件,并且它产出了 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 `ua-augmented` 模式。
+按顺序排查:
 
-如果没有安装,本套件会继续使用自带扫描链路,用户入口和用法都不变。
+1. **执行了 `/reload-plugins` 吗?** 没执行 Claude Code 不会扫到新 skill。
+2. **检查插件是否真装上**:`/plugin list` 应看到 `understand-arch`。
+3. **检查命令格式**:命令是 `/arch-onboard`(短横线连接),**不是** `/arch:onboard`(冒号语法不被 Claude Code 支持)。
+4. **强制重载**:重启 Claude Code 后再 `/reload-plugins`。
 
-### 安装后如何验证
+### 可选:Understand-Anything 联动
 
-`/reload-plugins` 后,应能看到这 4 个用户入口:
-
-- `/arch:onboard`
-- `/arch:design`
-- `/arch:audit`
-- `/arch:brief`
+`understand-arch` **不强依赖** [Understand-Anything](https://github.com/Lum1104/Understand-Anything)。若你装了它并跑过 `/understand`,产出 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 ua-augmented mode(扫描更快更准)。不装时本套件走自带扫描链路,用户入口和用法不变。
 
 ## 怎么开始
 
-```bash
-# 在 Claude Code 里装好本 plugin 后:
-/arch:onboard
+```text
+/arch-onboard
 ```
 
-首次运行扫代码 → 写 `specs/` 基线 → 计算 `freshness_status` → 用中文列出 `known_unknowns`(例如未识别 owner 的组件)。后续的 `/arch:design`、`/arch:audit`、`/arch:brief` 都在同一工作区上增量演进。
+首次运行扫代码 → 写 `specs/` 基线 → 计算 `freshness_status` → 用中文列出 `known_unknowns`(例如未识别 owner 的组件)。后续的 `/arch-design`、`/arch-audit`、`/arch-brief` 都在同一工作区上增量演进。
+
+也可以用自然语言触发:
+
+- "帮我看懂这个项目" → 自动走 `/arch-onboard`
+- "根据这份 PRD 设计架构" → `/arch-design`
+- "现在的 specs 还能信么" → `/arch-audit`
+- "给 CTO 整一份汇报" → `/arch-brief`
 
 ## 当前状态
 
