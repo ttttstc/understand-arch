@@ -98,6 +98,50 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 用户可见提示**默认中文**(eg. "当前架构基线可能已过期"),首次出现关键英文术语时加括号(eg. "架构漂移(drift)"、"写回(writeback)")。YAML key 与 schema 字段保持稳定英文。
 
+## 安装指南
+
+### 前置条件
+
+- 已安装支持插件市场的 Claude Code
+- 可以访问本仓库,无论是 GitHub 远端还是本地 clone
+
+### 从 GitHub 安装
+
+在 Claude Code 中执行:
+
+```text
+/plugin marketplace add https://github.com/ttttstc/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+### 从本地仓库安装
+
+如果你是在本地开发或调试:
+
+```text
+/plugin marketplace add D:/AI/workspace/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+Claude Code 会从 [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) 读取插件定义。
+
+### 可选: Understand-Anything 联动
+
+`understand-arch` **不强依赖** Understand-Anything。若你已经装好了该插件,并且它产出了 `.understand-anything/knowledge-graph.json`,`arch-analyze` 会自动识别并切到 `ua-augmented` 模式。
+
+如果没有安装,本套件会继续使用自带扫描链路,用户入口和用法都不变。
+
+### 安装后如何验证
+
+`/reload-plugins` 后,应能看到这 4 个用户入口:
+
+- `/arch:onboard`
+- `/arch:design`
+- `/arch:audit`
+- `/arch:brief`
+
 ## 怎么开始
 
 ```bash
@@ -116,6 +160,7 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 - **多 agent 并行扫描编排**(`scan-shard` 契约 + 切片规则 + 主上下文聚合)— 解决大仓上下文溢出
 - **业务能力地图**(`specs/baseline.yaml#capabilities[]`,v1.0 内嵌于 baseline)— 能力 × 成熟度 × 重要度 × 承载组件 × gaps,支撑业务能力维度的汇报与差距分析
 - **系统问题集成视图**(`generated/audit/{date}-健康度.md`)— audit 收尾聚合 risks/debt/open_questions/KB 漂移/反模式/drift,10 段 ≤250 行,一份表掌握项目健康度
+- **Understand-Anything 集成**(可选)— 用户装了 [UA plugin](https://github.com/Lum1104/Understand-Anything)(31K+ ⭐)后,arch-analyze 自动检测 `.understand-anything/knowledge-graph.json` 并切换到 ua-augmented mode,把 UA 的 nodes/edges 直接转成我们 specs;不装时走 standalone 不退化
 
 未进 v1.0(见 [v1.1 候选](./docs/spec-v1.0.md#v11-candidates)):
 

@@ -94,6 +94,19 @@ skills:
       enable_when:
         - "src_files >= 60"
         - "OR estimated_tokens >= 50k"
+    ua_integration:
+      enabled: true                 # 检测 UA 图谱;装了即用
+      detect_path: "${PROJECT_ROOT}/.understand-anything/knowledge-graph.json"
+      read_only: true               # 只读 UA 产物,绝不改写
+      mode_when_present:
+        FRESH: "ua-augmented"
+        POSSIBLY_STALE: "ua-augmented + freshness_status=possibly_stale"
+        STALE: "ua-augmented + freshness_status=stale + 用户确认门禁"
+      mode_when_absent: "standalone"
+      additional_read:
+        - "${PROJECT_ROOT}/.understand-anything/knowledge-graph.json"
+        - "${PROJECT_ROOT}/.understand-anything/config.json"
+      adapter_reference: "skills/arch-analyze/references/ua-graph-adapter.md"
     modes:
       baseline-refresh:
         write:

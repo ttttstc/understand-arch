@@ -81,10 +81,19 @@ semantic_checks:
       - baseline.yaml#capabilities 至少含 3 条 user_facing=true 的能力(过少则标 known_unknowns 解释为什么)
       - 每条能力的 supporting_components.component 引用都能在 baseline.yaml#components 找到
       - 每条能力的 gaps[] 若引用 R-NNN/Q-NNN,目标必须存在
+  - id: ua-integration-trace
+    question: "若以 ua-augmented mode 跑,specs 是否带 UA 来源标记?(standalone mode 此项自动 N/A pass)"
+    severity: conditional
+    when: ".metrics.jsonl 最近一条 arch-analyze 记录 mode=ua-augmented"
+    rubric:
+      - baseline.yaml#last_scanned_commit 与 UA gitCommitHash 一致(或显式标 stale)
+      - evidence_refs 至少部分含 source=ua-knowledge-graph 标记
+      - .metrics.jsonl 含 ua_augmented 段(ua_graph_path / ua_freshness / nodes_consumed)
+      - 若 ua_freshness=stale,baseline.yaml.freshness_status=stale 必须同步
 
 threshold:
   structural: 100%
-  semantic: 6/6
+  semantic: 7/7    # ua-integration-trace 在 standalone 下自动 pass,不增加难度
 
 retry_policy:
   max_retries: 2

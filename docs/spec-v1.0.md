@@ -561,6 +561,47 @@ Project Scanner
 - `generated/overview.md`
 - `specs/traceability.yaml`
 
+### Optional: Understand-Anything 集成(ua-augmented mode)
+
+若用户同时安装了 [Understand-Anything](https://github.com/Lum1104/Understand-Anything)(31K+ star 的 Claude Code plugin,**与本套件互为正交**),`arch-analyze` 会自动检测其产物 `.understand-anything/knowledge-graph.json` 并切换到 **ua-augmented mode**,跳过自有的 LLM-driven 扫描,直接把 UA 的 nodes/edges/layers/tour 转成我们的 `specs/*.yaml`。
+
+**判定**:
+
+| UA 图谱状态 | arch-analyze 行为 |
+|---|---|
+| 不存在 / 损坏 / 用户 `--no-ua` | 回退 **standalone mode**(下文 5 段式 + 多 agent 切片) |
+| 存在 + `gitCommitHash` 与当前 HEAD 一致 | **FRESH**,直接用 |
+| 存在 + 中间漂移 ≤20 文件 | **POSSIBLY_STALE**,先用并标 |
+| 存在 + 漂移 >20 文件 | **STALE**,中文提示用户重跑 `/understand`;同意继续则用旧图(标 stale) |
+
+**UA 节点 → 我们 specs 字段映射**(简表):
+
+| UA node type | 我们 specs 落点 |
+|---|---|
+| `service` / `module` / 高 complexity file 聚类 | `baseline.yaml#components` |
+| `endpoint` | `baseline.yaml#interfaces.apis` |
+| `class` (实体) / `table` / `schema` / `entity` | `baseline.yaml#data_models` |
+| `config` | `baseline.yaml#runtime_configs` |
+| `pipeline` | `baseline.yaml#deployment_units` |
+| `flow` + `step` + `calls` edges | `baseline.yaml#critical_flows` |
+| `concept` / `domain` | `capabilities.yaml#capabilities` 候选(LLM review)|
+| `resource` | `baseline.yaml#external_dependencies` 候选 |
+| `tour[]` | `generated/wiki/00-阅读指引.md` |
+
+**LLM 仍负责**(UA 不给的语义层):capabilities 抽取确认 / NFR / org_constraints 漂移 / risks 解释 / decisions / traceability / view_coverage 判定。
+
+**收益**:
+- 扫描速度大幅提升(跳过我们自有扫描,直接读 UA JSON)
+- 符号级准确度(UA 用 tree-sitter)
+- 业务能力初始信号有 UA 的 concept/domain 节点托底,LLM 误漏率显著降低
+- 自带 `tour[]` 转 `generated/wiki/00-阅读指引.md`("新人 30 分钟读懂"的引导路径)
+
+**约束**:
+- UA 不强依赖;不装时本套件能力不退化(走 standalone)
+- 与 fireworks-tech-graph 同等模式:**装了即用,不装降级**
+
+详见 `skills/arch-analyze/references/ua-graph-adapter.md`(15 段完整规约:启用条件 / 节点映射 / 边映射 / layers/tour 映射 / LLM 补语义层 / evidence_refs 处理 / 完整流程 / 多 agent 切换边缘 / 失败降级 / acceptance 影响)。
+
 ### 多 agent 并行扫描(上下文溢出防护)
 
 v1.0 必须支持大仓的多 agent 切片扫描,避免主上下文一次塞下整个代码仓导致溢出或质量下降。

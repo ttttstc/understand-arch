@@ -100,6 +100,50 @@ AI/agent architecture KB (`arch-library/agent-architecture/`) is intentionally d
 
 User-facing prompts default to **Chinese first** (e.g., "当前架构基线可能已过期"), with English technical terms in parentheses when first introduced. YAML keys and schema fields stay in stable English.
 
+## Installation
+
+### Prerequisites
+
+- Claude Code with plugin marketplace support
+- Access to this repository, either from GitHub or a local clone
+
+### Install from GitHub
+
+In Claude Code:
+
+```text
+/plugin marketplace add https://github.com/ttttstc/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+### Install from a local clone
+
+If you are developing or testing the plugin locally:
+
+```text
+/plugin marketplace add D:/AI/workspace/understand-arch
+/plugin install understand-arch@understand-arch
+/reload-plugins
+```
+
+Claude Code reads the plugin definition from [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json).
+
+### Optional: Understand-Anything integration
+
+`understand-arch` does **not** require Understand-Anything. If you already have that plugin installed and it has produced `.understand-anything/knowledge-graph.json`, `arch-analyze` will auto-detect it and switch to `ua-augmented` mode.
+
+If you do not install it, the suite falls back to its standalone scanner with no command-surface change.
+
+### Verify the install
+
+After reload, these four user-facing entries should be available:
+
+- `/arch:onboard`
+- `/arch:design`
+- `/arch:audit`
+- `/arch:brief`
+
 ## How to start
 
 ```bash
@@ -118,6 +162,7 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 - **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
 - **Business capability map** (`specs/baseline.yaml#capabilities[]`, v1.0 inlined into baseline) — capability × maturity × importance × supporting components × gaps, for business-axis reporting and gap analysis
 - **Integrated health-check view** (`generated/audit/{date}-健康度.md`) — audit-emit aggregation of risks/debt/open_questions/KB drift/anti-patterns/drift findings, 10 sections ≤250 lines, one-stop project health snapshot
+- **Understand-Anything integration** (optional) — if [UA plugin](https://github.com/Lum1104/Understand-Anything) (31K+ ⭐) is installed, `arch-analyze` auto-detects `.understand-anything/knowledge-graph.json` and switches to ua-augmented mode, converting UA's nodes/edges directly into our specs; not installed = falls back to standalone with no capability loss
 
 What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
 
