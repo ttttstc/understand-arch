@@ -28,8 +28,7 @@ description: |
 
 ## 输出
 
-- `specs/baseline.yaml`(含 `capabilities_index` 索引字段同步)
-- `specs/capabilities.yaml`(业务能力地图,新增)
+- `specs/baseline.yaml`(含内嵌 `capabilities[]` 字段,v1.0 收敛)
 - `specs/quality.yaml`
 - `specs/risks.yaml`
 - `specs/decisions.yaml`(仅索引字段;ADR 正文归 arch-adr)
@@ -122,7 +121,7 @@ description: |
 
 ### baseline-refresh mode
 
-- ✅ 可写: `specs/baseline.yaml`(含 `capabilities_index` 索引同步) · `capabilities.yaml`(新增) · `quality.yaml` · `risks.yaml` · `traceability.yaml` · `diagrams/*.mmd`;`specs/decisions.yaml` 仅索引字段(append-only,不修改既有条目)
+- ✅ 可写: `specs/baseline.yaml`(含内嵌 `capabilities[]` 字段) · `quality.yaml` · `risks.yaml` · `traceability.yaml` · `diagrams/*.mmd`;`specs/decisions.yaml` 仅索引字段(append-only,不修改既有条目)
 - ❌ 禁写: `generated/**`(归 arch-pack) · `decisions/ADR-*.md`(归 arch-adr) · `change-requests/**` · `state.yaml`(走 state_delta)
 
 ### drift-audit mode
@@ -157,5 +156,4 @@ state_delta:
 - `references/risk-and-debt-rubric.md`
 - `references/capabilities-rubric.md`
 - `references/subagent-orchestration.md`
-- `internal/schemas/specs-capabilities.schema.json`
 - `internal/schemas/scan-shard.schema.json`

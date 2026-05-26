@@ -33,8 +33,7 @@
 ```text
 arch/{项目名}/
 ├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源,无 markdown 解释)
-│   ├── baseline.yaml                 # 组件、接口、数据模型、部署单元、capabilities_index
-│   ├── capabilities.yaml             # 业务能力地图(能力 × 成熟度 × 重要度 × 承载组件 × gaps)
+│   ├── baseline.yaml                 # 组件、接口、数据模型、部署单元、capabilities[](v1.0 内嵌)
 │   ├── quality.yaml                  # NFR、组织 KB、运行/发布/回滚约束
 │   ├── risks.yaml                    # 风险 + 技术债台账
 │   ├── decisions.yaml                # ADR 索引 + superseded[] 关系
@@ -112,10 +111,10 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 
 **v1.0 specs-CR 模型已落地**,含:
 
-- spec + 10 skill + **15 JSON schema** + 4 acceptance gate + write-scope 契约 + **19 份 reference 文档** + 18 份知识库 seed
+- spec + 10 skill + **14 JSON schema**(v1.0 收敛:capabilities 内嵌 baseline) + 4 acceptance gate + write-scope 契约 + **19 份 reference 文档** + 18 份知识库 seed
 - `arch/_template/` 骨架 + `arch/sample/` 演示工作区
 - **多 agent 并行扫描编排**(`scan-shard` 契约 + 切片规则 + 主上下文聚合)— 解决大仓上下文溢出
-- **业务能力地图**(`specs/capabilities.yaml`)— 能力 × 成熟度 × 重要度 × 承载组件 × gaps,作为 specs 一等公民,支撑业务能力维度的汇报与差距分析
+- **业务能力地图**(`specs/baseline.yaml#capabilities[]`,v1.0 内嵌于 baseline)— 能力 × 成熟度 × 重要度 × 承载组件 × gaps,支撑业务能力维度的汇报与差距分析
 - **系统问题集成视图**(`generated/audit/{date}-健康度.md`)— audit 收尾聚合 risks/debt/open_questions/KB 漂移/反模式/drift,10 段 ≤250 行,一份表掌握项目健康度
 
 未进 v1.0(见 [v1.1 候选](./docs/spec-v1.0.md#v11-candidates)):

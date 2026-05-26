@@ -63,7 +63,7 @@ audience=onboarding 时默认生成固定 6 页(`references/wiki-pages-template/
 3. `03-数据与关键链路.md`
 4. `04-质量属性与运行约束.md`
 5. `05-风险、决策与近期变更.md`
-6. `06-能力雷达.md`(业务能力地图视图,从 `specs/capabilities.yaml` 重组)
+6. `06-能力雷达.md`(业务能力地图视图,从 `specs/baseline.yaml#capabilities[]` 重组)
 
 每页规则:
 1. 每页只回答一类问题

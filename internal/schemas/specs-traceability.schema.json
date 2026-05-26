@@ -54,7 +54,8 @@
         "notes": { "type": "string" },
         "evidence_refs": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
+          "description": "link 本身就是 traceability;evidence 可选(v1.0 松绑:不强制 minItems:1)",
           "items": { "$ref": "#/$defs/evidenceRef" }
         }
       }
