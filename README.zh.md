@@ -116,6 +116,7 @@ AI / agent 架构 KB(`arch-library/agent-architecture/`)有意先 defer,等 AI �
 - **多 agent 并行扫描编排**(`scan-shard` 契约 + 切片规则 + 主上下文聚合)— 解决大仓上下文溢出
 - **业务能力地图**(`specs/baseline.yaml#capabilities[]`,v1.0 内嵌于 baseline)— 能力 × 成熟度 × 重要度 × 承载组件 × gaps,支撑业务能力维度的汇报与差距分析
 - **系统问题集成视图**(`generated/audit/{date}-健康度.md`)— audit 收尾聚合 risks/debt/open_questions/KB 漂移/反模式/drift,10 段 ≤250 行,一份表掌握项目健康度
+- **Understand-Anything 集成**(可选)— 用户装了 [UA plugin](https://github.com/Lum1104/Understand-Anything)(31K+ ⭐)后,arch-analyze 自动检测 `.understand-anything/knowledge-graph.json` 并切换到 ua-augmented mode,把 UA 的 nodes/edges 直接转成我们 specs;不装时走 standalone 不退化
 
 未进 v1.0(见 [v1.1 候选](./docs/spec-v1.0.md#v11-candidates)):
 

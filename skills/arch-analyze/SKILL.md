@@ -37,7 +37,17 @@ description: |
 
 `generated/overview.md` 归 `arch-pack`,不由本 skill 产。
 
-## 扫描算法
+## Mode 选择(开始扫前)
+
+1. 检测 `${ARCH_PROJECT_DIR}/../.understand-anything/knowledge-graph.json`:
+   - **存在 + FRESH**(UA gitCommitHash 与当前 HEAD 一致)→ **ua-augmented mode**(走 `references/ua-graph-adapter.md`)
+   - **存在 + POSSIBLY_STALE**(commit 漂移 ≤20 文件)→ ua-augmented mode + 中文提示用户考虑重跑 `/understand`
+   - **存在 + STALE**(漂移 >20 文件)→ 提示用户;用户同意继续则用旧图(标 stale),否则回退 standalone
+   - **不存在 / 损坏 / 用户 `--no-ua`** → **standalone mode**(下 5 段式)
+2. ua-augmented mode 跑完即可,不需要 5 段式;`Phase 0-7` 在 adapter 手册内
+3. standalone mode 继续往下
+
+## 扫描算法(standalone mode)
 
 遵循 5 段式：
 
@@ -150,10 +160,11 @@ state_delta:
 - `internal/schemas/specs-*.schema.json`
 - `internal/tool-contracts/write-scope.yaml`
 - `internal/acceptance/onboard.yaml`
-- `references/scanner-playbook.md`
+- `references/scanner-playbook.md`(standalone mode)
 - `references/freshness-rules.md`
 - `references/architecture-composition-rubric.md`
 - `references/risk-and-debt-rubric.md`
 - `references/capabilities-rubric.md`
-- `references/subagent-orchestration.md`
+- `references/subagent-orchestration.md`(standalone mode 切片)
+- `references/ua-graph-adapter.md`(ua-augmented mode 适配)
 - `internal/schemas/scan-shard.schema.json`
