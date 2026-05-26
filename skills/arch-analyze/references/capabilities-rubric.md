@@ -1,6 +1,6 @@
 # 业务能力抽取手册
 
-> 约束 `arch-analyze` 如何从代码 + README + PRD 抽取 `specs/capabilities.yaml`,避免:
+> 约束 `arch-analyze` 如何从代码 + README + PRD 抽取 `specs/baseline.yaml#capabilities[]`(v1.0 收敛:内嵌于 baseline,不再独立 `specs/capabilities.yaml`),避免:
 >
 > - 把"组件"当能力(eg. 写"order-service" 当能力)
 > - 把"技术动作"当能力(eg. 写"调用第三方 API" 当能力)
@@ -124,13 +124,13 @@ gaps:
 
 ## 4. 输出双写
 
-每次抽取产 `specs/capabilities.yaml` 的同时,**必须**更新 `specs/baseline.yaml#capabilities_index`,保持索引同步。索引仅放 `id + name + importance`,避免 baseline 膨胀。
+v1.0 收敛:抽取结果**直接写 `specs/baseline.yaml#capabilities[]`**(全字段内嵌),不再产独立的 `specs/capabilities.yaml`,杜绝索引同步漂移。
 
 ## 5. 增量更新规则
 
 - onboard 首跑:全量抽取
 - baseline-refresh:对比代码新增 component / 新 API / 新业务域目录 → 候选新能力 → **必须人工 review** 后才追加(防止机器幻觉造一堆 "rest-api-handler" 类伪能力)
-- design CR 引入新能力:由 `arch-frame` 在 cr.md 里点明 "新增能力 CAP-NNN: xxx",writeback 时由 workflow 写入 capabilities.yaml
+- design CR 引入新能力:由 `arch-frame` 在 cr.md 里点明 "新增能力 CAP-NNN: xxx",writeback 时由 workflow append 进 baseline.yaml#capabilities[]
 
 ## 6. 最小可用门槛
 
@@ -147,7 +147,7 @@ onboard 收尾要求:
 | 把每个 service 当能力(`CAP-001=order-service`) | 颗粒度错;能力数量 = 组件数量 = 没增量信息 | 重抽:从"系统能干什么"反推 |
 | 一条能力堆 ≥10 个 supporting_components | 颗粒度过粗;能力定义太大 | 拆分;eg. "支付" 拆成 "订阅计费 / 一次性收款 / 退款 / 跨币种结算" |
 | 全是 user_facing=true,无 false | 缺基础设施级能力识别(eg. "异步任务队列") | 补内部能力 |
-| 能力清单与 README 描述不一致 | LLM 抽取偏离 PRD | 优先信任 README;capabilities.yaml 必须能找到 README 的对应描述 |
+| 能力清单与 README 描述不一致 | LLM 抽取偏离 PRD | 优先信任 README;baseline.yaml#capabilities[] 必须能找到 README 的对应描述 |
 | `maturity: missing` 而无 gap 描述 | 标了 gap 但没说为什么 missing | 必须在 gaps[] 写清"why missing + 业务影响" |
 
 ## 8. 给汇报的辅助

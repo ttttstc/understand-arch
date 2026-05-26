@@ -87,8 +87,7 @@ specs stale, run refresh?
 ```text
 arch/{project}/
 ├── specs/                         # 稳定架构基线,长期维护;100% 事实层(yaml + diagram 源)
-│   ├── baseline.yaml              # 组件、依赖、接口、数据、部署、外部依赖、capabilities_index
-│   ├── capabilities.yaml          # 业务能力地图(能力 × 成熟度 × 重要度 × 承载组件 × gaps)
+│   ├── baseline.yaml              # 组件、接口、数据、部署、外部依赖、capabilities[](v1.0 内嵌)
 │   ├── quality.yaml               # NFR、安全、合规、可观测性、运行约束
 │   ├── risks.yaml                 # 风险与技术债台账
 │   ├── decisions.yaml             # ADR 索引、key_assumptions、superseded 关系
@@ -200,10 +199,11 @@ deployment_units:
 runtime_configs:
 critical_flows:
 ownership:
+capabilities:                  # v1.0 收敛:业务能力地图内嵌(原 specs/capabilities.yaml)
+view_coverage:                 # v1.0 松绑:status + note,不强制 5 子字段
 known_unknowns:
 last_verified:
 last_scanned_commit:
-current_commit_at_review:
 changed_files_since_scan:
 freshness_status:
 baseline_commits:
@@ -220,13 +220,14 @@ evidence_refs:
 - `last_scanned_commit` 记录最后一次代码扫描提交。
 - `freshness_status` 使用 `fresh|possibly_stale|stale|unknown`。
 
-### `specs/capabilities.yaml`
+### `specs/baseline.yaml#capabilities[]`(v1.0 收敛:内嵌于 baseline,不再独立文件)
 
-业务能力地图,specs/ 一等公民。把"业务能力"层显式建模,**与组件维度互为正交**:同一能力可由多个组件承载,同一组件可服务多个能力。
+业务能力地图,baseline.yaml 的一级字段。把"业务能力"层显式建模,**与组件维度互为正交**:同一能力可由多个组件承载,同一组件可服务多个能力。
 
 每条能力必须含:
 
 ```yaml
+# baseline.yaml#capabilities
 capabilities:
   - id: CAP-NNN              # 三位连续编号
     name:                    # 中文优先,2-6 字
@@ -235,17 +236,17 @@ capabilities:
     importance:              # core | supporting | peripheral
     maturity:                # mature | evolving | experimental | deprecated | missing
     supporting_components:
-      - component:           # 必须存在于 baseline.yaml#components
+      - component:           # 必须存在于本文件 components[]
         role:                # primary | secondary | shared
     user_facing:             # 最终用户能否感知
     gaps:                    # 关联 R-NNN / Q-NNN
-    external_dependencies:   # 必须存在于 baseline.yaml#external_dependencies
+    external_dependencies:   # 必须存在于本文件 external_dependencies[]
     evidence_refs:
 ```
 
 关键约束:
 
-- **`specs/baseline.yaml#capabilities_index` 必须与本文件 `(id, name)` 集合一致**(索引同步)。
+- v1.0 收敛:**capabilities 直接内嵌 baseline.yaml**,不再独立维护 `specs/capabilities.yaml` — 减少文件数 + 杜绝索引同步漂移。
 - 能力是长期事实(半年内变化不大)。onboard 首跑由 `arch-analyze` 按 `capabilities-rubric.md` 抽取候选,需要**人工 review** 后才正式落,后续 CR 引入新能力时增量更新。
 - `maturity: missing` 表示能力被识别但未实现,**必须配套 gaps 描述**(为何 missing + 业务影响)。
 - 抽取规则、判定标准、反模式见 `skills/arch-analyze/references/capabilities-rubric.md`。

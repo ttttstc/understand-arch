@@ -35,8 +35,7 @@ v1.0 exposes only **four user-facing entries**. Everything else is internal orch
 ```text
 arch/{project}/
 ├── specs/                            # 100% fact layer (yaml + Mermaid only, no markdown)
-│   ├── baseline.yaml                 # components, interfaces, data models, deployments, capabilities_index
-│   ├── capabilities.yaml             # business capability map (capability × maturity × importance × supporting components × gaps)
+│   ├── baseline.yaml                 # components, interfaces, data models, deployments, capabilities[] (v1.0 inlined)
 │   ├── quality.yaml                  # NFRs, org KB, runtime/release/rollback constraints
 │   ├── risks.yaml                    # risks + tech debt ledger
 │   ├── decisions.yaml                # ADR index + superseded[] relationships
@@ -114,10 +113,10 @@ The first run scans your repo, writes a `specs/` baseline, computes `freshness_s
 
 **v1.0 specs-CR model is in place**, including:
 
-- Spec + 10 skills + **15 JSON schemas** + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
+- Spec + 10 skills + **14 JSON schemas** (v1.0 收敛:capabilities inlined into baseline) + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
 - `arch/_template/` scaffold and `arch/sample/` worked example
 - **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
-- **Business capability map** (`specs/capabilities.yaml`) — capability × maturity × importance × supporting components × gaps, as a first-class specs citizen for business-axis reporting and gap analysis
+- **Business capability map** (`specs/baseline.yaml#capabilities[]`, v1.0 inlined into baseline) — capability × maturity × importance × supporting components × gaps, for business-axis reporting and gap analysis
 - **Integrated health-check view** (`generated/audit/{date}-健康度.md`) — audit-emit aggregation of risks/debt/open_questions/KB drift/anti-patterns/drift findings, 10 sections ≤250 lines, one-stop project health snapshot
 
 What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):

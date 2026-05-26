@@ -15,13 +15,25 @@ deployment_units: []
 runtime_configs: []
 critical_flows: []
 ownership: []
-capabilities_index: []   # 业务能力索引,详情见 specs/capabilities.yaml
+# 业务能力地图(v1.0 收敛进 baseline,不再单独 specs/capabilities.yaml)
+# 抽取规则见 skills/arch-analyze/references/capabilities-rubric.md
+capabilities: []
+# - id: CAP-001
+#   name: ""                    # 中文优先,2-6 字
+#   description: ""             # ≤30 字,对外视角
+#   category: ""                # 可选业务域分组
+#   importance: ""              # core | supporting | peripheral
+#   maturity: ""                # mature | evolving | experimental | deprecated | missing
+#   supporting_components:      # 必须存在于本文件 components[]
+#     - component: ""
+#       role: ""                # primary | secondary | shared
+#   user_facing: true
+#   gaps: []                    # 关联 R-NNN / Q-NNN
+#   external_dependencies: []   # 必须存在于本文件 external_dependencies[]
+#   evidence_refs: []
 view_coverage:
-  logical: missing
-  development: missing
-  process: missing
-  physical: missing
-  scenarios: missing
+  status: missing               # complete | partial | missing
+  note: "Template scaffold; run /arch:onboard to populate"
 known_unknowns:
   - id: TEMPLATE-UNKNOWN-001
     question: "Project baseline has not been generated yet."
@@ -29,7 +41,6 @@ known_unknowns:
     next_action: "Run /arch:onboard"
 last_verified: TEMPLATE
 last_scanned_commit: git_unavailable
-current_commit_at_review: git_unavailable
 changed_files_since_scan: []
 freshness_status: unknown
 baseline_commits:

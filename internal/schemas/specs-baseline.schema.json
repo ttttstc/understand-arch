@@ -15,12 +15,11 @@
     "runtime_configs",
     "critical_flows",
     "ownership",
-    "capabilities_index",
+    "capabilities",
     "view_coverage",
     "known_unknowns",
     "last_verified",
     "last_scanned_commit",
-    "current_commit_at_review",
     "changed_files_since_scan",
     "freshness_status",
     "baseline_commits",
@@ -83,25 +82,26 @@
       "type": "array",
       "items": { "$ref": "#/$defs/ownership" }
     },
-    "capabilities_index": {
+    "capabilities": {
       "type": "array",
-      "description": "业务能力索引(详情见 specs/capabilities.yaml)。仅放 id + name 摘要,避免 baseline 膨胀。空数组表示尚未抽取业务能力(常见于 onboard 首跑前)。",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "name"],
-        "properties": {
-          "id": { "type": "string", "pattern": "^CAP-[0-9]{3}$" },
-          "name": { "type": "string", "minLength": 1 },
-          "importance": { "type": "string", "enum": ["core", "supporting", "peripheral"] }
-        }
-      }
+      "description": "业务能力地图(原 specs/capabilities.yaml,v1.0 收敛进 baseline)。把'业务能力'层显式建模:同一能力可由多个组件承载,同一组件可服务多个能力。空数组表示尚未抽取(常见于 onboard 首跑前)。",
+      "items": { "$ref": "#/$defs/capability" }
     },
     "view_coverage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["logical", "development", "process", "physical", "scenarios"],
+      "required": ["status"],
+      "description": "4+1 视图覆盖状态(v1.0 松绑:不强制 5 维子字段,只要 status + note)。",
       "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "partial", "missing"],
+          "description": "complete=4+1 全覆盖 / partial=部分覆盖(note 说明) / missing=未做"
+        },
+        "note": {
+          "type": "string",
+          "description": "可选;partial / missing 时建议填,说明缺哪几维"
+        },
         "logical": { "$ref": "#/$defs/viewStatus" },
         "development": { "$ref": "#/$defs/viewStatus" },
         "process": { "$ref": "#/$defs/viewStatus" },
@@ -115,7 +115,6 @@
     },
     "last_verified": { "type": "string", "minLength": 1 },
     "last_scanned_commit": { "type": "string", "minLength": 1 },
-    "current_commit_at_review": { "type": "string", "minLength": 1 },
     "changed_files_since_scan": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
@@ -146,6 +145,100 @@
     "viewStatus": {
       "type": "string",
       "enum": ["complete", "partial", "missing"]
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "importance",
+        "maturity",
+        "supporting_components",
+        "evidence_refs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^CAP-[0-9]{3}$",
+          "description": "能力 id,CAP-001 三位连续编号。"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "业务能力名(中文优先,例 '订阅计费' / '内容推荐')。"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "一句话说明该能力对业务的意义(≤30 字)。"
+        },
+        "category": {
+          "type": "string",
+          "description": "可选业务域分组(例 '账务' / '用户' / '推送' / '内容')。"
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["core", "supporting", "peripheral"]
+        },
+        "maturity": {
+          "type": "string",
+          "enum": ["mature", "evolving", "experimental", "deprecated", "missing"]
+        },
+        "supporting_components": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["component", "role"],
+            "properties": {
+              "component": {
+                "type": "string",
+                "minLength": 1,
+                "description": "组件名,必须存在于本文件 components[]"
+              },
+              "role": {
+                "type": "string",
+                "enum": ["primary", "secondary", "shared"]
+              }
+            }
+          }
+        },
+        "user_facing": {
+          "type": "boolean",
+          "description": "是否直接面向最终用户"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description"],
+            "properties": {
+              "description": { "type": "string", "minLength": 1 },
+              "related_risks": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^R-[0-9]{3}$" }
+              },
+              "related_open_questions": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "external_dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRef" }
+        }
+      }
     },
     "evidenceRef": {
       "type": "object",

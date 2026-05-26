@@ -99,8 +99,8 @@ skills:
         write:
           - path: "${ARCH_PROJECT_DIR}/specs/baseline.yaml"
             constraints:
-              - "capabilities_index 字段必须与 specs/capabilities.yaml 的 (id,name) 集合一致"
-          - "${ARCH_PROJECT_DIR}/specs/capabilities.yaml"
+              - "v1.0 收敛:capabilities[] 字段内嵌于 baseline,无独立 capabilities.yaml"
+              - "每条 capability.supporting_components.component 必须存在于本文件 components[]"
           - "${ARCH_PROJECT_DIR}/specs/quality.yaml"
           - "${ARCH_PROJECT_DIR}/specs/risks.yaml"
           - path: "${ARCH_PROJECT_DIR}/specs/decisions.yaml"

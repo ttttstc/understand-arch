@@ -3,11 +3,10 @@ purpose: "Create or refresh a trusted architecture baseline under specs/."
 
 structural_checks:
   - id: specs-files
-    description: "specs baseline bundle exists (specs/ 100% 事实层,无 markdown)"
+    description: "specs baseline bundle exists (specs/ 100% 事实层,无 markdown;v1.0 收敛:capabilities 内嵌 baseline)"
     check: files_exist
     targets:
       - specs/baseline.yaml
-      - specs/capabilities.yaml
       - specs/quality.yaml
       - specs/risks.yaml
       - specs/decisions.yaml
@@ -28,8 +27,6 @@ structural_checks:
     targets:
       - file: specs/baseline.yaml
         schema: internal/schemas/specs-baseline.schema.json
-      - file: specs/capabilities.yaml
-        schema: internal/schemas/specs-capabilities.schema.json
       - file: specs/quality.yaml
         schema: internal/schemas/specs-quality.schema.json
       - file: specs/risks.yaml
@@ -54,11 +51,11 @@ semantic_checks:
       - baseline.yaml 覆盖仓库、组件、接口、数据模型、部署、外部依赖
       - overview.md 不引入脱离 YAML 的新事实
   - id: four-plus-one
-    question: "4+1 视图覆盖是否达到可审视状态？"
+    question: "4+1 视图覆盖状态是否明确？"
     severity: required
     rubric:
-      - baseline.yaml.view_coverage 五个维度都存在
-      - 缺项必须显式标 partial 或 missing，并解释 known_unknowns
+      - baseline.yaml.view_coverage.status 是 complete | partial | missing
+      - status != complete 时 note 字段须解释缺哪几维(v1.0 松绑:不强制 5 子字段必填)
   - id: freshness
     question: "specs 是否带有新鲜度判断所需字段？"
     severity: required
@@ -81,9 +78,8 @@ semantic_checks:
     question: "业务能力地图是否达到最小可用门槛？"
     severity: required
     rubric:
-      - capabilities.yaml 至少含 3 条 user_facing=true 的能力(过少则标 known_unknowns 解释为什么)
-      - 每条能力的 supporting_components 引用都能在 baseline.yaml#components 找到
-      - baseline.yaml.capabilities_index 与 capabilities.yaml 的 (id,name) 集合一致
+      - baseline.yaml#capabilities 至少含 3 条 user_facing=true 的能力(过少则标 known_unknowns 解释为什么)
+      - 每条能力的 supporting_components.component 引用都能在 baseline.yaml#components 找到
       - 每条能力的 gaps[] 若引用 R-NNN/Q-NNN,目标必须存在
 
 threshold:

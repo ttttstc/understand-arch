@@ -7,8 +7,7 @@
 ```text
 arch/{project}/
 ├── specs/                            # 100% 事实层(只有 yaml + Mermaid 图源)
-│   ├── baseline.yaml                 # 含 capabilities_index 索引
-│   ├── capabilities.yaml             # 业务能力地图(能力 × 成熟度 × 承载组件 × gaps)
+│   ├── baseline.yaml                 # 含内嵌 capabilities[] 字段(v1.0 收敛)
 │   ├── quality.yaml
 │   ├── risks.yaml
 │   ├── decisions.yaml
