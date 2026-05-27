@@ -1409,7 +1409,28 @@ arch-diagram 正在开发中,v2.1 见。
 | 3 | `arch-architecture-analyzer` | 架构分层 | `intermediate/layers-{repo_id}.json` |
 | 4 | `arch-domain-analyzer` | 业务能力(支持跨仓 capability) | `intermediate/domains.json` |
 | 5 | `arch-quality-analyzer` ★ v2.0 新增 | NFR / risks / debt(强制 confidence) | `intermediate/quality.json` |
-| 6 | `arch-graph-reviewer` | graph 完整性 review(含 confidence/evidence 闭合) | `intermediate/review-{repo_id}.json` |
+| 6 | `arch-graph-reviewer` ★ v2.0 扩展 | **graph 生成全链路 review**(多 phase mode) | `intermediate/review-{phase}-{repo_id}.json` |
+
+**arch-graph-reviewer 扩展(v2.0)**
+
+UA 原版只在 Phase 7 跑一次。v2.0 扩展为**graph 生成全链路验收**,多 phase mode:
+
+| Mode | 触发时机 | 检查内容 | 实现方式 |
+|---|---|---|---|
+| `--mode=phase-1-scan` | Phase 1 SCAN 后 | scan-result.json 完整性 / 语言框架检测合理性 / ignore 过激度 | engine 确定性脚本(`engine/bin/validate-phase-1.js`)|
+| `--mode=phase-2-batch` | Phase 2 ANALYZE 抽样 | 单 batch 抽 10% review(评估是否漏抽/过抽) | engine 脚本 |
+| `--mode=phase-3-assemble` | Phase 3 ASSEMBLE 后 | 节点边总数 vs 文件数比例 / 节点重复检测 | engine 脚本 |
+| `--mode=phase-4-structure` | Phase 4 STRUCTURE 后 | ★ layers 是否覆盖 ≥70% nodes / 是否有孤立 node | **subagent**(主观判断) |
+| `--mode=phase-5-domain` | Phase 5 DOMAIN 后 | ★ 每个 core 能力 ≥1 supporting component / capability 边界是否合理 | **subagent** |
+| `--mode=phase-6-quality` | Phase 6 QUALITY 后 | confidence 必填 / weasel words / evidence_refs 闭合 | **subagent** |
+| `--mode=phase-7-final` | Phase 7 REVIEW(最终) | graph 总图完整性 + referential integrity | **subagent**(UA 原版) |
+| `--mode=phase-8-cross-repo` | Phase 8 FINALIZE | cross_edges referential integrity + 跨仓 capability 合理性 | **subagent** |
+
+**实现切分原则**(Q-split-1=b):
+- Phase 1-3:**确定性脚本**(机械可验证,免 subagent 成本)
+- Phase 4-8:**subagent**(需要主观/语义判断)
+
+**rubric 文件**:每 mode 对应 `internal/rubrics/graph-phase-{N}-*.yaml`,见 §11.4。
 
 #### 4.3.2 v2.0 新增 design 链 subagent(2 个)
 
@@ -1439,6 +1460,71 @@ arch-diagram 正在开发中,v2.1 见。
   - 标 known_unknowns(待定问题)
 - **rules/ 现读**:必须读 `rules/*.md` 全量,确保方案不违反组织约束
 - **写权限**:`change-requests/CR-*/solution-design.md`
+
+#### 4.3.3 v2.0 新增决策视图层 reviewer(1 个)
+
+**9. `arch-senior-reviewer`** ★ — 高级架构师终审 agent
+
+- **角色定位**:15 年经验高级架构师,经历多个 1M+ DAU 系统设计与重构;关注简洁性、演进性、风险识别、可观测性、可执行性;对模糊判断和应付式产出零容忍
+- **触发命令**:**仅在 `/arch-design` 和 `/arch-wiki`(受众化 mode)末尾触发**
+- **不触发场景**:`/arch-onboard` / `/arch-audit`(graph 层由 graph-reviewer 管,不重复)
+- **输入**:对应产物 + rubric 文件 + 当前 graph(只读)+ rules/*.md
+- **输出**:JSON 评审报告(见下方协议)
+
+**evaluator 角色 prompt(摘要)**:
+- 经验定位:多个 1M+ DAU 系统 + 跨业务架构治理经验
+- 偏好:简洁优于复杂、演进优于一次到位、显式优于隐式、证据优于直觉
+- 禁忌:不接受"应该/通常/大概",不接受"假设可以XX"式空想,不接受详细设计跟改动清单脱节
+- 反馈强制 JSON 格式
+
+**反馈 JSON 协议(强制)**:
+
+```json
+{
+  "verdict": "pass | needs_revision | fail",
+  "overall_score": 0.85,
+  "dimensions": {
+    "completeness": 0.9,
+    "actionability": 0.7,
+    "consistency": 0.85,
+    "honesty": 0.95
+  },
+  "findings": [
+    {
+      "id": "f-001",
+      "severity": "blocker | major | minor",
+      "where": "solution-design.md § 4.3 组件变化",
+      "issue": "新增 RateLimitService 但未定义接口契约,研发拿到无法实现",
+      "expectation": "至少写出方法签名、入参类型、错误码",
+      "actionable_fix": "在 § 4.2 加 IRateLimitService 接口定义,包含 check(userId, scope) → RateLimitDecision"
+    }
+  ],
+  "passed_criteria": ["13 段段落完整", "替代方案诚实标注"],
+  "summary_zh": "整体方案思路清晰,但详细设计缺接口契约,研发无法直接实施。建议补全接口签名后通过。"
+}
+```
+
+**触发后行为(refiner loop)**:
+
+```
+arch-senior-reviewer verdict
+├── pass            → 进入下一步(写盘 + 通知用户)
+├── needs_revision  → 反馈打回 producer,refiner loop ≤2 次
+│                     │ producer 用 findings 重写产物
+│                     │ senior-reviewer 复审
+│                     │ 仍 needs_revision → 第 3 次给用户 4 选项
+└── fail            → 直接给用户 4 选项,不再 loop
+```
+
+**复用 §11.3 失败处理协议**(4 选项:retry with hints / manual fix / override / abort)。
+
+**Mode**:
+- `--mode=design` — 审 `solution-design.md` + 关联 `impact.md` + `changes.md`(rubric: `senior-design-review.yaml`)
+- `--mode=wiki` — 审 wiki 16 页(rubric: `senior-wiki-review.yaml`),**仅当用户用 `--audience=cto|architect` 时触发**(Q-split-2=c)
+
+**写权限**:
+- `change-requests/CR-*/senior-review.json`(design mode)
+- `wiki/.senior-review-{date}.json`(wiki mode)
 
 ### 4.4 废弃 skill(v1.0 → v2.0)
 
@@ -1709,29 +1795,250 @@ wiki 内 LLM 推断条目末尾追加:`(LLM 推断,confidence=low,建议人工 c
 
 ---
 
-## 11. Acceptance
+## 11. Acceptance(验收机制)
 
-### 11.1 Acceptance 数量
+### 11.0 验收机制总览(v2.0 二元分工)
 
-**4 个**(`/arch-diagram` v2.0 占位无 acceptance,Q-detail-4=b 决策):
+v2.0 验收机制按**产物领域**拆为两套独立系统:
 
-- `internal/acceptance/onboard.yaml`
-- `internal/acceptance/design.yaml`
-- `internal/acceptance/audit.yaml`
-- `internal/acceptance/wiki.yaml`
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  事实层验收(graph 生成)                                        │
+│  Reviewer: arch-graph-reviewer(多 phase mode)                  │
+│  性质:    客观,机械化为主                                      │
+│  触发命令: /arch-onboard、/arch-audit                            │
+│  介入点:  Phase 1-8 全链路                                      │
+│  实现:    Phase 1-3 用 engine 确定性脚本                        │
+│            Phase 4-8 用 subagent + rubric                        │
+└──────────────────────────────────────────────────────────────────┘
 
-### 11.2 检查内容
+┌──────────────────────────────────────────────────────────────────┐
+│  决策视图层验收(design / wiki 产物)                            │
+│  Reviewer: arch-senior-reviewer(高级架构师 agent)              │
+│  性质:    主观,架构师水平判断                                  │
+│  触发命令: /arch-design(默认)、/arch-wiki(仅受众化 mode)      │
+│  介入点:  产物完成后终审                                        │
+│  实现:    subagent + rubric + refiner loop                       │
+└──────────────────────────────────────────────────────────────────┘
 
-| Gate | structural_checks | semantic_checks |
+互不调用,各管一片。
+```
+
+**为什么这样切**:
+- 事实层 80% 可客观验证(schema / 引用 / 字段),归 graph-reviewer 干,效率高
+- 决策视图层 80% 需主观判断(分层是否合理、方案能否执行),归 senior-reviewer 干,质量高
+- 两个 reviewer 能力模型不同,合并反而互相拖累
+
+### 11.1 三层质量保障(每个 acceptance gate 内部)
+
+不管哪个 reviewer,内部都跑三层:
+
+```
+Layer 1: structural_checks(脚本)
+   - schema 合规 / 字段必填 / referential integrity
+   - 失败 → fail-loud(立即停)
+        ↓ 通过
+Layer 2: semantic_checks(LLM + rubric)
+   - 弱化词检测 / evidence 闭合 / confidence 必填
+   - 失败 → retry ≤2 次 → 给用户 4 选项
+        ↓ 通过
+Layer 3: reviewer 终审(graph-reviewer 或 senior-reviewer)
+   - 领域专属深审(见 §11.2 / §11.3)
+   - 失败 → refiner loop ≤2 次 → 给用户 4 选项
+```
+
+### 11.2 graph-reviewer 验收清单(事实层)
+
+按 §4.3.1 表展开,8 个 phase mode:
+
+| Mode | 检查项 | rubric 文件 | 实现 |
+|---|---|---|---|
+| phase-1-scan | 文件数 / 语言数 / 框架数合理性;ignore 过滤率 < 95% | `graph-phase-1-scan.yaml` | 脚本 |
+| phase-2-batch | 抽 10% batch:节点密度 / edge 密度 / 命名合理性 | `graph-phase-2-analyze.yaml` | 脚本 |
+| phase-3-assemble | 节点边总数 vs 文件数比例区间;无重复 id | `graph-phase-3-assemble.yaml` | 脚本 |
+| phase-4-structure | ★ layers 覆盖 ≥70% nodes;无孤立 node;每层 ≥3 nodes | `graph-phase-4-structure.yaml` | subagent |
+| phase-5-domain | ★ 每个 core 能力 ≥1 supporting component;maturity 合理 | `graph-phase-5-domain.yaml` | subagent |
+| phase-6-quality | NFR 8 类每类 ≥1 条;risks/debt 100% 带 confidence;0 weasel words | `graph-phase-6-quality.yaml` | subagent |
+| phase-7-final | graph 总图完整性 + referential integrity + tour 可生成 | `graph-phase-7-final.yaml` | subagent(UA 原版)|
+| phase-8-cross-repo | cross_edges 引用闭合;跨仓 capability supporting node 跨仓覆盖 | `graph-phase-8-cross-repo.yaml` | subagent |
+
+### 11.3 senior-reviewer 验收清单(决策视图层)
+
+#### 11.3.1 senior-design-review.yaml(arch-design 终审 rubric)
+
+```yaml
+dimensions:
+  completeness:
+    weight: high
+    checks:
+      - id: design-13-sections
+        question: "solution-design.md 是否 13 段都有,无空段"
+        pass_criterion: "13/13"
+      - id: changes-coverage
+        question: "changes.md 是否按仓分组,且每个改动跟 § 4 详细设计能对得上"
+        pass_criterion: "≥90% 对得上"
+
+  actionability:
+    weight: high
+    checks:
+      - id: interface-contract
+        question: "新增/修改接口是否有方法签名、入参/出参类型、错误码"
+        pass_criterion: "100%"
+      - id: implementation-steps
+        question: "§ 9 实施步骤是否按依赖排序,每步有验证点"
+        pass_criterion: "100%"
+      - id: rollback-plan
+        question: "§ 10 回滚预案是否含触发条件、步骤、数据回滚"
+        pass_criterion: "若涉及 schema 变更必须 100%"
+
+  consistency:
+    weight: high
+    checks:
+      - id: design-vs-impact
+        question: "§ 4 详细设计声明的组件改动跟 impact.yaml#nodes 是否一致"
+        pass_criterion: "100%"
+      - id: design-vs-changes
+        question: "§ 4 详细设计跟 changes.md 文件清单是否对得上"
+        pass_criterion: "≥95%"
+
+  honesty:
+    weight: high
+    checks:
+      - id: alternatives
+        question: "§ 5 替代方案是否真有内容,不是凑数"
+        pass_criterion: "至少 1 个有质量的 alternative,或显式声明无显著替代"
+      - id: known-unknowns
+        question: "§ 12 known_unknowns 是否标了至少 1 条(架构师标准:任何方案都有 unknown)"
+        pass_criterion: "≥1 条 + reasoning"
+      - id: weasel-words
+        question: "全文是否有'应该/通常/大概'等弱化词"
+        pass_criterion: "0 条"
+
+  rules-compliance:
+    weight: high
+    checks:
+      - id: rules-respected
+        question: "方案是否违反 rules/*.md(尤其 banned-patterns / compliance / network-boundaries)"
+        pass_criterion: "0 violation"
+
+verdict_thresholds:
+  pass: "overall_score ≥ 0.85 且无 blocker"
+  needs_revision: "overall_score 0.6-0.85 或有 major findings"
+  fail: "overall_score < 0.6 或有 blocker"
+```
+
+#### 11.3.2 senior-wiki-review.yaml(arch-wiki 终审 rubric,仅 cto/architect mode)
+
+```yaml
+dimensions:
+  completeness:
+    weight: high
+    checks:
+      - id: 16-pages
+        question: "wiki 16 页是否全产"
+        pass_criterion: "16/16"
+      - id: per-page-substance
+        question: "每页是否讲透(不被字数限制制约,但有'是否实质讲清楚'判断)"
+        pass_criterion: "≥14/16 实质讲清楚"
+
+  traceability:
+    weight: high
+    checks:
+      - id: prose-to-graph
+        question: "每条 prose 断言可回链 graph node id 或 rules path"
+        pass_criterion: "≥95%"
+
+  audience-fit:
+    weight: high
+    checks:
+      - id: cto-fit
+        question: "(cto mode)README + 01 + 06 + 07 + 13 是否突出战略/风险/决策,无技术细节冗余"
+        pass_criterion: "≥0.8"
+      - id: architect-fit
+        question: "(architect mode)16 页全产,所有 4+1 视图与跨仓视图清晰"
+        pass_criterion: "≥0.8"
+
+  honesty:
+    weight: high
+    checks:
+      - id: known-limitations
+        question: "wiki/03-interfaces.md 末尾'已知局限'段是否保留"
+        pass_criterion: "100%"
+
+verdict_thresholds:
+  pass: "overall_score ≥ 0.85 且无 blocker"
+  needs_revision: "overall_score 0.6-0.85"
+  fail: "overall_score < 0.6"
+```
+
+### 11.4 Acceptance Gate(用户入口级)
+
+**4 个 acceptance gate**(`/arch-diagram` 占位无 acceptance):
+
+| Gate | Layer 1 structural | Layer 2 semantic | Layer 3 reviewer |
+|---|---|---|---|
+| `onboard.yaml` | graph schema + nodes ≥ N + freshness=fresh | wiki 16 页可回链 graph | arch-graph-reviewer Phase 1-8 全链路 |
+| `design.yaml` | cr.md / impact.yaml / changes.md / solution-design.md schema | graph 局部追加成功 + rules 不冲突 | ★ **arch-senior-reviewer --mode=design** |
+| `audit.yaml` | freshness 计算正确 + audit 报告产出 | drift 发现合理 | arch-graph-reviewer drift mode |
+| `wiki.yaml` | wiki 16 页全产 + 每条 prose 可 trace | 受众化 mode 输出符合预期 | ★ **arch-senior-reviewer --mode=wiki**(仅 audience=cto/architect) |
+
+### 11.5 Refiner Loop(共享协议)
+
+**所有 Layer 2 + Layer 3 验收失败时统一协议**(Q-split-3=a):
+
+```
+失败
+ ↓
+retry with hints(把 findings 加进 prompt 重跑 producer)
+ ↓ 仍失败
+retry 第 2 次
+ ↓ 仍失败
+第 3 次给用户中文 4 选项:
+  1. retry with hints(再试一次,你可补充上下文)
+  2. manual fix(用户手动改产物,然后跑 /arch-audit 重验)
+  3. override(留 OVR-NNN 记录,标 state.yaml degraded,继续)
+  4. abort(放弃本次,回到上个 stable phase)
+```
+
+### 11.6 Override 审计约束
+
+- override **必须**记入 `state.yaml.overrides[]`(append-only,见 state schema)
+- 每条 override:`{ts, scope, reason, by}`,reason **必填且 ≥20 字符**
+- `state.yaml.status` 自动标 `degraded`
+- 下次 `/arch-audit` 报告会显示 degraded 项 + override 历史,提示用户清理
+
+### 11.7 Acceptance Budget(token/时间预算)
+
+每个 gate 最大资源消耗(防爆):
+
+| Gate | token 上限 | refiner loop 上限 |
 |---|---|---|
-| onboard | graph schema 合规 + nodes ≥ N + freshness=fresh | wiki 15 页每页可回链 graph |
-| design | cr.md / impact.yaml schema + graph.change_requests[] 追加成功 | impact 推理合理 + ADR review pass |
-| audit | freshness 计算正确 + audit 报告产出 | drift 发现合理 |
-| wiki | wiki 15 页全产 + 每条 prose 可 trace | 受众化 mode 输出符合预期 |
+| onboard | 1M total(全链路含多 phase reviewer) | 2 |
+| design | 200K | 2 |
+| audit | 100K | 2 |
+| wiki | 300K(含 senior review on cto/architect mode) | 2 |
 
-### 11.3 Loop
+超 budget → 自动降级 `degraded` + 中文提示用户。
 
-沿用 v1.0:structural → semantic → 失败重试最多 2 次 → 第 3 次失败给用户 4 选项(retry with hints / manual fix / override / abort)。
+### 11.8 Rubric 文件清单(共 10 份)
+
+```
+internal/rubrics/
+├── graph-phase-1-scan.yaml            # 脚本读
+├── graph-phase-2-analyze.yaml         # 脚本读
+├── graph-phase-3-assemble.yaml        # 脚本读
+├── graph-phase-4-structure.yaml       # subagent 读
+├── graph-phase-5-domain.yaml          # subagent 读
+├── graph-phase-6-quality.yaml         # subagent 读
+├── graph-phase-7-final.yaml           # subagent 读
+├── graph-phase-8-cross-repo.yaml      # subagent 读
+├── senior-design-review.yaml          # ★ design 终审
+└── senior-wiki-review.yaml            # ★ wiki 终审(audience 触发)
+```
+
+### 11.9 用户自定义 Rubric(可选)
+
+用户可在 `arch/{project}/rubrics/` 下覆盖默认 rubric(例如对特定行业加重 compliance 权重)。加载顺序:项目级 → 全局默认。
 
 ---
 
@@ -1941,10 +2248,10 @@ internal/schemas/
 | 0 | spec-v2.0 outline + 完整 spec(含多仓 + arch-design 重写) | ✅ |
 | 1 | Fork UA + license check (MIT) | ✅ |
 | 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 7-phase 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
-| 3 | 改造 6 个 subagent 适配 v2.0 字段(含 repo_id 前缀);新写 arch-quality-analyzer + **arch-impact-analyzer + arch-solution-designer**(共 3 个新增) | 待开 |
+| 3 | 改造 6 个 subagent 适配 v2.0 字段(含 repo_id 前缀);新写 **4 个**:arch-quality-analyzer + arch-impact-analyzer + arch-solution-designer + **arch-senior-reviewer**;扩展 arch-graph-reviewer 多 phase mode | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
 | 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(13 段 solution-design) / arch-audit / arch-wiki(16 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
-| 6 | 重写 schemas(**7** 个)+ acceptance(4)+ write-scope + README + rules 模板 + 更新 .claude-plugin/ plugin manifest | 待开 |
+| 6 | 重写 schemas(**7** 个)+ acceptance(4 gate)+ **rubrics(10 份)** + write-scope + README + rules 模板 + 更新 .claude-plugin/ plugin manifest | 待开 |
 | 7 | 复刻 hooks/ 自动更新(hooks.json + arch-update-prompt.md);对接多仓 freshness 模型(每仓独立 fingerprint) | 待开 |
 | 8 | esbuild bundle engine 工具到 engine/bin/,验证 plugin 安装后免 npm install 可跑 | 待开 |
 | 9 | e2e 验证:arch/sample/ 单仓 + 真实多仓项目 dogfood + hook 增量更新链路 | 待开 |
