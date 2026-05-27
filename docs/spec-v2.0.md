@@ -50,24 +50,22 @@ arch/{project}/                                  # 业务系统 workspace
 │   │   │   └── .fingerprint.json
 │   │   └── ...
 │   └── cross-repo.json                          # ★ 跨仓事实(decisions/CR/NFR/risks/debt/cross_edges)
-├── wiki/                                        # ★ 人类视图层(LLM 渲染,16 页)
+├── wiki/                                        # ★ 人类视图层(LLM 渲染,14 页,v2.0 优化收敛)
 │   ├── README.md                                # 索引
 │   ├── 01-overview.md
-│   ├── 02-components.md                         # Logical view (4+1)
+│   ├── 02-components.md                         # Logical + Development view(合并原 02 + 10)
 │   ├── 03-interfaces.md
 │   ├── 04-data-models.md
 │   ├── 05-capabilities.md                       # 业务能力地图(跨仓)
 │   ├── 06-quality.md                            # NFR
 │   ├── 07-risks-and-debt.md
-│   ├── 08-deployments.md                        # Physical view (4+1)
-│   ├── 09-runtime-flows.md                      # Process view (4+1)
-│   ├── 10-development-view.md                   # Development view (4+1)
-│   ├── 11-scenarios.md                          # Scenarios view (4+1)
-│   ├── 12-diagrams.md                           # 4+1 视图占位 (v2.1 实现)
-│   ├── 13-decisions.md                          # ADR 索引
-│   ├── 14-changes.md                            # CR 索引
-│   ├── 15-rules.md                              # rules/*.md 摘要
-│   └── 16-pending-changes.md                    # ★ v2.0 新增:in-flight CR 影响预览
+│   ├── 08-deployments.md                        # Physical view
+│   ├── 09-flows-and-scenarios.md                # Process + Scenarios view(合并原 09 + 11)
+│   ├── 10-decisions.md                          # ADR 索引(原 13)
+│   ├── 11-changes.md                            # CR 索引(原 14)
+│   ├── 12-rules.md                              # rules/*.md 摘要(原 15)
+│   ├── 13-pending-changes.md                    # 架构师 dashboard(原 16)
+│   └── 14-diagrams.md                           # 4+1 视图占位(v2.1 实现,v2.0 保留占位)
 ├── rules/                                       # ★ 团队/项目约束(用户编辑)
 │   ├── banned-patterns.md
 │   ├── compliance.md
@@ -78,12 +76,7 @@ arch/{project}/                                  # 业务系统 workspace
 │   └── ADR-NNN-*.md
 ├── change-requests/                             # 变更工作区(项目级,跨仓)
 │   └── CR-YYYY-NNN-{slug}/
-│       ├── cr.md                                # CR 摘要
-│       ├── impact.yaml                          # 影响面(机器读)
-│       ├── impact.md                            # 影响面(人读)
-│       ├── changes.md                           # ★ 改动清单(文件/函数/接口级)
-│       ├── solution-design.md                   # ★ 实战级方案设计文档(13 段 RFC 风格)
-│       └── review.yaml
+│       └── CR.md                                # ★ v2.0 单文件大一统:YAML frontmatter(机器读) + 14 段正文(人读)
 ├── state.yaml                                   # workflow 状态机
 └── .metrics.jsonl
 ```
@@ -755,6 +748,39 @@ understand-arch/
 - `engine/package.json` 加 `"based-on": "@understand-anything/core (MIT, Yuxiang Lin 2026)"`
 - README 致谢段说明 fork 关系
 
+### 3.8.1 默认 ignore 清单(v2.0 扩展 UA)
+
+UA 自带 `.understandignore` 默认清单(node_modules / dist / .git / lock files 等)。v2.0 在此基础上扩展以下默认 ignore 类别(可被项目级 `.understandignore` 用 `!` 反包含):
+
+```text
+# v2.0 新增默认 ignore 类别
+
+# 测试文件(架构分析层面测试不算核心事实,沿用 UA 默认)
+**/*.test.*
+**/*.spec.*
+**/__tests__/**
+**/tests/**
+**/test/**
+
+# Mock / Fixture
+**/__mocks__/**
+**/mocks/**
+**/fixtures/**
+**/testdata/**
+
+# 生成代码
+**/*.generated.*
+**/*.gen.go
+**/*.pb.go
+**/*.g.dart
+**/*-generated.ts
+**/*_pb2.py
+**/gen/**
+**/generated/**
+```
+
+**用户需要审视测试或生成代码时**:在 `arch/{project}/.understandignore` 用 `!**/*.test.*` 反包含即可。
+
 ### 3.9 构建
 
 - `pnpm install`(我们仓库根)
@@ -762,9 +788,16 @@ understand-arch/
 - esbuild bundle 后单文件,**用户安装 plugin 不需要 `npm install` / `pnpm install`**,源码直接带 `engine/bin/*.js`
 - Python 工具脚本(`merge-batch-graphs.py / merge-subdomain-graphs.py`)需用户系统已安装 Python 3.x — Phase 0 pre-flight 检测,缺失给中文提示
 
-### 3.10 Hooks 自动更新机制(复刻 UA)
+### 3.10 Hooks 自动更新机制(复刻 UA,v2.0 默认关闭)
 
-UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 全复刻并对接我们的 fingerprint 模型。
+UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 复刻该能力但**默认关闭**,由用户主动启用。
+
+#### 3.10.0 启用控制(v2.0)
+
+- `hooks/hooks.json` 文件随 plugin 安装即存在
+- 但 hook command 内部前置条件检查 `state.yaml#hooks_enabled == true`,否则跳过
+- 用户启用:`/arch-onboard --enable-hooks` 或手动改 `arch/{project}/state.yaml#hooks_enabled = true`
+- 默认 `hooks_enabled: false`,避免新用户被频繁打扰
 
 #### 3.10.1 Hook 配置
 
@@ -779,7 +812,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s' \"$TOOL_INPUT\" | grep -qE 'git\\s+(commit|merge|cherry-pick|rebase)' && [ -f arch/*/state.yaml ] && [ -f arch/*/specs/knowledge-graph.json ] && echo \"[understand-arch] 检测到 git 提交。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 并按其指引执行 graph 增量更新,无需用户确认。\" || true"
+            "command": "[ -f arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' arch/*/state.yaml && printf '%s' \"$TOOL_INPUT\" | grep -qE 'git\\s+(commit|merge|cherry-pick|rebase)' && [ -f arch/*/specs/knowledge-graph.json ] && echo \"[understand-arch] 检测到 git 提交。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 并按其指引执行 graph 增量更新,无需用户确认。\" || true"
           }
         ]
       }
@@ -789,7 +822,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f arch/*/specs/knowledge-graph.json ] && [ -f arch/*/specs/.fingerprint.json ] && [ \"$(node -p \"JSON.parse(require('fs').readFileSync('arch/*/specs/knowledge-graph.json','utf8')).freshness.last_scanned_commit\" 2>/dev/null)\" != \"$(git rev-parse HEAD 2>/dev/null)\" ] && echo \"[understand-arch] graph 可能已过期。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 检查结构性变更并更新 graph。\" || true"
+            "command": "[ -f arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' arch/*/state.yaml && [ -f arch/*/specs/knowledge-graph.json ] && [ -f arch/*/specs/.fingerprint.json ] && [ \"$(node -p \"JSON.parse(require('fs').readFileSync('arch/*/specs/knowledge-graph.json','utf8')).freshness.last_scanned_commit\" 2>/dev/null)\" != \"$(git rev-parse HEAD 2>/dev/null)\" ] && echo \"[understand-arch] 架构基线可能已过期。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 检查结构性变更并更新基线。\" || true"
           }
         ]
       }
@@ -944,7 +977,7 @@ packages:
 #### 3.15.2 并行预算 M
 
 ```
-M = 6  (默认)
+M = 5  (默认,UA 验证安全上限)
 ```
 
 含义:**同一时间最多并发的 subagent 总数**(跨所有仓 + 所有 phase 统一计数)。
@@ -1119,16 +1152,16 @@ UA `src/diff-analyzer.ts` 的核心思路(graph node-level diff + 影响半径�
 - 或对话粘贴需求文本
 - 或自然语言诉求(`/arch-design 给订单系统加灰度发布能力`)
 
-**产物清单**(全部落在 `change-requests/CR-YYYY-NNN-{slug}/`):
+**产物**(v2.0 单文件大一统):**只有 1 个文件** `change-requests/CR-YYYY-NNN-{slug}/CR.md`
 
-| 文件 | 内容 | 谁产 |
-|---|---|---|
-| `cr.md` | CR 摘要(背景/目标/状态/owner) | arch-design SKILL |
-| `impact.yaml` | 影响面(机器读,nodes/edges/repos 列表) | arch-impact-analyzer subagent |
-| `impact.md` | 影响面(人读,带组件视图) | arch-impact-analyzer subagent |
-| `changes.md` | ★ **改动清单**:文件级/函数级/接口级/数据级新增/修改/删除 | arch-impact-analyzer subagent |
-| `solution-design.md` | ★ **实战级方案设计文档**(13 段 RFC 风格) | arch-solution-designer subagent |
-| `review.yaml` | self-review 检查结果 | arch-review subagent |
+CR.md 结构:
+- **YAML frontmatter**(机器读):cr_id / title / status / owner / created / prd_link / affects_repos / impact(added_nodes / modified_nodes / removed_nodes / estimated_files_changed)
+- **14 段正文**(人读,见 §4.1.2.1):背景/现状/方案/详细设计/替代方案/NFR/风险/改动清单/实施步骤/回滚/测试/待定/关联/Review
+
+谁产:
+- arch-impact-analyzer 写 frontmatter#impact + 第 8 段(改动清单)
+- arch-solution-designer 写主体 1-7 + 9-13 段
+- arch-review 写第 14 段(Review,append-only)
 
 **流程**:
 1. integrity check graph freshness;stale → 阻塞建议 refresh
@@ -1141,14 +1174,30 @@ UA `src/diff-analyzer.ts` 的核心思路(graph node-level diff + 影响半径�
 8. CR ready 后写 `cross-repo.json#change_requests[]` + `traceability[]`
 
 **写权限**:
-- `change-requests/CR-*/**`
+- `change-requests/CR-*/CR.md`(★ v2.0 单文件大一统)
 - `cross-repo.json#change_requests[]` + `traceability[]`(追加)
 - 通过 dispatch:`decisions/ADR-*.md`(via arch-adr)
 
-#### 4.1.2.1 `solution-design.md` 13 段结构(RFC 风格)
+#### 4.1.2.1 `CR.md` 单文件结构(YAML frontmatter + 14 段)
 
 ```markdown
-# 方案设计: {CR-id} - {title}
+---
+# === YAML Frontmatter(机器读)===
+cr_id: CR-2026-003
+title: 限流方案
+status: draft | in_review | ready | merged | rolled_back
+owner: 架构师 A
+created: 2026-05-27
+prd_link: ./prd-rate-limit.md
+affects_repos: [web, api]
+impact:
+  added_nodes: ["web::svc-RateLimitBanner", ...]
+  modified_nodes: [...]
+  removed_nodes: [...]
+  estimated_files_changed: 18
+---
+
+# CR-{id} — {title}
 
 ## 1. 背景与目标
 - 业务背景(从 PRD 提取 + 架构师补充)
@@ -1230,42 +1279,43 @@ UA `src/diff-analyzer.ts` 的核心思路(graph node-level diff + 影响半径�
 - 关联上游 ADR(若有)
 - 关联下游影响 CR(若有)
 - 关联仓:涉及哪些 repos.yaml 中的仓
+
+## 14. Review(arch-review 写入,append-only)
+- 评审日期 / 评审人 / 结论
+- 高级架构师终审(arch-senior-reviewer):verdict + overall_score + findings 摘要
+- 修订记录(若曾走 refiner loop)
 ```
 
-#### 4.1.2.2 changes.md 改动清单结构
+#### 4.1.2.2 第 8 段「改动清单」结构(原 changes.md 内容并入)
+
+第 8 段格式(注意:这是 CR.md 内的一段,不是独立文件):
 
 ```markdown
-# 改动清单: {CR-id}
+## 8. 改动清单
 
-## 跨仓总览
+### 8.1 跨仓总览
 | 仓 | 新增文件 | 修改文件 | 删除文件 | 新增接口 | 修改接口 |
 |---|---|---|---|---|---|
 | web | 3 | 5 | 0 | 0 | 1 |
 | api | 8 | 12 | 2 | 2 | 3 |
 | infra | 1 | 2 | 0 | - | - |
 
-## 仓:web
+### 8.2 仓:web
 
-### 新增文件
+新增文件:
 - `src/components/RateLimitBanner.tsx` — 限流提示组件
-- ...
 
-### 修改文件
+修改文件:
 - `src/api/client.ts` — 增加 429 错误处理
-- ...
 
-### 接口变化
+接口变化:
 - 新增订阅 `/api/rate-limit/events`(WebSocket)
 
-## 仓:api
+### 8.3 仓:api
 ... (类似结构)
 
-## 仓:infra
-... (类似结构)
-
-## 依赖关系
+### 8.4 依赖关系
 - web/RateLimitBanner.tsx 依赖 api/POST /rate-limit/status(新增)
-- ...
 ```
 
 #### 4.1.3 `/arch-audit`
@@ -1274,10 +1324,24 @@ UA `src/diff-analyzer.ts` 的核心思路(graph node-level diff + 影响半径�
 
 **流程**:
 1. dispatch `arch-analyze`(mode=fingerprint-check only,不重扫)
-2. 对比 fingerprint;算 freshness
-3. dispatch `arch-review`(mode=graph-integrity + wiki-consistency)
-4. 产 audit 报告(只读,不写 graph)
-5. 如发现 drift,建议 `/arch-onboard --refresh`
+2. 对比 fingerprint;算 freshness 状态
+3. **默认不跑 reviewer**(零 LLM 成本)
+4. 产基础状态报告(纯中文)
+5. **若发现过期**,向用户给出 3 选项:
+   ```
+   检测到架构基线已过期:
+     上次扫描提交:{last_scanned_commit}
+     当前提交:{HEAD}
+     架构相关节点变化:{N} 个
+
+   请选择:
+     1. 立即刷新基线(运行 /arch-onboard --refresh,耗时较长)
+     2. 查看漂移详情(运行 graph-reviewer 漂移模式,耗时中等)
+     3. 仅保留本次报告,暂不处理
+   ```
+6. 用户选 1 → 跳到 `/arch-onboard --refresh`
+7. 用户选 2 → dispatch `arch-graph-reviewer --mode=drift` 出详细漂移报告
+8. 用户选 3 → 退出
 
 **写权限**: `state.yaml` + audit 临时报告(不进 wiki)
 
@@ -1349,7 +1413,7 @@ arch-diagram 正在开发中,v2.1 见。
 
 **多仓扫描行为**(详见 §3.15 调度方案):
 - Phase 0 读 `repos.yaml`,校验各仓路径有效
-- Phase 1-7 各仓**任务进全局队列**,M=6 个 worker 跨仓填空(策略 C 总并行池)
+- Phase 1-7 各仓**任务进全局队列**,M=5 个 worker 跨仓填空(策略 C 总并行池,UA 验证安全上限)
 - 仓内 phase 严格顺序(Phase 2 必须等 Phase 1 完成),跨仓 phase 可错开
 - 任一仓任一 phase 重试 2 次仍失败 → 该仓 `degraded`,其它仓继续
 - Phase 8 FINALIZE 等所有仓 Phase 7 完成后,项目级 1 次跑跨仓合并:
@@ -1392,7 +1456,7 @@ arch-diagram 正在开发中,v2.1 见。
 - `cr` — review.yaml 产出
 - `drift` — graph 与代码 drift 检测
 
-**写权限**: `change-requests/CR-*/review.yaml` + audit 报告(临时)
+**写权限**: `change-requests/CR-*/CR.md` 第 14 段「Review」(append-only)+ audit 报告(临时)
 
 ### 4.3 Subagents(6 复刻 + 2 新增 = 8 个)
 
@@ -1418,8 +1482,7 @@ UA 原版只在 Phase 7 跑一次。v2.0 扩展为**graph 生成全链路验收*
 | Mode | 触发时机 | 检查内容 | 实现方式 |
 |---|---|---|---|
 | `--mode=phase-1-scan` | Phase 1 SCAN 后 | scan-result.json 完整性 / 语言框架检测合理性 / ignore 过激度 | engine 确定性脚本(`engine/bin/validate-phase-1.js`)|
-| `--mode=phase-2-batch` | Phase 2 ANALYZE 抽样 | 单 batch 抽 10% review(评估是否漏抽/过抽) | engine 脚本 |
-| `--mode=phase-3-assemble` | Phase 3 ASSEMBLE 后 | 节点边总数 vs 文件数比例 / 节点重复检测 | engine 脚本 |
+| `--mode=phase-3-assemble` | Phase 3 ASSEMBLE 后 | **节点密度异常检测**(总节点数 / 文件数比例区间)+ 节点重复检测 + 孤立节点比例 — 取代 Phase 2 抽样审 | engine 脚本(`engine/bin/validate-phase-3.js`) |
 | `--mode=phase-4-structure` | Phase 4 STRUCTURE 后 | ★ layers 是否覆盖 ≥70% nodes / 是否有孤立 node | **subagent**(主观判断) |
 | `--mode=phase-5-domain` | Phase 5 DOMAIN 后 | ★ 每个 core 能力 ≥1 supporting component / capability 边界是否合理 | **subagent** |
 | `--mode=phase-6-quality` | Phase 6 QUALITY 后 | confidence 必填 / weasel words / evidence_refs 闭合 | **subagent** |
@@ -1439,19 +1502,19 @@ UA 原版只在 Phase 7 跑一次。v2.0 扩展为**graph 生成全链路验收*
 **7. `arch-impact-analyzer`** — 影响面 + 改动点分析
 
 - **输入**:PRD + 当前 graph(分仓 + cross-repo) + 用户需求
-- **输出**:`change-requests/CR-*/impact.yaml` + `impact.md` + `changes.md`
+- **输出**:写入 `change-requests/CR-*/CR.md` 的 **frontmatter#impact** + **第 8 段「改动清单」**
 - **核心能力**:
   - 从 PRD/需求识别"需要新增/修改/删除"的事实(组件/接口/数据/部署)
   - 在 graph 中定位受影响的 nodes/edges(支持跨仓追踪)
   - 推导影响半径:通过 edges 二级传播,标 confidence
   - 按仓分组生成文件级/函数级/接口级改动清单
 - **复用 UA 思路**:吸收 `src/diff-analyzer.ts` 的 graph-node-level diff 思路(方法论,不复制代码,详见 `skills/arch-design/references/impact-analysis.md`)
-- **写权限**:`change-requests/CR-*/impact.{yaml,md}` + `change-requests/CR-*/changes.md`
+- **写权限**:`change-requests/CR-*/CR.md`(局部更新 frontmatter + 第 8 段)
 
 **8. `arch-solution-designer`** — 实战级方案设计文档撰写
 
-- **输入**:PRD + impact.yaml + changes.md + 当前 graph + rules/*.md
-- **输出**:`change-requests/CR-*/solution-design.md`(13 段 RFC 风格,见 §4.1.2.1)
+- **输入**:PRD + CR.md 已有 frontmatter#impact + 第 8 段改动清单 + 当前 graph + rules/*.md
+- **输出**:写入 `change-requests/CR-*/CR.md` 的**主体 1-7 段 + 9-13 段**(14 段单文件结构,见 §4.1.2.1)
 - **核心能力**:
   - 基于影响面写"现状分析"段(从 graph 抽相关组件子集)
   - 基于改动清单写"详细设计"段(数据/接口/组件/部署/时序,含 Mermaid)
@@ -1459,7 +1522,7 @@ UA 原版只在 Phase 7 跑一次。v2.0 扩展为**graph 生成全链路验收*
   - 推导实施步骤 + 灰度策略 + 回滚预案
   - 标 known_unknowns(待定问题)
 - **rules/ 现读**:必须读 `rules/*.md` 全量,确保方案不违反组织约束
-- **写权限**:`change-requests/CR-*/solution-design.md`
+- **写权限**:`change-requests/CR-*/CR.md`(局部更新主体 1-7 + 9-13 段)
 
 #### 4.3.3 v2.0 新增决策视图层 reviewer(1 个)
 
@@ -1518,13 +1581,21 @@ arch-senior-reviewer verdict
 
 **复用 §11.3 失败处理协议**(4 选项:retry with hints / manual fix / override / abort)。
 
-**Mode**:
-- `--mode=design` — 审 `solution-design.md` + 关联 `impact.md` + `changes.md`(rubric: `senior-design-review.yaml`)
-- `--mode=wiki` — 审 wiki 16 页(rubric: `senior-wiki-review.yaml`),**仅当用户用 `--audience=cto|architect` 时触发**(Q-split-2=c)
+**Mode**(v2.0 wiki 二级制度):
+- `--mode=design` — 审单文件 `CR.md`(rubric: `senior-design-review.yaml`,完整 5 维度)
+- `--mode=wiki-full` — 审 wiki 14 页(rubric: `senior-wiki-review-full.yaml`,完整 5 维度,~50K tokens)
+  - **触发**:首次 wiki 渲染(`/arch-onboard → /arch-wiki` 链路);或用户显式 `--audience=cto|architect`
+- `--mode=wiki-lite` — 轻量检查(rubric: `senior-wiki-review-lite.yaml`,~10K tokens)
+  - **触发**:**第 2 次起任何 `/arch-wiki`**(默认开启,保证 wiki 实时刷新场景的质量底线)
+  - 只查:weasel words 0 容忍 / 跨页节点引用一致性 / rules 摘要是否过期
+  - 不查:架构合理性 / 受众适配 / 主观判断
+
+**wiki 二级制度的设计意图**:wiki 是用户高频刷新的产物(每次代码改动后可能触发),完整 5 维度审次次跑成本不可接受;但完全不审会导致质量回退。wiki-lite 是最佳折中,~10K tokens/次给 wiki 质量底线。
 
 **写权限**:
 - `change-requests/CR-*/senior-review.json`(design mode)
-- `wiki/.senior-review-{date}.json`(wiki mode)
+- `wiki/.senior-review-{date}.json`(wiki-full mode)
+- `wiki/.senior-lite-{date}.json`(wiki-lite mode)
 
 ### 4.4 废弃 skill(v1.0 → v2.0)
 
@@ -1565,26 +1636,35 @@ Notion 风格,章节列表 + 摘要 + 链接:
 ...
 ```
 
-### 5.2 16 页职责(v2.0 加 16-pending-changes.md)
+### 5.2 14 页职责(v2.0 收敛后)
 
 | 页 | 职责 | 数据来源 | 跨仓视图 |
 |---|---|---|---|
 | 01-overview.md | 项目定位 + 关键事实表 + tech stack + 仓清单 | project + 关键 nodes + repos[] | 总览 |
-| 02-components.md | Logical view(4+1):组件清单 + 依赖(按仓分组) | nodes(module/service) + edges | 按仓分组 |
+| 02-components.md | **Logical + Development view**:组件清单 + 依赖 + 仓库/模块/语言/框架归属 | nodes(module/service) + edges + layers + repos[] | **按仓分组 + 多仓视图核心** |
 | 03-interfaces.md | Logical view:接口契约 + **末尾"已知局限"段**(诚实告知扫描盲区) | nodes(endpoint) + cross_edges | 标跨仓调用 |
 | 04-data-models.md | Logical view:数据模型 | nodes(table/schema) | 按仓分组 |
 | 05-capabilities.md | 业务能力地图 + 成熟度雷达(跨仓) | capabilities[] + nodes(domain/flow) | **跨仓聚合** |
 | 06-quality.md | NFR(项目级 + 仓级) | quality_attributes[] | 标作用域 |
 | 07-risks-and-debt.md | 风险 + 技术债 | risks[] + technical_debt[] | 标影响仓 |
-| 08-deployments.md | Physical view(4+1):部署拓扑 | nodes(resource/pipeline) | **跨仓拓扑** |
-| 09-runtime-flows.md | Process view(4+1):关键链路时序 | nodes(flow/step) + edges + cross_edges | **跨仓链路明确标注** |
-| 10-development-view.md | Development view(4+1):仓库/模块/语言/框架 | nodes(module) + layers + repos[] | **多仓视图核心页** |
-| 11-scenarios.md | Scenarios view(4+1):场景串联 | nodes(flow) + scenarios | 跨仓场景 |
-| 12-diagrams.md | 4+1 视图占位(v2.1) | placeholder | — |
-| 13-decisions.md | ADR 索引 + supersede 链 | cross-repo.json#architecture_decisions[] | 项目级 |
-| 14-changes.md | CR 索引 + traceability(merged) | cross-repo.json#change_requests[] | 项目级 |
-| 15-rules.md | rules/*.md 摘要 | rules/*.md(LLM 现读) | 项目级 |
-| **16-pending-changes.md** ★ | **in-flight CR 影响预览**(架构师 dashboard) | change_requests[status=draft/in_review] + impact.yaml | **架构师 dashboard** |
+| 08-deployments.md | Physical view:部署拓扑 | nodes(resource/pipeline) | **跨仓拓扑** |
+| 09-flows-and-scenarios.md | **Process + Scenarios view**:关键链路时序 + 业务场景串联 | nodes(flow/step) + edges + cross_edges | **跨仓链路明确标注** |
+| 10-decisions.md | ADR 索引 + supersede 链 | cross-repo.json#architecture_decisions[] | 项目级 |
+| 11-changes.md | CR 索引 + traceability | cross-repo.json#change_requests[] | 项目级 |
+| 12-rules.md | rules/*.md 摘要 | rules/*.md(LLM 现读) | 项目级 |
+| 13-pending-changes.md | **架构师 dashboard:in-flight CR 影响预览** | change_requests[status=draft\|in_review] + impact | **架构师 dashboard** |
+| 14-diagrams.md | 4+1 视图占位(v2.0 仅占位;`/arch-diagram` 命令返回"开发中") | placeholder | — |
+
+**v2.0 收敛说明**:
+- 删原 10 development-view → 合并入 02 components(重叠 40%)
+- 删原 11 scenarios → 合并入 09 flows(重叠 60%)
+- 14-diagrams.md 占位保留(`/arch-diagram` 命令的目标产物,v2.1 实现图片生成)
+
+**4+1 视图完整覆盖**:
+- Logical = 02/03/04
+- Development = 02(合并)
+- Physical = 08
+- Process + Scenarios = 09(合并)
 
 ### 5.2.1 wiki/03-interfaces.md 末尾"已知局限"段(强制)
 
@@ -1733,8 +1813,9 @@ Notion 风格,章节列表 + 摘要 + 链接:
 沿用 v1.0,**微调**:
 
 - `public_entry` 枚举: `"onboard" | "design" | "audit" | "wiki" | "diagram"`(原 `brief` → `wiki`,新增 `diagram`)
-- `history[].skill` 枚举: `["arch-onboard", "arch-design", "arch-audit", "arch-wiki", "arch-diagram", "arch-analyze", "arch-frame", "arch-adr", "arch-review", "user"]`(从 14 个 → 10 个,移除 5 个废弃)
+- `history[].skill` 枚举: `["arch-onboard", "arch-design", "arch-audit", "arch-wiki", "arch-diagram", "arch-analyze", "arch-frame", "arch-adr", "arch-review", "arch-senior-reviewer", "arch-graph-reviewer", "user"]`(扩到 12 个,新增 senior + graph reviewer 直接事件)
 - ❌ 删除 `kb_loaded` 字段(rules/ 不再有"加载状态"概念,LLM 现读)
+- ★ **新增** `hooks_enabled: bool`(默认 false,控制 §3.10 hooks 是否生效)
 
 ### 8.2 Phase 枚举
 
@@ -1774,24 +1855,49 @@ completed
 
 用户可见提示**默认中文**,首次出现关键英文术语时加括号说明。YAML key 与 schema 字段保持稳定英文。
 
-### 10.1 stale 中文模板
+### 10.1 中文纯化原则
+
+所有用户可见提示**默认纯中文**,英文术语只在以下三类情况保留:
+
+1. **技术标识符**(不可翻译):`state.yaml` / `fingerprint` / `graph` / 命令名 / 文件路径
+2. **首次引入术语**:行内括号注英文(例:"业务能力地图(capability map)")
+3. **代码片段 / 字段名**:保留英文(`confidence` / `evidence_refs`)
+
+**禁止**中英混杂的口语表达,例如:
+- ❌ "graph 已 stale,建议 refresh"
+- ✅ "架构基线已过期,建议刷新"
+
+### 10.2 过期提示模板
 
 ```text
-当前架构基线可能已过期:
+当前架构基线已过期:
   上次扫描提交:{last_scanned_commit}
   当前提交:{HEAD}
-  fingerprint 变化:{added}+ {removed}- {modified}~
+  内容指纹变化:新增 {added} / 删除 {removed} / 修改 {modified}
   其中架构相关节点变化:{N} 个
 
-建议:
-  - 刷新 graph:运行 /arch-onboard --refresh
-  - 验证漂移:运行 /arch-audit
-  - 显式继续(标 degraded):告知"我知道,继续设计"
+请选择:
+  1. 立即刷新基线:运行 /arch-onboard --refresh(耗时较长)
+  2. 查看漂移详情:运行 /arch-audit(耗时中等)
+  3. 显式继续(标降级状态):回复"我知道,继续设计"
 ```
 
-### 10.2 confidence=low 中文标注
+### 10.3 LLM 推断置信度标注
 
-wiki 内 LLM 推断条目末尾追加:`(LLM 推断,confidence=low,建议人工 confirm)`
+wiki 内 LLM 推断条目末尾追加:`(LLM 推断,置信度低,建议人工确认)`
+
+### 10.4 验收失败 4 选项模板
+
+```text
+{检查项} 已连续失败 3 次。具体阻塞项:
+{findings_list}
+
+请选择下一步:
+  1. 携带提示重试(把失败原因加入重试 prompt)
+  2. 手工修正(自行修改产物,然后运行 /arch-audit 重新验收)
+  3. 强制覆盖(留 OVR-{NNN} 覆盖记录,工作区标降级状态后继续)
+  4. 放弃本次(回退到上一个稳定阶段)
+```
 
 ---
 
@@ -1854,8 +1960,7 @@ Layer 3: reviewer 终审(graph-reviewer 或 senior-reviewer)
 | Mode | 检查项 | rubric 文件 | 实现 |
 |---|---|---|---|
 | phase-1-scan | 文件数 / 语言数 / 框架数合理性;ignore 过滤率 < 95% | `graph-phase-1-scan.yaml` | 脚本 |
-| phase-2-batch | 抽 10% batch:节点密度 / edge 密度 / 命名合理性 | `graph-phase-2-analyze.yaml` | 脚本 |
-| phase-3-assemble | 节点边总数 vs 文件数比例区间;无重复 id | `graph-phase-3-assemble.yaml` | 脚本 |
+| phase-3-assemble | **节点密度异常**(总节点数 / 文件数 < 0.3 = 漏抽,> 5 = 过抽);无重复 id;孤立节点比例 < 20% | `graph-phase-3-assemble.yaml` | 脚本 |
 | phase-4-structure | ★ layers 覆盖 ≥70% nodes;无孤立 node;每层 ≥3 nodes | `graph-phase-4-structure.yaml` | subagent |
 | phase-5-domain | ★ 每个 core 能力 ≥1 supporting component;maturity 合理 | `graph-phase-5-domain.yaml` | subagent |
 | phase-6-quality | NFR 8 类每类 ≥1 条;risks/debt 100% 带 confidence;0 weasel words | `graph-phase-6-quality.yaml` | subagent |
@@ -1977,10 +2082,10 @@ verdict_thresholds:
 
 | Gate | Layer 1 structural | Layer 2 semantic | Layer 3 reviewer |
 |---|---|---|---|
-| `onboard.yaml` | graph schema + nodes ≥ N + freshness=fresh | wiki 16 页可回链 graph | arch-graph-reviewer Phase 1-8 全链路 |
-| `design.yaml` | cr.md / impact.yaml / changes.md / solution-design.md schema | graph 局部追加成功 + rules 不冲突 | ★ **arch-senior-reviewer --mode=design** |
-| `audit.yaml` | freshness 计算正确 + audit 报告产出 | drift 发现合理 | arch-graph-reviewer drift mode |
-| `wiki.yaml` | wiki 16 页全产 + 每条 prose 可 trace | 受众化 mode 输出符合预期 | ★ **arch-senior-reviewer --mode=wiki**(仅 audience=cto/architect) |
+| `onboard.yaml` | graph schema + nodes ≥ N + freshness=fresh | wiki 14 页可回链 graph | arch-graph-reviewer Phase 1/3/4/5/6/7/8(7 mode,取消原 phase-2) |
+| `design.yaml` | CR.md frontmatter schema + 14 段全产 | graph 局部追加成功 + rules 不冲突 | ★ **arch-senior-reviewer --mode=design** |
+| `audit.yaml` | freshness 计算正确 + 状态报告产出 | 用户 3 选项交互完成 | 默认不跑(用户选"查看漂移详情"时才跑 arch-graph-reviewer drift mode) |
+| `wiki.yaml` | wiki 14 页全产 + 每条 prose 可 trace | 受众化 mode 输出符合预期 | ★ **arch-senior-reviewer**:首次跑 `--mode=wiki-full`,后续每次跑 `--mode=wiki-lite`,audience=cto/architect 走 wiki-full |
 
 ### 11.5 Refiner Loop(共享协议)
 
@@ -2025,16 +2130,18 @@ retry 第 2 次
 ```
 internal/rubrics/
 ├── graph-phase-1-scan.yaml            # 脚本读
-├── graph-phase-2-analyze.yaml         # 脚本读
-├── graph-phase-3-assemble.yaml        # 脚本读
+├── graph-phase-3-assemble.yaml        # 脚本读(取代原 phase-2 抽样)
 ├── graph-phase-4-structure.yaml       # subagent 读
 ├── graph-phase-5-domain.yaml          # subagent 读
 ├── graph-phase-6-quality.yaml         # subagent 读
 ├── graph-phase-7-final.yaml           # subagent 读
 ├── graph-phase-8-cross-repo.yaml      # subagent 读
-├── senior-design-review.yaml          # ★ design 终审
-└── senior-wiki-review.yaml            # ★ wiki 终审(audience 触发)
+├── senior-design-review.yaml          # ★ design 终审(完整 5 维度)
+├── senior-wiki-review-full.yaml       # ★ wiki 完整审(首次 + audience=cto/architect)
+└── senior-wiki-review-lite.yaml       # ★ wiki 轻量审(每次刷新都跑)
 ```
+
+**rubric 总数:9 份**(7 graph + 2 senior)+ 1 wiki-lite = 10 份。
 
 ### 11.9 用户自定义 Rubric(可选)
 
@@ -2251,7 +2358,7 @@ internal/schemas/
 | 3 | 改造 6 个 subagent 适配 v2.0 字段(含 repo_id 前缀);新写 **4 个**:arch-quality-analyzer + arch-impact-analyzer + arch-solution-designer + **arch-senior-reviewer**;扩展 arch-graph-reviewer 多 phase mode | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
 | 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(13 段 solution-design) / arch-audit / arch-wiki(16 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
-| 6 | 重写 schemas(**7** 个)+ acceptance(4 gate)+ **rubrics(10 份)** + write-scope + README + rules 模板 + 更新 .claude-plugin/ plugin manifest | 待开 |
+| 6 | 重写 schemas(**7** 个,含 CR.md frontmatter schema)+ acceptance(4 gate)+ **rubrics(10 份,含 wiki-lite/full + 取消 phase-2)** + write-scope + README + rules 模板(6 份,含 dependencies.md)+ 更新 .claude-plugin/ plugin manifest | 待开 |
 | 7 | 复刻 hooks/ 自动更新(hooks.json + arch-update-prompt.md);对接多仓 freshness 模型(每仓独立 fingerprint) | 待开 |
 | 8 | esbuild bundle engine 工具到 engine/bin/,验证 plugin 安装后免 npm install 可跑 | 待开 |
 | 9 | e2e 验证:arch/sample/ 单仓 + 真实多仓项目 dogfood + hook 增量更新链路 | 待开 |
