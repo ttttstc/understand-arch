@@ -1,7 +1,22 @@
 # understand-arch v1.0 Spec
 
+> ⚠️ **DEPRECATED** — 本 spec 已被 [`docs/spec-v2.0.md`](./spec-v2.0.md) 取代。
+>
+> v2.0 是 breaking change,核心变更:
+> - 5 份 specs yaml → 分仓 `specs/repos/*/knowledge-graph.json` + 跨仓 `specs/cross-repo.json`
+> - 单仓 → 多仓统一模型(单仓为 N=1 退化)
+> - 13 skill → 9 skill + 8 subagent
+> - generated/ → wiki/(16 页,含架构师 dashboard)
+> - `~/.understand-arch/kb/` → 项目内 `rules/*.md`(含 dependencies.md 人工依赖补充)
+> - 自带 fork 自 UA 的扫描引擎(MIT,三层架构 + 多仓并行调度)
+> - `/arch-design` 升级为 13 段 RFC 风格方案设计文档
+>
+> 本文件保留作为历史归档,**新项目请参考 v2.0**。
+
+---
+
 > Updated: 2026-05-24  
-> Status: REDESIGNED DRAFT  
+> Status: DEPRECATED(superseded by v2.0)  
 > Supersedes: 早期原型 spec。
 
 ## 一句话定位
