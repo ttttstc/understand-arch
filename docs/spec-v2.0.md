@@ -15,12 +15,12 @@
 - 服务对象:**高级架构师**(不是普通开发者,不是新人学习工具)
 - 核心场景:**架构决策 + 方案设计**(给研发的可执行方案,不是科普性介绍)
 - 项目范围:**单仓 / 多仓统一模型**(单仓是多仓的 N=1 退化)
-- 一等产物:`/arch-design` 产出**实战级方案设计文档**(13 段 RFC 风格 markdown)
+- 一等产物:`/arch-design` 产出**实战级方案设计文档**(单文件 CR.md,YAML frontmatter + 14 段 RFC 风格)
 
 **v2.0 核心变更**(对比 v1.0):
 - 砍掉对 `Understand-Anything` 的外部依赖,**fork 其完整三层扫描架构**(MIT)作为内置引擎(orchestrator + subagents + tools)
 - **事实层从 5 份 yaml 收敛为分仓 `knowledge-graph.json` + 跨仓 `cross-repo.json`**
-- **人类视图层从 generated/ 升级为 wiki/**(LLM 渲染,16 页,单页无字数限制)
+- **人类视图层从 generated/ 升级为 wiki/**(LLM 渲染,14 页,单页无字数限制)
 - **配置目录从全局 `~/.understand-arch/kb/` 改为项目内 `rules/*.md`**
 - **Skill 套件从 13 个收敛到 9 个**(5 用户入口 + 4 内部 + 6 个 subagent + 2 个 v2.0 新增 subagent)
 - **多仓原生支持**:repos.yaml + node id 加 `repo_id::` 前缀,跨仓 edges 独立维护
@@ -135,11 +135,11 @@ repos:
 
 | v1.0 | v2.0 |
 |---|---|
-| `specs/baseline.yaml` | 合入 `specs/knowledge-graph.json#nodes / edges / layers` |
-| `specs/quality.yaml` | 合入 `specs/knowledge-graph.json#quality_attributes[]` |
-| `specs/risks.yaml` | 合入 `specs/knowledge-graph.json#risks[] / technical_debt[]` |
-| `specs/decisions.yaml` | 合入 `specs/knowledge-graph.json#architecture_decisions[]` |
-| `specs/traceability.yaml` | 合入 `specs/knowledge-graph.json#traceability[]` |
+| `specs/baseline.yaml` | 合入各仓 `specs/repos/{repo_id}/knowledge-graph.json#nodes / edges / layers` |
+| `specs/quality.yaml` | 合入 `specs/cross-repo.json#quality_attributes[]` |
+| `specs/risks.yaml` | 合入 `specs/cross-repo.json#risks[] / technical_debt[]` |
+| `specs/decisions.yaml` | 合入 `specs/cross-repo.json#architecture_decisions[]` |
+| `specs/traceability.yaml` | 合入 `specs/cross-repo.json#traceability[]` |
 | `specs/diagrams/*.mmd` | wiki/12-diagrams.md 内嵌 (v2.0 占位) |
 | `~/.understand-arch/kb/*.yaml` | `.understand-arch/{project}/rules/*.md` |
 | `generated/overview.md` + `generated/wiki/*` | `.understand-arch/{project}/wiki/*` |
@@ -730,7 +730,7 @@ understand-arch/
 │   │   └── extensions/                       # ← v2.0 新增
 │   │       ├── arch-schema.ts                # GraphNode 扩展字段 + 顶层数组类型
 │   │       ├── arch-validator.ts             # confidence/evidence_refs 闭合校验
-│   │       └── output-writer.ts              # 写 specs/knowledge-graph.json + .fingerprint.json
+│   │       └── output-writer.ts              # 写 specs/repos/{repo_id}/knowledge-graph.json + .fingerprint.json + specs/cross-repo.json
 │   └── tests/
 ├── agents/                                   # 顶级 subagents(Claude Code 规范)
 │   ├── arch-project-scanner.md
@@ -812,7 +812,7 @@ understand-arch/
 | Phase 5 DOMAIN | `assembled-graph.json#nodes(domain/flow/step)` + maturity/importance | arch-domain-analyzer subagent |
 | Phase 6 QUALITY | `assembled-graph.json#quality_attributes/risks/technical_debt` | arch-quality-analyzer subagent ★ v2.0 |
 | Phase 7 REVIEW | confidence/evidence 闭合校验 + 修复建议 | arch-graph-reviewer subagent |
-| Phase 8 FINALIZE | `specs/knowledge-graph.json + .fingerprint.json` | engine bin (output-writer) |
+| Phase 8 FINALIZE | `specs/repos/{repo_id}/{knowledge-graph.json, .fingerprint.json}` + `specs/cross-repo.json` | engine bin (output-writer) |
 
 ### 3.8 License 与归属
 
@@ -886,7 +886,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' arch/*/state.yaml && printf '%s' \"$TOOL_INPUT\" | grep -qE 'git\\s+(commit|merge|cherry-pick|rebase)' && [ -f arch/*/specs/knowledge-graph.json ] && echo \"[understand-arch] 检测到 git 提交。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 并按其指引执行 graph 增量更新,无需用户确认。\" || true"
+            "command": "[ -f .understand-arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' .understand-arch/*/state.yaml && printf '%s' \"$TOOL_INPUT\" | grep -qE 'git\\s+(commit|merge|cherry-pick|rebase)' && [ -f .understand-arch/*/specs/cross-repo.json ] && echo \"[understand-arch] 检测到 git 提交。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 并按其指引执行基线增量更新,无需用户确认。\" || true"
           }
         ]
       }
@@ -896,7 +896,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' arch/*/state.yaml && [ -f arch/*/specs/knowledge-graph.json ] && [ -f arch/*/specs/.fingerprint.json ] && [ \"$(node -p \"JSON.parse(require('fs').readFileSync('arch/*/specs/knowledge-graph.json','utf8')).freshness.last_scanned_commit\" 2>/dev/null)\" != \"$(git rev-parse HEAD 2>/dev/null)\" ] && echo \"[understand-arch] 架构基线可能已过期。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 检查结构性变更并更新基线。\" || true"
+            "command": "[ -f .understand-arch/*/state.yaml ] && grep -q 'hooks_enabled.*true' .understand-arch/*/state.yaml && [ -f .understand-arch/*/specs/cross-repo.json ] && [ \"$(node -p \"JSON.parse(require('fs').readFileSync('.understand-arch/*/specs/cross-repo.json','utf8')).freshness.last_scanned_commit\" 2>/dev/null)\" != \"$(git rev-parse HEAD 2>/dev/null)\" ] && echo \"[understand-arch] 架构基线可能已过期。读取 ${CLAUDE_PLUGIN_ROOT}/hooks/arch-update-prompt.md 检查结构性变更并更新基线。\" || true"
           }
         ]
       }
@@ -1158,19 +1158,18 @@ Phase 8 用 3 个 subagent,但**项目级 1 次**,M 预算够。
 
 ```
 .understand-arch/{project}/
-├── .understand-arch/
-│   └── intermediate/                                # 中间产物(--resume 用)
-│       ├── task-state.json                          # 调度器状态
-│       ├── repos/
-│       │   ├── web/{scan-result, batches, batch-*, assembled-graph, layers, domain, quality, review}.json
-│       │   ├── api/...
-│       │   └── infra/...
-│       └── cross-repo/
-│           ├── cross-edges.json
-│           ├── capabilities-cross.json
-│           ├── quality-cross.json
-│           └── review-cross.json
-└── specs/                                           # 最终产物
+├── intermediate/                                    # ★ 中间产物(--resume 用,ignored)
+│   ├── task-state.json                              # 调度器状态
+│   ├── repos/
+│   │   ├── web/{scan-result, batches, batch-*, assembled-graph, layers, domain, quality, review}.json
+│   │   ├── api/...
+│   │   └── infra/...
+│   └── cross-repo/
+│       ├── cross-edges.json
+│       ├── capabilities-cross.json
+│       ├── quality-cross.json
+│       └── review-cross.json
+└── specs/                                           # 最终产物(commit 进 git)
     ├── repos.yaml                                   # commit_hash 更新
     ├── repos/
     │   ├── web/{knowledge-graph.json, .fingerprint.json}
@@ -1240,9 +1239,9 @@ CR.md 结构:
 **流程**:
 1. integrity check graph freshness;stale → 阻塞建议 refresh
 2. dispatch `arch-frame`(PRD HARD GATE,见 §4.2.2)
-3. 创建 `change-requests/CR-YYYY-NNN-{slug}/`,写 cr.md 摘要
-4. dispatch `arch-impact-analyzer` → 产 impact.yaml + impact.md + changes.md(支持跨仓)
-5. dispatch `arch-solution-designer` → 产 solution-design.md(13 段)
+3. arch-frame 初始化 `change-requests/CR-YYYY-NNN-{slug}/CR.md`(frontmatter + § 1 背景)
+4. dispatch `arch-impact-analyzer` → 写 CR.md frontmatter#impact + § 8 改动清单(支持跨仓)
+5. dispatch `arch-solution-designer` → 写 CR.md 主体 § 1-7 + § 9-13 段
 6. (可选)dispatch `arch-adr` 记录关键决策
 7. dispatch `arch-review --mode=cr`
 8. CR ready 后写 `cross-repo.json#change_requests[]` + `traceability[]`
@@ -1321,7 +1320,7 @@ impact:
 - 每个风险的缓解措施
 - 升级到 graph.risks[] 的候选
 
-## 8. 改动清单(指引 changes.md)
+## 8. 改动清单(详细结构见 §4.1.2.2)
 - 文件级:新增 / 修改 / 删除文件清单
 - 函数级:关键函数变化
 - 接口级:契约变化
@@ -1527,7 +1526,7 @@ arch-diagram 正在开发中,v2.1 见。
 **Modes**:
 - `graph-integrity` — graph schema + evidence 闭合 + confidence 必填
 - `wiki-consistency` — wiki 每条 prose 断言可追溯到 graph 节点 id
-- `cr` — review.yaml 产出
+- `cr` — 审 CR.md(单文件 v2.0),写 § 14 Review
 - `drift` — graph 与代码 drift 检测
 
 **写权限**: `change-requests/CR-*/CR.md` 第 14 段「Review」(append-only)+ audit 报告(临时)
@@ -1630,13 +1629,13 @@ UA 原版只在 Phase 7 跑一次。v2.0 扩展为**graph 生成全链路验收*
     {
       "id": "f-001",
       "severity": "blocker | major | minor",
-      "where": "solution-design.md § 4.3 组件变化",
+      "where": "CR.md § 4.3 组件变化",
       "issue": "新增 RateLimitService 但未定义接口契约,研发拿到无法实现",
       "expectation": "至少写出方法签名、入参类型、错误码",
       "actionable_fix": "在 § 4.2 加 IRateLimitService 接口定义,包含 check(userId, scope) → RateLimitDecision"
     }
   ],
-  "passed_criteria": ["13 段段落完整", "替代方案诚实标注"],
+  "passed_criteria": ["14 段段落完整", "替代方案诚实标注"],
   "summary_zh": "整体方案思路清晰,但详细设计缺接口契约,研发无法直接实施。建议补全接口签名后通过。"
 }
 ```
@@ -1692,7 +1691,7 @@ Notion 风格,章节列表 + 摘要 + 链接:
 ```markdown
 # {项目名} 架构 Wiki
 
-> 自动生成于 {timestamp},基于 commit {hash}。事实源:`specs/knowledge-graph.json`。
+> 自动生成于 {timestamp},基于 commit {hash}。事实源:`specs/repos/*/knowledge-graph.json` + `specs/cross-repo.json`。
 
 ## 快速导航
 
@@ -1782,7 +1781,7 @@ Notion 风格,章节列表 + 摘要 + 链接:
 ### 6.1 算法
 
 1. engine 每次扫码后,为每个 file/function/class 节点算内容指纹
-2. 持久化到 `.understand-arch/{project}/specs/.fingerprint.json`
+2. 持久化到各仓 `.understand-arch/{project}/specs/repos/{repo_id}/.fingerprint.json`
 3. 下次扫:新旧 fingerprint diff → 算 per_node_freshness
 
 ### 6.2 全局 status 判定
@@ -2050,11 +2049,11 @@ dimensions:
   completeness:
     weight: high
     checks:
-      - id: design-13-sections
-        question: "solution-design.md 是否 13 段都有,无空段"
-        pass_criterion: "13/13"
+      - id: design-14-sections
+        question: "CR.md 是否 14 段都有,无空段(含 frontmatter + § 1-14)"
+        pass_criterion: "14/14"
       - id: changes-coverage
-        question: "changes.md 是否按仓分组,且每个改动跟 § 4 详细设计能对得上"
+        question: "CR.md § 8 改动清单是否按仓分组,且每个改动跟 § 4 详细设计能对得上"
         pass_criterion: "≥90% 对得上"
 
   actionability:
@@ -2074,10 +2073,10 @@ dimensions:
     weight: high
     checks:
       - id: design-vs-impact
-        question: "§ 4 详细设计声明的组件改动跟 impact.yaml#nodes 是否一致"
+        question: "§ 4 详细设计声明的组件改动跟 frontmatter#impact.{added,modified,removed}_nodes 是否一致"
         pass_criterion: "100%"
       - id: design-vs-changes
-        question: "§ 4 详细设计跟 changes.md 文件清单是否对得上"
+        question: "§ 4 详细设计跟 § 8 改动清单的文件级清单是否对得上"
         pass_criterion: "≥95%"
 
   honesty:
@@ -2106,7 +2105,7 @@ verdict_thresholds:
   fail: "overall_score < 0.6 或有 blocker"
 ```
 
-#### 11.3.2 senior-wiki-review.yaml(arch-wiki 终审 rubric,仅 cto/architect mode)
+#### 11.3.2 senior-wiki-review-full.yaml(arch-wiki 完整审 rubric,首次 + audience=cto/architect 触发)
 
 ```yaml
 dimensions:
@@ -2114,8 +2113,8 @@ dimensions:
     weight: high
     checks:
       - id: 16-pages
-        question: "wiki 16 页是否全产"
-        pass_criterion: "16/16"
+        question: "wiki 14 页是否全产"
+        pass_criterion: "14/14"
       - id: per-page-substance
         question: "每页是否讲透(不被字数限制制约,但有'是否实质讲清楚'判断)"
         pass_criterion: "≥14/16 实质讲清楚"
@@ -2134,7 +2133,7 @@ dimensions:
         question: "(cto mode)README + 01 + 06 + 07 + 13 是否突出战略/风险/决策,无技术细节冗余"
         pass_criterion: "≥0.8"
       - id: architect-fit
-        question: "(architect mode)16 页全产,所有 4+1 视图与跨仓视图清晰"
+        question: "(architect mode)14 页全产,所有 4+1 视图与跨仓视图清晰"
         pass_criterion: "≥0.8"
 
   honesty:
@@ -2248,12 +2247,7 @@ skills:
   arch-design:
     direct_writes:
       - "state.yaml"
-      - "change-requests/CR-*/cr.md"
-      - "change-requests/CR-*/impact.yaml"
-      - "change-requests/CR-*/impact.md"
-      - "change-requests/CR-*/changes.md"
-      - "change-requests/CR-*/solution-design.md"   # ★ v2.0 一等产物
-      - "change-requests/CR-*/review.yaml"
+      - "change-requests/CR-*/CR.md"                # ★ v2.0 单文件大一统(frontmatter + 14 段)
       - ".metrics.jsonl"
     cross_repo_partial_writes:                       # ★ v2.0:cross-repo.json 仅允许追加这些字段
       - "change_requests[]"
@@ -2271,11 +2265,12 @@ skills:
     direct_writes:
       - "state.yaml"
       - ".metrics.jsonl"
-      - "audit-{date}.md"                  # 临时报告,不进 wiki
+      - "audit-{date}.md"                              # 临时报告,不进 wiki
     indirect_writes_via_dispatch:
-      - "specs/.fingerprint.json"           # via arch-analyze fingerprint-check
+      - "specs/repos/*/.fingerprint.json"              # via arch-analyze fingerprint-check
     forbidden:
-      - "specs/knowledge-graph.json"
+      - "specs/repos/*/knowledge-graph.json"
+      - "specs/cross-repo.json"
       - "wiki/**"
       - "decisions/**"
       - "engine/**"
@@ -2316,7 +2311,7 @@ skills:
   arch-frame:
     direct_writes:
       - "change-requests/CR-*/PM问题清单.md"
-      - "change-requests/CR-*/cr.md"
+      - "change-requests/CR-*/CR.md"                   # 初始化 frontmatter + § 1 背景
     forbidden:
       - "specs/**"
       - "wiki/**"
@@ -2335,7 +2330,7 @@ skills:
 
   arch-review:
     direct_writes:
-      - "change-requests/CR-*/review.yaml"
+      - "change-requests/CR-*/CR.md"                   # 仅追加 § 14 Review(append-only)
       - "audit-{date}.md"
     forbidden:
       - "specs/**"
@@ -2361,16 +2356,14 @@ forbidden_globally:
 
 ---
 
-## 13. JSON Schema(7 个)
+## 13. JSON Schema(5 个,v2.0 单文件 CR.md 后从 7 → 5)
 
 ```
 internal/schemas/
 ├── repos.schema.json                   # ★ specs/repos.yaml(多仓注册表)
 ├── repo-knowledge-graph.schema.json    # ★ 仓内 graph(specs/repos/{repo_id}/knowledge-graph.json)
 ├── cross-repo.schema.json              # ★ 跨仓 graph(specs/cross-repo.json)
-├── cr.schema.json                      # CR 子产物 cr.md frontmatter
-├── impact.schema.json                  # CR 子产物 impact.yaml
-├── review.schema.json                  # CR 子产物 review.yaml
+├── cr.schema.json                      # ★ v2.0 单文件 CR.md 的 YAML frontmatter schema
 └── state.schema.json                   # state.yaml(微调,移除 kb_loaded)
 ```
 
@@ -2405,11 +2398,11 @@ internal/schemas/
 | **多仓支持** | 无 → 原生支持(repos.yaml 注册 + node id `::` 前缀) |
 | Skill 数 | 13 → 9 user-facing + 8 subagent(原 9 用户 + 9 内部) |
 | 用户入口 | 4 → 5(新增 `/arch-wiki` 和 `/arch-diagram`,`/arch-brief` 废弃) |
-| **arch-design** | 简单 CR 流程 → **13 段 RFC 风格 solution-design.md + impact.yaml/md + changes.md** |
+| **arch-design** | 简单 CR 流程 → **单文件 CR.md(YAML frontmatter + 14 段 RFC 风格)** |
 | **新 subagent** | 无 | arch-impact-analyzer / arch-solution-designer / arch-quality-analyzer |
 | 配置目录 | `~/.understand-arch/kb/` → `.understand-arch/{project}/rules/` |
-| 视图层 | `generated/` → `wiki/`(16 页含 `16-pending-changes.md` 架构师 dashboard) |
-| Schema 数 | 14 → **7**(加 repos / repo-graph / cross-repo) |
+| 视图层 | `generated/` → `wiki/`(14 页含 `13-pending-changes.md` 架构师 dashboard) |
+| Schema 数 | 14 → **5**(加 repos / repo-graph / cross-repo;v2.0 单文件 CR.md 合并掉 cr/impact/review 三个旧 schema) |
 | 引擎 | 无引擎(LLM 全扫) → fork UA 三层(orchestrator + subagents + engine tools) |
 | Mermaid | `specs/diagrams/*.mmd` → wiki/12-diagrams.md 内嵌(v2.0 占位) |
 | 字数限制 | wiki 单页 ≤200 行 → 无限制 |
@@ -2431,8 +2424,8 @@ internal/schemas/
 | 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 7-phase 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
 | 3 | 改造 6 个 subagent 适配 v2.0 字段(含 repo_id 前缀);新写 **4 个**:arch-quality-analyzer + arch-impact-analyzer + arch-solution-designer + **arch-senior-reviewer**;扩展 arch-graph-reviewer 多 phase mode | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
-| 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(13 段 solution-design) / arch-audit / arch-wiki(16 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
-| 6 | 重写 schemas(**7** 个,含 CR.md frontmatter schema)+ acceptance(4 gate)+ **rubrics(10 份,含 wiki-lite/full + 取消 phase-2)** + write-scope + README + rules 模板(6 份,含 dependencies.md)+ 更新 .claude-plugin/ plugin manifest | 待开 |
+| 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(单文件 CR.md 14 段) / arch-audit / arch-wiki(14 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
+| 6 | 重写 schemas(**5** 个,含 CR.md frontmatter schema)+ acceptance(4 gate)+ **rubrics(10 份,含 wiki-lite/full + 取消 phase-2)** + write-scope + README + rules 模板(6 份,含 dependencies.md)+ 更新 .claude-plugin/ plugin manifest | 待开 |
 | 7 | 复刻 hooks/ 自动更新(hooks.json + arch-update-prompt.md);对接多仓 freshness 模型(每仓独立 fingerprint) | 待开 |
 | 8 | esbuild bundle engine 工具到 engine/bin/,验证 plugin 安装后免 npm install 可跑 | 待开 |
 | 9 | e2e 验证:plugin `samples/` 单仓 + 真实多仓项目 dogfood + hook 增量更新链路 | 待开 |
