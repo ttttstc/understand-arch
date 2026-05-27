@@ -38,10 +38,10 @@
 
 ## 1. 工作区数据模型(单仓/多仓统一)
 
-> **核心抽象**:workspace 按**业务系统**(`arch/{project}/`)组织,不按代码仓库。一个业务系统包含 N 个 git 仓库(N≥1)。单仓是 N=1 的退化情形,目录结构跟多仓**完全一致**。
+> **核心抽象**:workspace 按**业务系统**(`.understand-arch/{project}/`)组织,不按代码仓库。一个业务系统包含 N 个 git 仓库(N≥1)。单仓是 N=1 的退化情形,目录结构跟多仓**完全一致**。
 
 ```
-arch/{project}/                                  # 业务系统 workspace
+.understand-arch/{project}/                                  # 业务系统 workspace
 ├── specs/
 │   ├── repos.yaml                               # ★ 多仓注册表(单仓时只 1 条)
 │   ├── repos/                                   # ★ 每仓独立 graph
@@ -84,7 +84,7 @@ arch/{project}/                                  # 业务系统 workspace
 ### 1.1 repos.yaml(多仓注册表)
 
 ```yaml
-# arch/{project}/specs/repos.yaml
+# .understand-arch/{project}/specs/repos.yaml
 version: "1.0"
 repos:
   - id: web
@@ -121,7 +121,7 @@ repos:
 `/arch-onboard` 首次启动时:
 1. 扫描**当前目录及一层子目录**寻找 `.git/` 目录
 2. 引导用户确认要纳入哪些仓
-3. 自动生成 `arch/{project}/specs/repos.yaml`(用户可手动编辑)
+3. 自动生成 `.understand-arch/{project}/specs/repos.yaml`(用户可手动编辑)
 4. 后续 skill 启动时读 `repos.yaml`,不再问
 
 ### 1.3 v1.0 → v2.0 数据模型对照
@@ -141,12 +141,86 @@ repos:
 | `specs/decisions.yaml` | 合入 `specs/knowledge-graph.json#architecture_decisions[]` |
 | `specs/traceability.yaml` | 合入 `specs/knowledge-graph.json#traceability[]` |
 | `specs/diagrams/*.mmd` | wiki/12-diagrams.md 内嵌 (v2.0 占位) |
-| `~/.understand-arch/kb/*.yaml` | `arch/{project}/rules/*.md` |
-| `generated/overview.md` + `generated/wiki/*` | `arch/{project}/wiki/*` |
+| `~/.understand-arch/kb/*.yaml` | `.understand-arch/{project}/rules/*.md` |
+| `generated/overview.md` + `generated/wiki/*` | `.understand-arch/{project}/wiki/*` |
 | `generated/audit/*` | wiki 各对应页 + `arch-review` 临时报告 |
 | `generated/briefs/*` | `/arch-wiki` 受众化输出 mode |
 
-### 1.5 删除的概念
+### 1.5 目录侵入面策略(v2.0)
+
+#### 1.5.1 用户项目根目录只放 1 个目录
+
+```
+用户项目根/
+├── src/                                        # 用户的代码
+├── package.json                                # 用户的
+├── .git/                                       # 用户的
+├── .gitignore                                  # 用户的(需加 1 行排除 intermediate)
+└── .understand-arch/                           # ★ 我们整个 plugin 的唯一入口
+    ├── .gitignore                              # 自动生成,排除 intermediate/ 和 .metrics.jsonl
+    ├── {project-name}/                         # 业务系统 workspace
+    │   ├── specs/                              # ✅ 进 git
+    │   ├── wiki/                               # ✅ 进 git
+    │   ├── rules/                              # ✅ 进 git
+    │   ├── decisions/                          # ✅ 进 git
+    │   ├── change-requests/                    # ✅ 进 git
+    │   ├── state.yaml                          # ✅ 进 git
+    │   ├── .metrics.jsonl                      # ❌ ignored
+    │   └── intermediate/                       # ❌ ignored (engine 7-phase 临时产物)
+    └── (可能多个 {project-name}/)
+```
+
+**侵入面 = 1 个目录**(`.understand-arch/`),无其它污染。
+
+#### 1.5.2 项目级 vs 全局级
+
+- **项目级**(随用户项目走,进 git):`.understand-arch/{project}/` 全套
+- **plugin 级**(在 plugin 仓库里,不进用户项目):
+  - `templates/rules/` — rules 6 份中文模板
+  - `samples/` — 示例 workspace(dogfood 用)
+- **全局级**(已废弃):v1.0 的 `~/.understand-arch/kb/` v2.0 全部废弃,改为项目级 `rules/`
+
+#### 1.5.3 .gitignore 自动生成
+
+`/arch-onboard` 首次运行时,在 `.understand-arch/.gitignore` 写入:
+
+```text
+# .understand-arch/.gitignore (自动生成)
+*/intermediate/
+*/.metrics.jsonl
+```
+
+并提示用户在自己的 `.gitignore` 加 1 行(若希望整体忽略本目录):
+
+```text
+# 仅当用户不希望提交架构基线时,可加:
+# .understand-arch/
+```
+
+#### 1.5.4 intermediate/ 用途
+
+engine 跑 7 phases 时,每个 phase 把输出写到 `intermediate/`,下一个 phase 读它继续加工:
+
+```
+Phase 1 SCAN          → intermediate/scan-result-{repo_id}.json
+Phase 1.5 BATCH       → intermediate/batches-{repo_id}.json
+Phase 2 ANALYZE       → intermediate/batch-1.json ... batch-N.json(并行写)
+Phase 3 ASSEMBLE      → intermediate/assembled-graph-{repo_id}.json
+Phase 4 STRUCTURE     → intermediate/layers-{repo_id}.json
+Phase 5 DOMAIN        → intermediate/domain-{repo_id}.json
+Phase 6 QUALITY       → intermediate/quality-{repo_id}.json
+Phase 7 REVIEW        → intermediate/review-{phase}-{repo_id}.json
+Phase 8 FINALIZE      → 合成最终 specs/repos/{repo_id}/knowledge-graph.json + specs/cross-repo.json
+```
+
+**保留意义**:
+- `--resume` 续跑:任何 phase 失败后,intermediate 产物保留,下次接着跑
+- 跨仓合并:Phase 8 需要读所有仓的 intermediate 才能合并 cross-repo.json
+- 调试追溯:出问题时可以看 intermediate 定位是哪个 phase 出错
+
+**单仓产物量**:中等仓(500 文件)约 4MB;5 仓项目约 20MB。所以必须 ignored。
+
+### 1.6 删除的概念
 
 - ❌ `freshness_status` 启发式("命中文件数 ≤ 5" 等)→ 改用 fingerprint
 - ❌ 全局 KB 目录
@@ -779,7 +853,7 @@ UA 自带 `.understandignore` 默认清单(node_modules / dist / .git / lock fil
 **/generated/**
 ```
 
-**用户需要审视测试或生成代码时**:在 `arch/{project}/.understandignore` 用 `!**/*.test.*` 反包含即可。
+**用户需要审视测试或生成代码时**:在 `.understand-arch/{project}/.understandignore` 用 `!**/*.test.*` 反包含即可。
 
 ### 3.9 构建
 
@@ -796,7 +870,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
 
 - `hooks/hooks.json` 文件随 plugin 安装即存在
 - 但 hook command 内部前置条件检查 `state.yaml#hooks_enabled == true`,否则跳过
-- 用户启用:`/arch-onboard --enable-hooks` 或手动改 `arch/{project}/state.yaml#hooks_enabled = true`
+- 用户启用:`/arch-onboard --enable-hooks` 或手动改 `.understand-arch/{project}/state.yaml#hooks_enabled = true`
 - 默认 `hooks_enabled: false`,避免新用户被频繁打扰
 
 #### 3.10.1 Hook 配置
@@ -1046,7 +1120,7 @@ interface ScanTask {
 
 ```bash
 node engine/bin/finalize-cross-repo.js \
-  --workspace arch/{project}/ \
+  --workspace .understand-arch/{project}/ \
   --repos web,api,infra
 ```
 
@@ -1070,7 +1144,7 @@ Phase 8 用 3 个 subagent,但**项目级 1 次**,M 预算够。
 
 任意时点中断后,`/arch-analyze --resume` 可续跑:
 
-1. 读 `arch/{project}/.understand-arch/intermediate/task-state.json`(调度器持久化的 task 状态)
+1. 读 `.understand-arch/{project}/intermediate/task-state.json`(调度器持久化的 task 状态)
 2. 跳过已 `done` 的 task
 3. 从 `running` 状态的 task 重新开始(假设上次未完成)
 4. `failed` 的 task 重新计入重试预算
@@ -1083,7 +1157,7 @@ Phase 8 用 3 个 subagent,但**项目级 1 次**,M 预算够。
 #### 3.15.8 输出结构
 
 ```
-arch/{project}/
+.understand-arch/{project}/
 ├── .understand-arch/
 │   └── intermediate/                                # 中间产物(--resume 用)
 │       ├── task-state.json                          # 调度器状态
@@ -1409,7 +1483,7 @@ arch-diagram 正在开发中,v2.1 见。
 
 **Subagent 调用方式**:同 UA,通过 Claude Code 内置的 subagent dispatch(`Agent` tool),subagent 定义在仓库顶级 `agents/arch-*.md`。
 
-**写权限**: `specs/repos/*/knowledge-graph.json` + `specs/repos/*/.fingerprint.json` + `specs/cross-repo.json` + `arch/{project}/.understand-arch/intermediate/**`(临时中间产物)
+**写权限**: `specs/repos/*/knowledge-graph.json` + `specs/repos/*/.fingerprint.json` + `specs/cross-repo.json` + `.understand-arch/{project}/intermediate/**`(临时中间产物)
 
 **多仓扫描行为**(详见 §3.15 调度方案):
 - Phase 0 读 `repos.yaml`,校验各仓路径有效
@@ -1708,7 +1782,7 @@ Notion 风格,章节列表 + 摘要 + 链接:
 ### 6.1 算法
 
 1. engine 每次扫码后,为每个 file/function/class 节点算内容指纹
-2. 持久化到 `arch/{project}/specs/.fingerprint.json`
+2. 持久化到 `.understand-arch/{project}/specs/.fingerprint.json`
 3. 下次扫:新旧 fingerprint diff → 算 per_node_freshness
 
 ### 6.2 全局 status 判定
@@ -1734,9 +1808,9 @@ Notion 风格,章节列表 + 摘要 + 链接:
 
 ### 7.1 位置
 
-`arch/{project}/rules/`,**项目级**,不区分团队/项目子目录。
+`.understand-arch/{project}/rules/`,**项目级**,不区分团队/项目子目录。
 
-### 7.2 模板(arch/_template/rules/,中文)
+### 7.2 模板(plugin 仓库 `templates/rules/`,中文)
 
 参考业界规范的 6 个起点 md:
 
@@ -2145,7 +2219,7 @@ internal/rubrics/
 
 ### 11.9 用户自定义 Rubric(可选)
 
-用户可在 `arch/{project}/rubrics/` 下覆盖默认 rubric(例如对特定行业加重 compliance 权重)。加载顺序:项目级 → 全局默认。
+用户可在 `.understand-arch/{project}/rubrics/` 下覆盖默认 rubric(例如对特定行业加重 compliance 权重)。加载顺序:项目级 → 全局默认。
 
 ---
 
@@ -2333,7 +2407,7 @@ internal/schemas/
 | 用户入口 | 4 → 5(新增 `/arch-wiki` 和 `/arch-diagram`,`/arch-brief` 废弃) |
 | **arch-design** | 简单 CR 流程 → **13 段 RFC 风格 solution-design.md + impact.yaml/md + changes.md** |
 | **新 subagent** | 无 | arch-impact-analyzer / arch-solution-designer / arch-quality-analyzer |
-| 配置目录 | `~/.understand-arch/kb/` → `arch/{project}/rules/` |
+| 配置目录 | `~/.understand-arch/kb/` → `.understand-arch/{project}/rules/` |
 | 视图层 | `generated/` → `wiki/`(16 页含 `16-pending-changes.md` 架构师 dashboard) |
 | Schema 数 | 14 → **7**(加 repos / repo-graph / cross-repo) |
 | 引擎 | 无引擎(LLM 全扫) → fork UA 三层(orchestrator + subagents + engine tools) |
@@ -2361,7 +2435,7 @@ internal/schemas/
 | 6 | 重写 schemas(**7** 个,含 CR.md frontmatter schema)+ acceptance(4 gate)+ **rubrics(10 份,含 wiki-lite/full + 取消 phase-2)** + write-scope + README + rules 模板(6 份,含 dependencies.md)+ 更新 .claude-plugin/ plugin manifest | 待开 |
 | 7 | 复刻 hooks/ 自动更新(hooks.json + arch-update-prompt.md);对接多仓 freshness 模型(每仓独立 fingerprint) | 待开 |
 | 8 | esbuild bundle engine 工具到 engine/bin/,验证 plugin 安装后免 npm install 可跑 | 待开 |
-| 9 | e2e 验证:arch/sample/ 单仓 + 真实多仓项目 dogfood + hook 增量更新链路 | 待开 |
+| 9 | e2e 验证:plugin `samples/` 单仓 + 真实多仓项目 dogfood + hook 增量更新链路 | 待开 |
 
 ---
 
