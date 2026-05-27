@@ -42,6 +42,10 @@ function nodeList(nodes, limit = 50) {
   return nodes.slice(0, limit).map((node) => `- \`${node.id}\` ${node.name}: ${node.summary}`).join("\n");
 }
 
+function fallbackNote() {
+  return "> 注:当前为确定性兜底渲染。当 graph 有对应类型节点(deployments/flows/decisions/changes 等),应由 LLM 受众化润色填充。";
+}
+
 function evidenceLine(node) {
   const evidence = node.evidence_refs?.[0];
   if (!evidence) return `证据:${node.id}`;
@@ -173,6 +177,7 @@ function pageBody(title, nodes, extra = []) {
     "",
     "## 说明",
     nodes.length ? "上述条目均来自 graph 节点或跨仓索引。缺失项必须回写 graph 或 known_unknowns,不得在 wiki 中凭空补充。" : "当前 graph 没有提供该类节点。若项目实际存在此类事实,请重新运行 arch-analyze 或补充对应 subagent 推断结果。",
+    nodes.length ? "" : fallbackNote(),
     ...extra
   ].join("\n");
 }
@@ -216,12 +221,15 @@ function renderWiki(workspace) {
     "## Technical Debt",
     nodeList(crossRepo.technical_debt ?? [])
   ].join("\n"));
-  writePage(wikiDir, "08-deployments.md", "08 Deployments", nodeList(deployments));
-  writePage(wikiDir, "09-flows-and-scenarios.md", "09 Flows And Scenarios", nodeList(flows));
-  writePage(wikiDir, "10-decisions.md", "10 Decisions", nodeList(crossRepo.architecture_decisions ?? []));
-  writePage(wikiDir, "11-changes.md", "11 Changes", nodeList(crossRepo.change_requests ?? []));
+  // These fallback sections are deterministic placeholders. In a live Claude Code run,
+  // arch-wiki should ask an LLM to audience-shape the same graph-backed facts while
+  // preserving node ids, ADR/CR paths, rules paths and known_unknowns boundaries.
+  writePage(wikiDir, "08-deployments.md", "08 Deployments", pageBody("部署拓扑", deployments));
+  writePage(wikiDir, "09-flows-and-scenarios.md", "09 Flows And Scenarios", pageBody("流程与场景", flows));
+  writePage(wikiDir, "10-decisions.md", "10 Decisions", pageBody("架构决策", crossRepo.architecture_decisions ?? []));
+  writePage(wikiDir, "11-changes.md", "11 Changes", pageBody("变更请求", crossRepo.change_requests ?? []));
   writePage(wikiDir, "12-rules.md", "12 Rules", renderRules(workspace));
-  writePage(wikiDir, "13-pending-changes.md", "13 Pending Changes", nodeList((crossRepo.change_requests ?? []).filter((cr) => ["draft", "in_review", "ready"].includes(cr.status))));
+  writePage(wikiDir, "13-pending-changes.md", "13 Pending Changes", pageBody("待处理变更", (crossRepo.change_requests ?? []).filter((cr) => ["draft", "in_review", "ready"].includes(cr.status))));
   writePage(wikiDir, "14-diagrams.md", "14 Diagrams", [
     "v2.0 保留 4+1 / C4 视图占位,图片生成留给 v2.1。",
     "",

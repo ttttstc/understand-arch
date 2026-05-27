@@ -36,7 +36,7 @@
     },
     "node": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "required": ["id", "type", "name", "summary", "tags", "complexity", "repo_id"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::[a-zA-Z0-9-_]+$" },
@@ -46,9 +46,31 @@
           "enum": ["file", "function", "class", "module", "concept", "config", "document", "service", "table", "endpoint", "pipeline", "schema", "resource", "domain", "flow", "step", "article", "entity", "topic", "claim", "source"]
         },
         "name": { "type": "string" },
+        "filePath": { "type": "string" },
+        "lineRange": { "type": "array", "prefixItems": [{ "type": "integer" }, { "type": "integer" }], "minItems": 2, "maxItems": 2 },
         "summary": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
         "complexity": { "type": "string", "enum": ["simple", "moderate", "complex"] },
+        "languageNotes": { "type": "string" },
+        "domainMeta": { "type": "object" },
+        "knowledgeMeta": { "type": "object" },
+        "criticality": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "maturity": { "type": "string", "enum": ["experimental", "growing", "stable", "deprecated"] },
+        "importance": { "type": "string", "enum": ["core", "supporting", "edge"] },
+        "boundary": { "type": "string", "enum": ["internal", "public", "external"] },
+        "communication": { "type": "string", "enum": ["sync", "async", "event"] },
+        "data_sensitivity": { "type": "string", "enum": ["public", "internal", "pii", "secret"] },
+        "sla": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "availability": { "type": "string" },
+            "latency_p99_ms": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "linked_adrs": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+        "linked_crs": { "type": "array", "items": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" } },
+        "linked_risks": { "type": "array", "items": { "type": "string" } },
         "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
         "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidenceRef" } }
       }
@@ -91,4 +113,3 @@
     }
   }
 }
-

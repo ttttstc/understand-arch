@@ -85,6 +85,10 @@ Return JSON findings and retry_hints.
 - wiki 14 页全部生成,且结论可回链 graph node id 或 rules path。
 - 没有写出 `.understand-arch/` 以外的架构资产。
 
+## References
+
+- `references/onboarding-flow.md`:多仓发现、rules 初始化、首次扫描和中文交互模板。
+
 ## 写权限
 
 见 `internal/tool-contracts/write-scope.yaml#skills.arch-onboard`。本 skill 直接写 `state.yaml`、`specs/repos.yaml`、`.metrics.jsonl`,通过调度间接写 graph 与 wiki。禁止写 `decisions/**`、`change-requests/**`、`rules/**` 的用户已有内容。

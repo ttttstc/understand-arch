@@ -1,6 +1,6 @@
 {
   "name": "understand-arch",
-  "version": "2.0.0-skeleton",
+  "version": "2.0.0-rc1",
   "private": true,
   "description": "Claude Code architecture knowledge plugin for senior architects.",
   "scripts": {

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "面向高级架构师的 Claude Code plugin。v2.0 支持单仓/多仓统一 graph、14 页 wiki、单文件 CR.md 方案设计、append-only ADR 与项目内 rules。",
-    "version": "2.0.0-skeleton"
+    "version": "2.0.0-rc1"
   },
   "plugins": [
     {

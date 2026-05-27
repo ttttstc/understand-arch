@@ -10,14 +10,14 @@
     "project": { "type": "object" },
     "repos": { "type": "array", "items": { "type": "object" } },
     "cross_edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
-    "capabilities": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
-    "architecture_decisions": { "type": "array", "items": { "type": "object" } },
-    "change_requests": { "type": "array", "items": { "type": "object" } },
-    "traceability": { "type": "array", "items": { "type": "object" } },
-    "quality_attributes": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
-    "risks": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
-    "technical_debt": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
-    "known_unknowns": { "type": "array", "items": { "$ref": "#/$defs/inferred" } }
+    "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
+    "architecture_decisions": { "type": "array", "items": { "$ref": "#/$defs/architectureDecision" } },
+    "change_requests": { "type": "array", "items": { "$ref": "#/$defs/changeRequestRef" } },
+    "traceability": { "type": "array", "items": { "$ref": "#/$defs/traceabilityLink" } },
+    "quality_attributes": { "type": "array", "items": { "$ref": "#/$defs/qualityAttribute" } },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/risk" } },
+    "technical_debt": { "type": "array", "items": { "$ref": "#/$defs/technicalDebt" } },
+    "known_unknowns": { "type": "array", "items": { "$ref": "#/$defs/knownUnknown" } }
   },
   "$defs": {
     "edge": {
@@ -33,16 +33,144 @@
         "cross_repo": { "type": "boolean", "const": true }
       }
     },
-    "inferred": {
+    "evidenceRef": {
       "type": "object",
-      "additionalProperties": true,
-      "required": ["id", "confidence", "evidence_refs"],
+      "additionalProperties": false,
+      "required": ["repo_id", "file", "source", "extracted_at"],
+      "properties": {
+        "repo_id": { "type": "string" },
+        "file": { "type": "string" },
+        "line_range": { "type": "array", "prefixItems": [{ "type": "integer" }, { "type": "integer" }], "minItems": 2, "maxItems": 2 },
+        "source": { "type": "string", "enum": ["engine", "llm", "human"] },
+        "extracted_at": { "type": "string" }
+      }
+    },
+    "architectureDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "date", "context", "decision", "consequences", "affected_node_ids", "md_path", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ADR-[0-9]{3}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["proposed", "accepted", "deprecated", "superseded"] },
+        "date": { "type": "string" },
+        "context": { "type": "string" },
+        "decision": { "type": "string" },
+        "consequences": { "type": "string" },
+        "superseded_by": { "type": "string", "pattern": "^ADR-[0-9]{3}$" },
+        "supersedes": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+        "affected_node_ids": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" } },
+        "md_path": { "type": "string" },
+        "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidenceRef" } }
+      }
+    },
+    "changeRequestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "date", "impact_node_ids", "introduced_adrs", "dir_path"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "in_review", "ready", "merged", "rolled_back"] },
+        "date": { "type": "string" },
+        "impact_node_ids": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" } },
+        "introduced_adrs": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+        "dir_path": { "type": "string" }
+      }
+    },
+    "qualityAttribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "statement", "target", "measurement", "applies_to_node_ids", "status", "evidence_refs", "confidence"],
       "properties": {
         "id": { "type": "string" },
-        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
-        "evidence_refs": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+        "category": { "type": "string", "enum": ["performance", "availability", "security", "scalability", "maintainability", "observability", "compliance", "cost"] },
+        "statement": { "type": "string" },
+        "target": { "type": "string" },
+        "measurement": { "type": "string" },
+        "applies_to_node_ids": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["met", "at_risk", "violated", "unknown"] },
+        "evidence_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "category", "likelihood", "impact", "severity", "affected_node_ids", "status", "evidence_refs", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["technical", "operational", "security", "compliance", "organizational"] },
+        "likelihood": { "type": "string", "enum": ["low", "medium", "high"] },
+        "impact": { "type": "string", "enum": ["low", "medium", "high"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "affected_node_ids": { "type": "array", "items": { "type": "string" } },
+        "mitigation": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "mitigated", "accepted", "transferred"] },
+        "evidence_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "technicalDebt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "category", "affected_node_ids", "status", "evidence_refs", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["code", "architecture", "infra", "test", "docs"] },
+        "affected_node_ids": { "type": "array", "items": { "type": "string" } },
+        "cost_estimate": { "type": "string" },
+        "business_impact": { "type": "string" },
+        "introduced_in": { "type": "string", "pattern": "^CR-" },
+        "status": { "type": "string", "enum": ["acknowledged", "scheduled", "in_progress", "resolved"] },
+        "evidence_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description", "supporting_node_ids", "maturity", "importance", "gaps", "evidence_refs", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "supporting_node_ids": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" } },
+        "maturity": { "type": "string", "enum": ["experimental", "growing", "stable", "deprecated"] },
+        "importance": { "type": "string", "enum": ["core", "supporting", "edge"] },
+        "gaps": { "type": "array", "items": { "type": "string" } },
+        "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidenceRef" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "traceabilityLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cr_id"],
+      "properties": {
+        "cr_id": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" },
+        "affected_node_ids": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" } },
+        "adr_ids": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+        "release": { "type": "string" },
+        "from": { "type": "object" },
+        "to": { "type": "object" },
+        "relation": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "knownUnknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "statement", "affected_node_ids", "suggested_action"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string", "enum": ["missing_evidence", "ambiguous_boundary", "untraced_dependency", "unverified_assumption", "scan_gap"] },
+        "statement": { "type": "string" },
+        "affected_node_ids": { "type": "array", "items": { "type": "string" } },
+        "suggested_action": { "type": "string" }
       }
     }
   }
 }
-

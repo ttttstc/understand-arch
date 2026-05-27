@@ -95,6 +95,10 @@ node engine/bin/wiki-review.js --workspace .understand-arch/{project} --mode ful
 
 `wiki-review.js` 检查 README+14 页、graph node id 回链、`03-interfaces.md` 已知局限;full 模式额外检查 rules 摘要与 `14-diagrams.md` Mermaid 占位。
 
+## References
+
+- `references/audience-guide.md`:cto/newcomer/pm/architect 受众化渲染重点与 LLM prompt 模板。
+
 ## 写权限
 
 允许写 `wiki/**`、`wiki/.cache.json`、`state.yaml` 与 `.metrics.jsonl`;禁止写 specs、decisions、change-requests、rules。
