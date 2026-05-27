@@ -138,6 +138,12 @@ Write {workspace}/intermediate/review-phase-7-{repo_id}.json.
 
 运行前应先执行 `npm run verify`,它会 build forked core 并跑 v2 smoke test。
 
+## References
+
+- `references/phase-pipeline.md`:Phase 0-8 contract and phase outputs.
+- `references/multi-repo-rules.md`:single-repo and multi-repo graph rules.
+- `references/scheduler-playbook.md`:worker scheduling, incremental refresh and failure handling.
+
 ## 多仓规则
 
 - 所有 node id 必须是 `{repo_id}::{local-id}`。

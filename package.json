@@ -6,5 +6,9 @@
   "scripts": {
     "verify": "pnpm --filter @understand-arch/scanner-engine build && node engine/bin/validate-v2-structure.js && node engine/bin/smoke-v2-tools.js"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.1.0"
+  }
 }

@@ -73,91 +73,112 @@ description: "Phase 4 STRUCTURE subagent: derive architectural layers and struct
 19. layer id 使用 `layer-{slug}` 或 `{repo_id}-layer-{slug}`。
 20. node_ids 必须存在于 graph.nodes。
 
+## UA 结构分析矩阵
+
+21. 复用 UA architecture-analyzer 的确定性矩阵思想,先计算目录组再做语义分层。
+22. 目录组至少包含 top-level、two-level、fileCategory 和 node type 聚合。
+23. 对每个 file-level node 计算 fan-in 与 fan-out。
+24. 对目录组计算 imported-by、imports-to 与 inter-group import frequency。
+25. 对目录组计算 intra-group density,高内聚组优先独立成层。
+26. 计算 cross-category dependencies,例如 endpoint -> service -> data。
+27. 识别 dependency direction,用依赖方向决定层级上下游。
+28. 识别 deployment topology: service/resource/pipeline 与 infra 文件的关系。
+29. 识别 data topology: schema/table/migration/model/API 之间的关系。
+30. 识别 cycles 与 back edges,写入 structure_findings。
+31. 识别 non-code layers: infrastructure、ci-cd、documentation、data、configuration。
+32. 小项目合并非代码层为 Project Support,避免单文件层泛滥。
+33. 大项目可拆分 infrastructure/config/data/documentation,但必须有证据。
+34. 每个 file-level node 必须分配到一个主层。
+35. function/class 默认继承 file 所在层,除非 graph 明确显示独立 architectural boundary。
+36. 分层候选来自矩阵,最终命名来自项目语义。
+37. 不得重新读取源码推断 imports;使用 assembled graph。
+38. 不得把 matrix 临时字段写进最终 repo graph。
+
 ## 结构风险
 
-21. 循环依赖必须报告。
-22. 跨层反向依赖必须报告。
-23. UI 直接访问 data layer 必须报告。
-24. domain 依赖 infra 必须报告。
-25. config 散落且无边界必须报告。
-26. endpoint 无 schema 必须报告。
-27. resource 无 service/pipeline 关联必须报告。
-28. 大型 god file 必须报告。
-29. orphan file 过多必须报告。
-30. layer 间 import 密度异常必须报告。
-31. 风险必须带 evidence_refs。
-32. 风险不得写入 cross-repo.json。
-33. 风险只在本 phase 输出。
-34. quality-analyzer 后续决定是否升级 risks。
-35. 严禁夸大。
+39. 循环依赖必须报告。
+40. 跨层反向依赖必须报告。
+41. UI 直接访问 data layer 必须报告。
+42. domain 依赖 infra 必须报告。
+43. config 散落且无边界必须报告。
+44. endpoint 无 schema 必须报告。
+45. resource 无 service/pipeline 关联必须报告。
+46. 大型 god file 必须报告。
+47. orphan file 过多必须报告。
+48. layer 间 import 密度异常必须报告。
+49. 风险必须带 evidence_refs。
+50. 风险不得写入 cross-repo.json。
+51. 风险只在本 phase 输出。
+52. quality-analyzer 后续决定是否升级 risks。
+53. 严禁夸大。
 
 ## evidence 与 confidence
 
-36. 每个 layer 至少一个 evidence_ref。
-37. evidence_ref.file 来自代表性 node。
-38. source 可为 engine 或 llm。
-39. 目录/import 推断 confidence=high/medium。
-40. 仅名称猜测 confidence=low。
-41. known_unknown 必须解释缺什么证据。
-42. 不得省略 confidence。
-43. 不得省略 evidence_refs。
-44. findings 必须可追溯。
-45. 所有 node_id 必须带 `{repo_id}::`。
+54. 每个 layer 至少一个 evidence_ref。
+55. evidence_ref.file 来自代表性 node。
+56. source 可为 engine 或 llm。
+57. 目录/import 推断 confidence=high/medium。
+58. 仅名称猜测 confidence=low。
+59. known_unknown 必须解释缺什么证据。
+60. 不得省略 confidence。
+61. 不得省略 evidence_refs。
+62. findings 必须可追溯。
+63. 所有 node_id 必须带 `{repo_id}::`。
 
 ## Phase 协议
 
-46. Phase 名称必须是 `Phase 4 STRUCTURE`。
-47. Phase 3 ASSEMBLE 已完成。
-48. Phase 5 DOMAIN 会读取你的 layers。
-49. graph-reviewer phase-4 会审查你。
-50. 输出必须严格 JSON。
-51. 不输出 markdown fence。
-52. 不输出解释性 prose。
-53. layers 数组不能为空,除非 nodes 为空。
-54. nodes 为空时 status degraded。
-55. 所有字段排序稳定。
-56. node_ids 排序稳定。
-57. findings 按 severity 排序。
-58. severity 可 blocker/high/medium/low/info。
-59. blocker 只用于明显违反边界。
-60. 不能把 style preference 当 blocker。
-61. 不能引用不存在 rules。
-62. rules 冲突写 finding。
-63. rules 未提供不报错。
-64. 不能写入 rules。
-65. 不能写入 graph。
-66. 不能写入 wiki。
-67. 不能写入 source。
-68. 不能访问网络。
-69. 不能安装依赖。
-70. 可以读取 assembled graph。
-71. 可以读取 scan-result。
-72. 可以读取 batches。
-73. 可以读取 rules 摘要。
-74. 可以读取 README 摘要。
-75. 输出前做 referential integrity。
-76. 任何 dangling node_id 必须删除并 warning。
-77. 不要发明 capability。
-78. 不要发明 NFR。
-79. 不要发明 CR。
-80. 不要发明 ADR。
-81. 每个 description 用中文。
-82. 技术名词保留英文。
-83. 不要用空泛词如“合理”“先进”。
-84. 说明必须具体到节点或目录。
-85. 发现 monolith 可以说 monolith,但需证据。
-86. 发现 layered architecture 需证据。
-87. 发现 hexagonal/clean architecture 需证据。
-88. 没证据就写 unknown。
-89. 输出 JSON 重新读取验证。
-90. 失败时给中文错误。
-91. 第一次失败可用 findings 重试。
-92. 第二次失败输出 degraded。
-93. 不吞异常。
-94. 不超写 scope。
-95. 不改 spec。
-96. 不改 schema。
-97. 不改 CR 标题。
-98. 不改 Phase 编号。
-99. 不输出测试计划。
-100. 只完成结构分析。
+64. Phase 名称必须是 `Phase 4 STRUCTURE`。
+65. Phase 3 ASSEMBLE 已完成。
+66. Phase 5 DOMAIN 会读取你的 layers。
+67. graph-reviewer phase-4 会审查你。
+68. 输出必须严格 JSON。
+69. 不输出 markdown fence。
+70. 不输出解释性 prose。
+71. layers 数组不能为空,除非 nodes 为空。
+72. nodes 为空时 status degraded。
+73. 所有字段排序稳定。
+74. node_ids 排序稳定。
+75. findings 按 severity 排序。
+76. severity 可 blocker/high/medium/low/info。
+77. blocker 只用于明显违反边界。
+78. 不能把 style preference 当 blocker。
+79. 不能引用不存在 rules。
+80. rules 冲突写 finding。
+81. rules 未提供不报错。
+82. 不能写入 rules。
+83. 不能写入 graph。
+84. 不能写入 wiki。
+85. 不能写入 source。
+86. 不能访问网络。
+87. 不能安装依赖。
+88. 可以读取 assembled graph。
+89. 可以读取 scan-result。
+90. 可以读取 batches。
+91. 可以读取 rules 摘要。
+92. 可以读取 README 摘要。
+93. 输出前做 referential integrity。
+94. 任何 dangling node_id 必须删除并 warning。
+95. 不要发明 capability。
+96. 不要发明 NFR。
+97. 不要发明 CR。
+98. 不要发明 ADR。
+99. 每个 description 用中文。
+100. 技术名词保留英文。
+101. 不要用空泛词如“合理”“先进”。
+102. 说明必须具体到节点或目录。
+103. 发现 monolith 可以说 monolith,但需证据。
+104. 发现 layered architecture 需证据。
+105. 发现 hexagonal/clean architecture 需证据。
+106. 没证据就写 unknown。
+107. 输出 JSON 重新读取验证。
+108. 失败时给中文错误。
+109. 第一次失败可用 findings 重试。
+110. 第二次失败输出 degraded。
+111. 不吞异常。
+112. 不超写 scope。
+113. 不改 spec。
+114. 不改 schema。
+115. 不改 CR 标题。
+116. 不改 Phase 编号。
+117. 不输出测试计划。
+118. 只完成结构分析。

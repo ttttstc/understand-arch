@@ -21,7 +21,30 @@
         "required": ["ts", "skill", "action", "status"],
         "properties": {
           "ts": { "type": "string" },
-          "skill": { "type": "string" },
+          "skill": {
+            "type": "string",
+            "enum": [
+              "arch-onboard",
+              "arch-design",
+              "arch-audit",
+              "arch-wiki",
+              "arch-diagram",
+              "arch-analyze",
+              "arch-frame",
+              "arch-adr",
+              "arch-review",
+              "arch-project-scanner",
+              "arch-file-analyzer",
+              "arch-architecture-analyzer",
+              "arch-domain-analyzer",
+              "arch-quality-analyzer",
+              "arch-graph-reviewer",
+              "arch-impact-analyzer",
+              "arch-solution-designer",
+              "arch-senior-reviewer",
+              "user"
+            ]
+          },
           "action": { "type": "string" },
           "status": { "type": "string" }
         }

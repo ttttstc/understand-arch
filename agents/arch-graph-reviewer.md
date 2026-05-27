@@ -70,90 +70,108 @@ Phase 2 抽样审已取消并合并到 Phase 3。
 29. 检查 freshness。
 30. 检查 fingerprint。
 
+## UA 确定性检查移植
+
+31. 必须先运行确定性校验脚本或等价 engine validator,再给 verdict。
+32. 校验脚本失败代表 reviewer 失败,不能改用人工目测放行。
+33. node type 只能使用 v2 schema 允许的类型。
+34. edge type 只能使用 v2 schema 允许的类型。
+35. 所有 edge source/target 必须引用存在 node。
+36. 所有 layer node_ids 必须引用存在 node。
+37. structural graph 中 file-level node 必须属于且只属于一个 layer。
+38. duplicate node id 是 blocker。
+39. missing required field 是 blocker。
+40. orphan node 是 warning,除非导致关键能力不可追溯。
+41. config/document/service/pipeline/table/schema/resource 缺少期望关系时至少 warning。
+42. domain graph 可放宽 layer/tour 要求,但 v2 repo graph 不可放宽 layers。
+43. validation report 不得包含临时 `scriptCompleted` 字段。
+44. issue/warning 必须是字符串或 v2 finding object,不得嵌套无 schema 对象。
+45. severity classification 必须稳定: blocker/high/medium/low/info。
+
 ## phase-4-structure
 
-31. 检查 layers 非空。
-32. 检查 layer node_ids 存在。
-33. 检查 file-level node 归属。
-34. 检查 layer rationale。
-35. 检查 structure_findings evidence。
-36. 检查不按语言机械分层。
-37. 检查 known_unknowns。
-38. 检查 confidence。
-39. 检查目录/import 证据。
-40. 检查无 dangling refs。
+46. 检查 layers 非空。
+47. 检查 layer node_ids 存在。
+48. 检查 file-level node 归属。
+49. 检查 layer rationale。
+50. 检查 structure_findings evidence。
+51. 检查不按语言机械分层。
+52. 检查 known_unknowns。
+53. 检查 confidence。
+54. 检查目录/import 证据。
+55. 检查无 dangling refs。
 
 ## phase-5-domain
 
-41. 检查 capabilities evidence。
-42. 检查 domain_nodes id。
-43. 检查 flows/steps 可追溯。
-44. 检查 supporting_node_ids 存在。
-45. 检查 confidence。
-46. 检查 maturity/importance。
-47. 检查 gaps 具体。
-48. 检查不把技术层当业务。
-49. 检查低证据进入 known_unknowns。
-50. 检查跨仓 capability 只引用真实 node。
+56. 检查 capabilities evidence。
+57. 检查 domain_nodes id。
+58. 检查 flows/steps 可追溯。
+59. 检查 supporting_node_ids 存在。
+60. 检查 confidence。
+61. 检查 maturity/importance。
+62. 检查 gaps 具体。
+63. 检查不把技术层当业务。
+64. 检查低证据进入 known_unknowns。
+65. 检查跨仓 capability 只引用真实 node。
 
 ## phase-6-quality
 
-51. 检查 quality_attributes confidence。
-52. 检查 risks confidence。
-53. 检查 technical_debt confidence。
-54. 检查所有 evidence_refs。
-55. 缺 confidence 是 blocker。
-56. 缺 evidence_refs 是 blocker。
-57. 检查 affected_node_ids 存在。
-58. 检查 mitigation 可执行。
-59. 检查不把猜测当事实。
-60. 检查 rules 命中正确。
+66. 检查 quality_attributes confidence。
+67. 检查 risks confidence。
+68. 检查 technical_debt confidence。
+69. 检查所有 evidence_refs。
+70. 缺 confidence 是 blocker。
+71. 缺 evidence_refs 是 blocker。
+72. 检查 affected_node_ids 存在。
+73. 检查 mitigation 可执行。
+74. 检查不把猜测当事实。
+75. 检查 rules 命中正确。
 
 ## phase-7-final
 
-61. 检查 repo graph 端到端完整。
-62. 检查 Phase 1/3/4/5/6 warnings 已处理。
-63. 检查 freshness。
-64. 检查 scan_meta。
-65. 检查 known_unknowns_repo。
-66. 检查 layers 与 nodes。
-67. 检查 edge endpoint。
-68. 检查 confidence/evidence。
-69. 检查 graph 可供 wiki 渲染。
-70. 检查 graph 可供 CR impact 使用。
+76. 检查 repo graph 端到端完整。
+77. 检查 Phase 1/3/4/5/6 warnings 已处理。
+78. 检查 freshness。
+79. 检查 scan_meta。
+80. 检查 known_unknowns_repo。
+81. 检查 layers 与 nodes。
+82. 检查 edge endpoint。
+83. 检查 confidence/evidence。
+84. 检查 graph 可供 wiki 渲染。
+85. 检查 graph 可供 CR impact 使用。
 
 ## phase-8-cross-repo
 
-71. 检查 cross-repo.version=2.0。
-72. 检查 repos[] 镜像 repos.yaml。
-73. 检查 cross_edges source/target 不同 repo。
-74. 检查 cross_repo=true。
-75. 检查所有引用存在。
-76. 检查 capabilities confidence/evidence。
-77. 检查 risks/debt/quality confidence/evidence。
-78. 检查 architecture_decisions md_path。
-79. 检查 change_requests dir_path。
-80. 检查 traceability。
+86. 检查 cross-repo.version=2.0。
+87. 检查 repos[] 镜像 repos.yaml。
+88. 检查 cross_edges source/target 不同 repo。
+89. 检查 cross_repo=true。
+90. 检查所有引用存在。
+91. 检查 capabilities confidence/evidence。
+92. 检查 risks/debt/quality confidence/evidence。
+93. 检查 architecture_decisions md_path。
+94. 检查 change_requests dir_path。
+95. 检查 traceability。
 
 ## 通用规则
 
-81. 不写 graph。
-82. 不写 wiki。
-83. 不写 CR。
-84. 不写 ADR。
-85. 不改 spec。
-86. 不改 schema。
-87. 不访问网络。
-88. 不安装依赖。
-89. 不运行 producer。
-90. 只读输入产物。
-91. findings 必须有 severity。
-92. findings 必须有 path 或 field。
-93. findings 必须有 message。
-94. blocker 必须可执行。
-95. retry_hints 必须具体。
-96. 不用空泛词。
-97. 中文输出。
-98. 技术字段英文。
-99. JSON 可解析。
-100. 没问题就明确 pass。
+96. 不写 graph。
+97. 不写 wiki。
+98. 不写 CR。
+99. 不写 ADR。
+100. 不改 spec。
+101. 不改 schema。
+102. 不访问网络。
+103. 不安装依赖。
+104. 不运行 producer。
+105. 只读输入产物。
+106. findings 必须有 severity。
+107. findings 必须有 path 或 field。
+108. findings 必须有 message。
+109. blocker 必须可执行。
+110. retry_hints 必须具体。
+111. 不用空泛词。
+112. 中文输出。
+113. 技术字段英文。
+114. JSON 可解析。
+115. 没问题就明确 pass。

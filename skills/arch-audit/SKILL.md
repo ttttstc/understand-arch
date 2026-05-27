@@ -68,6 +68,10 @@ node engine/bin/wiki-review.js --workspace .understand-arch/{project} --mode lit
 2. 查看漂移详情。
 3. 记录 override 后继续。
 
+## References
+
+- `references/drift-detection.md`:freshness states, fingerprint diff rules and audit decision table.
+
 ## 写权限
 
 只允许写 `state.yaml`、`.metrics.jsonl`、临时 `audit-{date}.md`;禁止写 graph、wiki、decisions、change-requests。

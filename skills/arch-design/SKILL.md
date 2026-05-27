@@ -139,3 +139,7 @@ node engine/bin/impact-analyzer.js --workspace .understand-arch/{project} --text
 ```text
 node engine/bin/senior-review.js --mode design --cr change-requests/CR-*/CR.md
 ```
+
+## References
+
+- `references/impact-analysis.md`:requirement-to-graph matching, CR.md section 8 writes and traceability rules.

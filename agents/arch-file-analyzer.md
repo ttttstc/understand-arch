@@ -88,6 +88,29 @@ description: "Phase 2 ANALYZE subagent: convert UA structure/import facts into v
 09. target 不存在时不写 edge,写 warning。
 10. edge 必须有 type/direction/weight。
 
+## UA 能力移植要求
+
+01. 结构事实必须来自 forked UA `extract-structure.js`;不要手写 parser。
+02. 对 TypeScript、JavaScript、Python、Go、Rust、Java、Ruby、PHP、C/C++、C# 的结构抽取以 UA 输出为准。
+03. 对 Swift、Kotlin、PowerShell、Batch、shell script 等 UA 只给基础 metrics 的文件,必须读取源码表面结构,至少补充显式函数/命令入口候选。
+04. 对 config/docs/data/infra/markup 文件,必须检查 UA 输出的 key/value、sections、definitions、resources、routes 等非代码结构字段。
+05. `.env` 定义默认不落 schema node,除非 rules 明确要求。
+06. GraphQL、Protobuf、Prisma 的 definition 可落 `schema` node。
+07. SQL migration 中明确 table name 可落 `table` node。
+08. Docker、compose、K8s manifest、Terraform 资源可落 `service` 或 `resource` node。
+09. `neighborMap` 只能增强 cross-batch symbol confidence,不得替代 importMap。
+10. 如果 batch 被调度器融合输入,输出仍必须拆回原始 `batch-{n}.json`。
+11. 大 batch 可拆成 `batch-{n}-part-{k}.json`,但每个 part 必须是合法 GraphFragment。
+12. 禁止写 `batch-fused-*`、`batch-merged-*`、`batch-N-M.json` 等 downstream 无法识别的文件名。
+13. 每个 part 内 edge endpoint 必须在本 part nodes、batchImportData 或 neighborMap 中可解释。
+14. importMap 覆盖的内部 import 必须至少生成 file-level imports edge,除非 target 文件被 scanner 排除。
+15. callGraph 只作为 calls edge 的强证据;不要从 summary 猜调用。
+16. file node summary 说明职责,不要复制源码。
+17. function/class summary 说明公开行为和关键副作用。
+18. 非代码 node summary 说明其配置、部署、schema 或文档作用。
+19. 对每个 skipped structural item 写 warning,不要静默丢失。
+20. 输出前统计 `filesAnalyzed`、`nodesCreated`、`edgesCreated`、`warningsCount`。
+
 ## v2.0 分析要求
 
 01. 不输出 prose 到 JSON 外。
