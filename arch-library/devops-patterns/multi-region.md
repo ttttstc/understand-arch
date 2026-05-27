@@ -119,7 +119,7 @@
 - **active-active 没冲突解决**:数据互踩,数据修复是噩梦
 - **多 region 装 control plane 没装数据面隔离**:省钱省成沙雕
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 真的需要 multi-region 吗?驱动是什么?
 - [ ] 选哪种形态?为什么不选更简单的?

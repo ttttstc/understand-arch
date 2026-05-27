@@ -1,0 +1,12 @@
+{
+  "version": "2.0",
+  "enabled_by_default": false,
+  "guards": [
+    {
+      "name": "post-commit-architecture-freshness",
+      "enabled_when": "state.yaml#hooks_enabled == true",
+      "command": "node engine/bin/scanner.js --fingerprint-check"
+    }
+  ]
+}
+

@@ -1,58 +1,22 @@
 ---
 name: arch-diagram
 description: |
-  架构图渲染器。优先输出 Mermaid 图源；当可用时可额外渲染 SVG/PNG。来源可以是 `specs/` 或某个 CR。稳定图落到 `specs/diagrams/`，派生展示图落到 `generated/diagrams/`。
-
-  触发词: 画个架构图 / 更新 C4 / 出图 / 生成系统图 / 生成时序图
-
-  本 skill 不自己发明架构，只渲染现有事实。
+  v2.0 图表入口占位。读取 graph 并说明可生成的 4+1 / C4 视图,但不写任何图像文件。
 ---
 
 # arch-diagram
 
-## 角色定位
+## 定位
 
-- 结构化事实到图的翻译层。
-- 默认 Mermaid，fireworks 只作为增强后端。
-
-## 输入
-
-- `source=specs|cr`
-- `type=context|container|component|sequence|data-flow|deployment`
-- 上游 YAML 或 markdown 事实
+`arch-diagram` 在 v2.0 是占位入口。它可以读取 graph、列出 Logical / Development / Process / Physical / Scenarios 视图的可用事实与缺口,但不落盘图片或 Mermaid 文件。
 
 ## 输出
 
-- `specs/diagrams/*.mmd` 或 `generated/diagrams/*.mmd`
-- 可选 `.svg` / `.png`
+- 中文说明当前 4+1 视图覆盖情况。
+- 指向 `wiki/14-diagrams.md` 的占位内容。
+- 明确说明真正图片生成属于 v2.1 候选。
 
-## 硬规则
+## 写权限
 
-1. 每张图必须能回链 source artifact。
-2. Mermaid 图源永远生成。
-3. fireworks 不可用时自动降级 Mermaid。
-4. 不允许“凭感觉补图”。
+除 `state.yaml` 与 `.metrics.jsonl` 外不写任何文件。若被要求生成图片,必须说明 v2.0 不支持,不能伪造产物。
 
-## 验收
-
-- `.mmd` 可解析
-- 图中命名与 specs/CR 一致
-
-## Write Scope
-
-完整定义见 `internal/tool-contracts/write-scope.yaml#skills.arch-diagram`。
-
-| mode (source) | ✅ 可写 | ❌ 禁写 |
-|---|---|---|
-| `source=specs` | `specs/diagrams/*.mmd` | `generated/**` |
-| `source=cr` | `generated/diagrams/*.{mmd,svg,png}` | `specs/diagrams/**` |
-| `source=generated-view`(为 wiki/brief 嵌图) | `generated/diagrams/*.mmd` | `specs/**` |
-
-任何 mode 都 ❌ 禁写: `state.yaml` / `specs/*.yaml` / `decisions/**` / `change-requests/**`
-
-## 参考
-
-- `docs/spec-v1.0.md`
-- `internal/tool-contracts/write-scope.yaml`
-- `references/diagram-playbook.md`
-- `references/mermaid-templates.md`

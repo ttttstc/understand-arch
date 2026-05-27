@@ -144,7 +144,7 @@ DLQ **必须**有:
 - **消费者不幂等**:重试一次数据加倍
 - **DLQ 没人看**:积压到磁盘满
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 这条消息是事实还是请求?命名是否对齐?
 - [ ] saga 选 orchestration 还是 choreography?为什么?

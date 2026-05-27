@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/v2/cr.schema.json",
+  "title": "understand-arch v2 CR.md frontmatter",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "title", "status", "created_at", "project", "impact_node_ids", "sections"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["draft", "in_review", "ready", "merged", "rolled_back"] },
+    "created_at": { "type": "string" },
+    "project": { "type": "string" },
+    "impact_node_ids": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" } },
+    "introduced_adrs": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+    "traceability": { "type": "array", "items": { "type": "object" } },
+    "sections": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": { "type": "string" }
+    }
+  }
+}
+

@@ -1,0 +1,17 @@
+{
+  "name": "understand-arch",
+  "version": "2.0.0-skeleton",
+  "description": "Senior-architect workflow plugin for v2.0 graph, wiki, CR and ADR assets.",
+  "skills": [
+    "./skills/arch-onboard",
+    "./skills/arch-design",
+    "./skills/arch-audit",
+    "./skills/arch-wiki",
+    "./skills/arch-diagram",
+    "./skills/arch-analyze",
+    "./skills/arch-frame",
+    "./skills/arch-adr",
+    "./skills/arch-review"
+  ]
+}
+

@@ -1,0 +1,8 @@
+phase: 6
+name: graph-phase-6-quality
+checks:
+  - id: inferred-confidence
+    pass: "quality_attributes、risks、technical_debt 全部带 confidence"
+  - id: inferred-evidence
+    pass: "LLM 推断项全部带 evidence_refs"
+

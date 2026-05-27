@@ -132,7 +132,7 @@ src/             渲染进程(浏览器环境)
 - **circular import**:绕得过就不绕,绕不过就重构 — 不要 lazy import 兜
 - **没有 ESM/CJS 策略**:lib 同时被 ESM 和 CJS 用户引用 → dual package hazard
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 项目类型分类清楚了吗?(应用形态决定后续 90% 的选型)
 - [ ] 真的需要 monorepo 吗?有≥2 个独立产物且真共享?

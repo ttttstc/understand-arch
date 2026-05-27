@@ -1,0 +1,10 @@
+version: "2.0"
+project: sample
+status: idle
+current_skill: null
+current_phase: null
+hooks_enabled: false
+last_graph_refresh: null
+history: []
+overrides: []
+

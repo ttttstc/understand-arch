@@ -1,0 +1,15 @@
+name: senior-wiki-review-full
+dimensions:
+  completeness:
+    checks:
+      - "wiki/README.md + 14 页全部存在"
+  traceability:
+    checks:
+      - "关键断言可回链 graph node id、ADR/CR 路径或 rules path"
+  audience-fit:
+    checks:
+      - "cto/architect mode 内容取舍符合受众"
+  honesty:
+    checks:
+      - "已知局限与 known_unknowns 不被润色消失"
+

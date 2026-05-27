@@ -131,7 +131,7 @@ Dev 关注:启动速度、HMR、错误 overlay。Build 关注:体积、tree-shak
 - **prod source map 公开**: 泄露源码
 - **package.json `main` / `exports` 不一致**: 不同打包器走不同入口,bug 玄学
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] bundler 选择是否匹配项目类型(app vs lib)?
 - [ ] dev 和 build 各自的速度数据?CI build 时间?

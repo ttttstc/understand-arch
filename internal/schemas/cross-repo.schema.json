@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/v2/cross-repo.schema.json",
+  "title": "understand-arch v2 cross repo graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "project", "repos"],
+  "properties": {
+    "version": { "type": "string", "const": "2.0" },
+    "project": { "type": "object" },
+    "repos": { "type": "array", "items": { "type": "object" } },
+    "cross_edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "capabilities": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
+    "architecture_decisions": { "type": "array", "items": { "type": "object" } },
+    "change_requests": { "type": "array", "items": { "type": "object" } },
+    "traceability": { "type": "array", "items": { "type": "object" } },
+    "quality_attributes": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
+    "technical_debt": { "type": "array", "items": { "$ref": "#/$defs/inferred" } },
+    "known_unknowns": { "type": "array", "items": { "$ref": "#/$defs/inferred" } }
+  },
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source", "target", "type", "direction", "weight", "cross_repo"],
+      "properties": {
+        "source": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" },
+        "target": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::" },
+        "type": { "type": "string" },
+        "direction": { "type": "string", "enum": ["forward", "backward", "bidirectional"] },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "cross_repo": { "type": "boolean", "const": true }
+      }
+    },
+    "inferred": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "confidence", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "evidence_refs": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+      }
+    }
+  }
+}
+

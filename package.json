@@ -1,0 +1,10 @@
+{
+  "name": "understand-arch",
+  "version": "2.0.0-skeleton",
+  "private": true,
+  "description": "Claude Code architecture knowledge plugin for senior architects.",
+  "scripts": {
+    "verify": "pnpm --filter @understand-arch/scanner-engine build && node engine/bin/validate-v2-structure.js && node engine/bin/smoke-v2-tools.js"
+  },
+  "devDependencies": {}
+}

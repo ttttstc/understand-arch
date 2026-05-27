@@ -1,68 +1,25 @@
-mode: audit
-purpose: "Assess whether the current specs baseline is complete, fresh enough, and safe to trust."
-
-structural_checks:
-  - id: core-specs-present
-    description: "audit has a baseline to read"
-    check: files_exist
-    targets:
-      - specs/baseline.yaml
-      - specs/quality.yaml
-      - specs/risks.yaml
-      - specs/traceability.yaml
-  - id: state-present
-    description: "workflow state exists"
-    check: file_exists
-    target: state.yaml
-  - id: health-check-view
-    description: "audit 收尾产 generated/audit/{date}-健康度.md(系统问题集成视图)"
-    check: file_count_gte
-    target: generated/audit/*-健康度.md
-    expected: 1
-  - id: audit-readonly
-    description: "audit 模式默认只读;若发生写入,必须落在 write-scope 允许范围内(eg. arch-pack 产健康度视图)"
-    check: scope_audit
-    contract: internal/tool-contracts/write-scope.yaml
-    against: .metrics.jsonl
-
-semantic_checks:
-  - id: freshness-decision
-    question: "audit 是否明确告诉用户 specs 现在是 fresh、possibly_stale、stale 还是 unknown？"
-    severity: required
-    rubric:
-      - 结论必须来自 commit diff 或内容完整性检查
-      - stale 或 unknown 时必须给出中文 refresh 建议
-  - id: drift-risk
-    question: "audit 是否区分了内容不完整与可能漂移？"
-    severity: required
-    rubric:
-      - 能指出是 specs 自身缺失还是代码变更导致可能过期
-      - 必要时建议运行 drift audit，而不是直接假设无事发生
-  - id: reviewability
-    question: "audit 是否只靠 specs 就能审视核心架构维度？"
-    severity: required
-    rubric:
-      - 风险、技术债、4+1 覆盖、关键依赖、关键数据模型都能被回答
-      - 缺项进入 known_unknowns 或 findings
-  - id: actionability
-    question: "audit 是否给出下一步动作？"
-    severity: required
-    rubric:
-      - 结论至少包含 continue、refresh、drift-audit 三类之一
-  - id: health-check-integration
-    question: "generated/audit/{date}-健康度.md 是否真聚合了 5 个事实源,且 0 新事实？"
-    severity: required
-    rubric:
-      - 10 段固定结构齐全(评分 / blocking / high / medium 摘要 / open questions / KB 漂移 / 反模式 / drift / 改造路线图 / non-recommendations)
-      - 每个数字/表格行可追溯到 risks.yaml / decisions.yaml / quality.yaml#org_constraints / arch-library/anti-patterns 或 drift findings
-      - 风险与技术债分开呈现(不混表)
-      - blocking 项数 = risks.yaml 中 severity=critical 的子集
-      - 全文 ≤ 250 行
-
-threshold:
-  structural: 100%
-  semantic: 5/5
-
-retry_policy:
-  max_retries: 2
-  on_failure: "retry arch-review or arch-analyze with verifier notes"
+gate: audit
+version: "2.0"
+applies_to: arch-audit
+structural:
+  - id: deterministic-tool
+    command: "node engine/bin/audit-workspace.js --workspace .understand-arch/{project}"
+  - id: state-readable
+    schema: "internal/schemas/state.schema.json"
+  - id: graph-readable
+    rule: "repos.yaml、repo graph、cross-repo graph 均可读取"
+  - id: report
+    rule: "需要落盘时只写 audit-{date}.md"
+semantic:
+  - id: freshness
+    rule: "每仓 fingerprint 对比结果为 fresh、stale 或 unknown;workspace 可汇总为 degraded"
+  - id: degraded-visible
+    rule: "state.yaml.overrides[] 与 degraded 状态必须在报告中显式展示"
+  - id: wiki-review
+    rule: "wiki 完整性由 engine/bin/wiki-review.js --mode lite/full 独立检查"
+  - id: user-choice
+    rule: "stale 时给用户刷新、查看漂移详情、override 三选项"
+verdict:
+  pass: "完成 freshness 与完整性判断"
+  needs_revision: "报告缺少 degraded 或 override 信息"
+  fail: "写入 graph/wiki/CR/ADR 或无法读取核心事实层"

@@ -130,7 +130,7 @@
 - **CI 慢就拆 retry**:retry = 把 flaky 藏起来,永远修不掉
 - **本地能过 CI 挂**:环境差异(时区 / 文件系统 / 浏览器版本)— 把 CI 复现拉到本地
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 测试分层是否合理?是否过度 unit / 缺 integration?
 - [ ] MSW(或等价)在用吗?fetch mock 还是网络 mock?

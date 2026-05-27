@@ -1,6 +1,6 @@
 # arch-library/ — Optional Architecture Knowledge Seeds
 
-> 这里只放少量高信号知识条目，给 `arch-options`、`arch-review`、`eval-design` 等按需加载。它不是事实源，也不要求每次 workflow 都读全量。
+> 这里只放少量高信号知识条目，给 `arch-design`、`arch-review`、`eval-design` 等按需加载。它不是事实源，也不要求每次 workflow 都读全量。
 
 ## 使用原则
 

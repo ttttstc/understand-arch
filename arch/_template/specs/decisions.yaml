@@ -1,9 +1,0 @@
-adr_index: []          # arch-adr 通过 state_delta 由 workflow append
-superseded: []         # ADR supersede 关系(老 ADR 文件本身永不修改;关系全记这里)
-key_assumptions: []
-pending_decisions: []
-decision_links: []
-evidence_refs:
-  - file: arch/_template/specs/decisions.yaml
-    line: 1
-    commit: template-scaffold
