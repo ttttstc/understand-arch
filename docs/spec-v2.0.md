@@ -22,7 +22,7 @@
 - **事实层从 5 份 yaml 收敛为分仓 `knowledge-graph.json` + 跨仓 `cross-repo.json`**
 - **人类视图层从 generated/ 升级为 wiki/**(LLM 渲染,14 页,单页无字数限制)
 - **配置目录从全局 `~/.understand-arch/kb/` 改为项目内 `rules/*.md`**
-- **Skill 套件从 13 个收敛到 9 个**(5 用户入口 + 4 内部 + 6 个 subagent + 2 个 v2.0 新增 subagent)
+- **Skill 套件从 13 个收敛到 9 个**(5 用户入口 + 4 内部)+ **9 个 subagent**(4 复刻 + 1 扩展 + 4 新增:arch-quality-analyzer / arch-impact-analyzer / arch-solution-designer / arch-senior-reviewer)
 - **多仓原生支持**:repos.yaml + node id 加 `repo_id::` 前缀,跨仓 edges 独立维护
 
 **v2.0 服务目标**(按优先级):
@@ -1456,7 +1456,7 @@ arch-diagram 正在开发中,v2.1 见。
 
 #### 4.2.1 `arch-analyze`(编排层)
 
-**唯一职责**: 7 phases 编排,调度 6 个 subagent + engine 工具脚本,产 graph + fingerprint
+**唯一职责**: 7 phases 编排,调度 6 个 graph 链 subagent(见 §4.3.1)+ engine 工具脚本,产 graph + fingerprint(senior-reviewer 不归 arch-analyze 调,归 arch-design / arch-wiki 调)
 
 **Modes**:
 - `full` — 全量 7 phases
@@ -1531,22 +1531,22 @@ arch-diagram 正在开发中,v2.1 见。
 
 **写权限**: `change-requests/CR-*/CR.md` 第 14 段「Review」(append-only)+ audit 报告(临时)
 
-### 4.3 Subagents(6 复刻 + 2 新增 = 8 个)
+### 4.3 Subagents(4 复刻 + 1 扩展 + 4 新增 = 9 个)
 
 详细 fork 与改造规则见 §3.5。
 
-#### 4.3.1 复刻自 UA 并改造(6 个)
+#### 4.3.1 graph 链 subagent(4 复刻 + 1 扩展 + 1 新增 = 6 个)
 
 由 `arch-analyze` 编排调用,产物对齐 v2.0 graph schema:
 
-| # | Subagent | 职责 | 写权限 |
-|---|---|---|---|
-| 1 | `arch-project-scanner` | 项目扫描(每仓一次) | `intermediate/scan-result-{repo_id}.json` |
-| 2 | `arch-file-analyzer` | 文件级 LLM 抽取(主力,并行 up to 5) | `intermediate/batch-*.json` |
-| 3 | `arch-architecture-analyzer` | 架构分层 | `intermediate/layers-{repo_id}.json` |
-| 4 | `arch-domain-analyzer` | 业务能力(支持跨仓 capability) | `intermediate/domains.json` |
-| 5 | `arch-quality-analyzer` ★ v2.0 新增 | NFR / risks / debt(强制 confidence) | `intermediate/quality.json` |
-| 6 | `arch-graph-reviewer` ★ v2.0 扩展 | **graph 生成全链路 review**(多 phase mode) | `intermediate/review-{phase}-{repo_id}.json` |
+| # | Subagent | 来源 | 职责 | 写权限 |
+|---|---|---|---|---|
+| 1 | `arch-project-scanner` | 复刻 | 项目扫描(每仓一次) | `intermediate/scan-result-{repo_id}.json` |
+| 2 | `arch-file-analyzer` | 复刻 | 文件级 LLM 抽取(主力,并行 up to 5) | `intermediate/batch-*.json` |
+| 3 | `arch-architecture-analyzer` | 复刻 | 架构分层 | `intermediate/layers-{repo_id}.json` |
+| 4 | `arch-domain-analyzer` | 复刻 | 业务能力(支持跨仓 capability) | `intermediate/domains.json` |
+| 5 | `arch-quality-analyzer` | ★ **v2.0 新增** | NFR / risks / debt(强制 confidence + evidence_refs) | `intermediate/quality.json` |
+| 6 | `arch-graph-reviewer` | ★ **v2.0 扩展** | **graph 生成全链路 review**(多 phase mode) | `intermediate/review-{phase}-{repo_id}.json` |
 
 **arch-graph-reviewer 扩展(v2.0)**
 
@@ -2028,7 +2028,7 @@ Layer 3: reviewer 终审(graph-reviewer 或 senior-reviewer)
 
 ### 11.2 graph-reviewer 验收清单(事实层)
 
-按 §4.3.1 表展开,8 个 phase mode:
+按 §4.3.1 表展开,7 个 phase mode(取消原 phase-2 抽样审后从 8 减为 7):
 
 | Mode | 检查项 | rubric 文件 | 实现 |
 |---|---|---|---|
@@ -2396,7 +2396,7 @@ internal/schemas/
 | **项目模型** | 单仓项目 → **业务系统(N≥1 仓)** |
 | **事实层** | 5 specs yaml → 分仓 `specs/repos/*/knowledge-graph.json` + 跨仓 `specs/cross-repo.json` |
 | **多仓支持** | 无 → 原生支持(repos.yaml 注册 + node id `::` 前缀) |
-| Skill 数 | 13 → 9 user-facing + 8 subagent(原 9 用户 + 9 内部) |
+| Skill 数 | 13 → 9 skill(5 用户 + 4 内部)+ 9 subagent(4 复刻 + 1 扩展 graph-reviewer + 4 新增:quality / impact / solution-designer / senior-reviewer) |
 | 用户入口 | 4 → 5(新增 `/arch-wiki` 和 `/arch-diagram`,`/arch-brief` 废弃) |
 | **arch-design** | 简单 CR 流程 → **单文件 CR.md(YAML frontmatter + 14 段 RFC 风格)** |
 | **新 subagent** | 无 | arch-impact-analyzer / arch-solution-designer / arch-quality-analyzer |
@@ -2422,7 +2422,7 @@ internal/schemas/
 | 0 | spec-v2.0 outline + 完整 spec(含多仓 + arch-design 重写) | ✅ |
 | 1 | Fork UA + license check (MIT) | ✅ |
 | 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 7-phase 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
-| 3 | 改造 6 个 subagent 适配 v2.0 字段(含 repo_id 前缀);新写 **4 个**:arch-quality-analyzer + arch-impact-analyzer + arch-solution-designer + **arch-senior-reviewer**;扩展 arch-graph-reviewer 多 phase mode | 待开 |
+| 3 | **9 个 subagent**:① 改造 4 复刻(project-scanner / file-analyzer / architecture-analyzer / domain-analyzer)适配 v2.0 字段 + repo_id 前缀;② 扩展 1 个 arch-graph-reviewer(多 phase mode);③ 新写 4 个(arch-quality-analyzer / arch-impact-analyzer / arch-solution-designer / **arch-senior-reviewer**) | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
 | 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(单文件 CR.md 14 段) / arch-audit / arch-wiki(14 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
 | 6 | 重写 schemas(**5** 个,含 CR.md frontmatter schema)+ acceptance(4 gate)+ **rubrics(10 份,含 wiki-lite/full + 取消 phase-2)** + write-scope + README + rules 模板(6 份,含 dependencies.md)+ 更新 .claude-plugin/ plugin manifest | 待开 |
