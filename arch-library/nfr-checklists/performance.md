@@ -1,6 +1,6 @@
 # Performance NFR Checklist
 
-> 性能维度 + 度量 + 优化路径。`arch-options` / `arch-review` 用来评估方案是否能撑住业务规模。
+> 性能维度 + 度量 + 优化路径。`arch-design` / `arch-review` 用来评估方案是否能撑住业务规模。
 
 ## 度量(必须百分位,不要平均)
 
@@ -137,7 +137,7 @@
 - **scale up 而不是 scale out**:单实例越来越大,故障爆炸半径越大
 - **没有性能 budget**:设计期不分配,上线 surprise
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] SLI 用百分位定义(不是均值)?
 - [ ] 性能 budget 在设计期就分配了吗?

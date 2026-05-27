@@ -1,6 +1,6 @@
 # Cost NFR Checklist
 
-> 成本是 NFR 一等公民。`arch-options` 评估方案时**必须**含成本维度,否则会做出"技术漂亮但烧钱"的选择。
+> 成本是 NFR 一等公民。`arch-design` 评估方案时**必须**含成本维度,否则会做出"技术漂亮但烧钱"的选择。
 
 ## 度量(必须可量化)
 
@@ -104,7 +104,7 @@
 - 成本数据可见(看板 / Slack 周报)
 - 定期(月度)cost review 例会 — 不是 finops 团队的活,是工程团队的活
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 方案的月度运营成本估算了吗?$ 单位?
 - [ ] 用 reserved / spot 还是 on-demand?为什么?

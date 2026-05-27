@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "repo_id": "sample",
+  "generated_from": "analyze-workspace",
+  "files": {
+    "README.md": {
+      "hash": "e56deb3d77b9ccd0697de4771435ab788ccc56bf4ed3f50a77dccaf0ce584938",
+      "bytes": 72,
+      "language": "markdown"
+    },
+    "src/app.ts": {
+      "hash": "3f9cc883d877b41de1dbd5e8507bad0e98d95f5a1fe8844f450be6ebf536846f",
+      "bytes": 51,
+      "language": "typescript"
+    }
+  }
+}

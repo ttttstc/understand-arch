@@ -1,6 +1,6 @@
 # Security NFR Checklist
 
-> 工程级核查清单,**不是合规专家手册**。`arch-options` / `arch-review` 用来判断设计是否触线。
+> 工程级核查清单,**不是合规专家手册**。`arch-design` / `arch-review` 用来判断设计是否触线。
 
 ## 度量(security 难量化但仍要尝试)
 
@@ -109,7 +109,7 @@
 - **加密就是加密** — 不验证密钥管理、rotation、HSM,加密效果 = 0
 - **WAF 一招鲜**:绕 WAF 的姿势天天有,深度防御才是路
 
-## 决策辅助清单(给 arch-options / arch-review)
+## 决策辅助清单(给 arch-design / arch-review)
 
 - [ ] 威胁建模做了吗?选了哪些高价值资产?
 - [ ] Auth / Authz 设计清楚?service-to-service?user-to-service?

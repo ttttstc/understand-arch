@@ -1,0 +1,8 @@
+phase: 3
+name: graph-phase-3-assemble
+checks:
+  - id: node-id-prefix
+    pass: "所有 node id 使用 {repo_id}::{local-id}"
+  - id: evidence
+    pass: "节点有 evidence_refs 或 known_unknowns 说明"
+

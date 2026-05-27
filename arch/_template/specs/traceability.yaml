@@ -1,7 +1,0 @@
-artifacts: []
-relations: []
-last_verified: TEMPLATE
-evidence_refs:
-  - file: arch/_template/specs/traceability.yaml
-    line: 1
-    commit: template-scaffold

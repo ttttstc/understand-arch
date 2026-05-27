@@ -159,7 +159,7 @@ type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 - **enum 滥用**:大多数场景 `as const` 字面量数组 + union 更好(enum 编译产物不可摇树、值类型混淆)
 - **跨端不区分**:Node 类型(Buffer / process)漏到浏览器代码 → tsconfig lib 区分
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] strict 全开了吗?noUncheckedIndexedAccess 开了吗?
 - [ ] any 数量是不是 KPI?有趋势监控?

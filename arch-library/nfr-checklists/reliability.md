@@ -1,6 +1,6 @@
 # Reliability NFR Checklist
 
-> 给 `arch-options` / `arch-review` 用的可靠性维度核查表。**不是百科**,是"该问什么 / 该怎么量化 / 反模式"。
+> 给 `arch-design` / `arch-review` 用的可靠性维度核查表。**不是百科**,是"该问什么 / 该怎么量化 / 反模式"。
 
 ## 度量(必须可量化,否则不算 NFR)
 
@@ -80,7 +80,7 @@ trade-off: **CAP** 选择必须显式。"金融场景宁可拒绝也不放行" /
 - **备份没测过恢复**:发现时备份是空 / 损坏 / 加密 key 丢
 - **error budget 喊冻结发版,实际上线该上线**:SLO 是装的
 
-## 决策辅助清单(给 arch-options / arch-review)
+## 决策辅助清单(给 arch-design / arch-review)
 
 - [ ] SLO 量化写下来了?(可用性 / latency / error rate / RPO / RTO)
 - [ ] 失败种类全覆盖? 每条有行为?

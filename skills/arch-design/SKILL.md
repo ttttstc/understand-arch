@@ -1,99 +1,145 @@
 ---
 name: arch-design
 description: |
-  围绕一次需求或变更创建 change-requests/CR-*/:产 cr.md(需求 + 设计入口)+ impact.yaml(8 维影响面)+ 条件 options.md(方案分歧时)+ 条件 ADR(durable decision)+ review.yaml(readiness gate)+ writeback 计划。是设计单次架构变更的入口。
-
-  触发词: 根据 PRD 设计 / 设计这次变更 / 需求怎么落架构 / 开 CR / 出 RFC / 出实施方案 / 迁移方案 / 重构方案 / 拆分 / 拆服务 / /arch-design
-
-  本 skill 不写业务代码。
+  面向高级架构师的方案设计入口。基于 PRD 或变更诉求创建 v2.0 单文件 CR.md,
+  输出影响面、改动点、方案、风险、发布回滚与评审,并维护 cross-repo traceability。
 ---
 
-# arch-design — 创建 CR 设计单次变更
+# arch-design
 
-## 角色
+## 定位
 
-- 用户级入口,直接触发 design 流程
-- 自己编排 design 链路;共享逻辑读 `internal/orchestration/playbook.md`
-- 维护 `state.yaml`(本 skill 活跃期间作为单 writer)
+`arch-design` 是 v2.0 一等入口。产物是 `change-requests/CR-YYYY-NNN-{slug}/CR.md`:YAML frontmatter + 14 段 RFC 风格正文。它面向可执行研发方案,不是科普说明。
 
-## 输入
+## 工作流
 
-- PRD / 需求描述 / issue / 用户对话
-- `${ARCH_PROJECT_DIR}`
-- 可选 `--cr-slug <kebab-case>`
-- 可选 `--continue`(续跑 `state.yaml#active_cr`)
+1. 调度 `arch-frame`:校验 PRD 清晰度,创建 CR 目录与 CR.md 初稿。
+2. 检查 graph freshness。`stale` 默认阻塞,用户 override 时必须写入 `state.yaml.overrides[]`。
+3. 调度 `arch-impact-analyzer`:基于 graph 找影响 node、跨仓 edge、rules 命中与未知项,只写 frontmatter#impact + 第 8 段。
+4. 调度 `arch-solution-designer`:生成第 1-7 段与第 9-13 段方案正文。
+5. 按需要调度 `arch-adr`:仅 durable architecture decision 才写 ADR。
+6. 调度 `arch-review`:用 `arch-senior-reviewer --mode=design` 做终审。
+7. 只向 `cross-repo.json#change_requests[]` 与 `traceability[]` 追加引用。
 
-## 输出
+## CR.md 14 段
 
-| 路径 | 何时产 |
-|---|---|
-| `change-requests/CR-YYYY-NNN-{slug}/cr.md` | 总是 |
-| `change-requests/CR-*/impact.yaml`(8 维) | 总是 |
-| `change-requests/CR-*/options.md` | 条件:真实方案分歧时 |
-| `decisions/ADR-NNN-*.md`(append-only) | 条件:durable decision 时 |
-| `change-requests/CR-*/review.yaml`(readiness gate) | 总是 |
-| `change-requests/CR-*/traceability.yaml` | 总是 |
-| `agent/证据/影响面-{cr-slug}.yaml`(若用 ua-augmented) | 条件 |
-| `state.yaml`(`active_cr` + history append) | 总是 |
+1. 背景与目标
+2. 现状分析
+3. 方案概述
+4. 详细设计
+5. 替代方案对比
+6. NFR 影响
+7. 风险与缓解
+8. 改动清单
+9. 实施步骤 + 灰度策略
+10. 回滚预案
+11. 测试策略
+12. 待定问题(known_unknowns)
+13. 关联
+14. Review(arch-review 写入,append-only)
 
-## 链路(7 step)
+第 4 段必须保留 4.1 数据模型变化、4.2 接口变化、4.3 组件变化、4.4 部署变化、4.5 关键流程时序。
 
-1. **freshness 前置检查**: 读 `specs/baseline.yaml#freshness_status`。stale / unknown 时**中文提示**用户先 refresh(或显式继续);详见 `internal/orchestration/playbook.md` § freshness
-2. **dispatch arch-frame**: 创建 CR(若新需求)或恢复 active_cr;加载 org KB 注入 `kb_loaded`;PRD HARD GATE 检测(≥3 个 specific 未答问题 → 阻塞产 PM问题清单.md)
-3. **dispatch arch-diff-judge**: 基于 specs 产 `impact.yaml`(8 维:services / modules / apis / data_models / events_messages / permissions / deployments / configs)+ scope_boundary + rollback_strategy
-4. **dispatch arch-options**(条件): 真实架构分歧时(≥2 可行路径 / 数据模型策略差异 / 触碰 KB 红线分支),产 options.md
-5. **dispatch arch-adr**(条件): durable decision(跨 CR / 改边界 / 影响组织约束)时,产 ADR-NNN-*.md(append-only)
-6. **dispatch arch-review**: mode=cr,产 review.yaml(readiness=ready / degraded / blocked)
-7. **writeback 计划**: review.yaml.readiness=ready 后,产 writeback proposal(更新哪些 specs 字段、为什么、来自哪个 CR)
+## Subagent Dispatch 模板
 
-## 关键路口(用户确认)
+### arch-frame
 
-- **HARD GATE 触发**: 命中 ≥3 specific 问题时,workflow 暂停在 `awaiting-pm-confirmation`,中文列问题,用户在 `PM问题清单.md` 答完后继续
-- **stale 提示**: freshness 不通过时,先问"建议刷新 specs 再设计;是否先跑 onboard --refresh?"
-- **options 选择**: arch-options 产多方案时,用户选定后才进 arch-adr
+Dispatch a subagent using the `arch-frame` skill/agent definition.
 
-## acceptance
+```text
+Read the PRD or requirement text.
+Run the PM hard gate.
+Create change-requests/CR-YYYY-NNN-{slug}/CR.md using cr-md-editor.js create.
+Write only frontmatter initialization and section 1.
+Do not write sections 2-14.
+```
 
-跑完 `internal/acceptance/design.yaml`:
-- structural: cr-files + cr-schemas + no_writes_outside_scope + adr-append-only
-- semantic 4 项: impact-depth / dependency-and-data / rollback / writeback-ready
-- 失败 2 次 retry → 第 3 次升级用户决策
+### arch-impact-analyzer
 
-## 硬规则
+Dispatch a subagent using the `arch-impact-analyzer` agent definition.
 
-1. PRD 不清晰时(HARD GATE 命中)**必须阻塞**,不允许凭空设计
-2. `impact.yaml` 8 维必须显式覆盖(无影响维度也要写 `no_impact` + 理由)
-3. 数据模型变化必须含 migration / backfill / compatibility / rollback_strategy
-4. 回滚策略**不允许只写 "revert PR"**(必须覆盖 code/config/data/deploy 4 类)
-5. **CR 一旦 review.yaml.readiness=ready,整目录禁重写**(只能新 CR 或 OVR override)
-6. 老 ADR markdown 文件**永不修改**;supersede 关系记 `specs/decisions.yaml#superseded[]`
-7. 触碰 org KB 红线不允许隐藏
+Append the following additional context:
 
-## 降级
+```text
+Workspace: .understand-arch/{project}
+CR file: change-requests/CR-YYYY-NNN-{slug}/CR.md
+Requirement: {requirement}
+Repo graphs: specs/repos/*/knowledge-graph.json
+Cross repo graph: specs/cross-repo.json
+Rules summary: rules/*.md
+```
 
-| 失败模式 | 行为 |
-|---|---|
-| 输入只有一句话 | 允许建轻量 CR,在 cr.md 标 known_unknowns 提示用户补充 |
-| baseline 太弱 | 中文提示先 refresh,但用户可 override 继续(留 OVR-NNN) |
-| 某 impact 维度证据不足 | 保留 best effort,进入 derived_risks 或 known_unknowns |
-| arch-review failed 3 次 | 写盘 readiness=blocked,详列阻塞项 |
+Pass these parameters:
 
-## Write Scope
+```text
+Analyze impact and write only frontmatter#impact plus section 8 改动清单.
+Use engine/bin/cr-md-editor.js update-frontmatter and set-section.
+Actor must be arch-impact-analyzer.
+Return impact_node_ids, rules_findings, known_unknowns and retry_hints.
+```
 
-完整定义见 `internal/tool-contracts/write-scope.yaml#skills.arch-design`。
+### arch-solution-designer
 
-- ✅ 可写:`state.yaml`(限本次 CR 范围) · `.metrics.jsonl`
-- ✅ 子 skill 间接写:`change-requests/${active_cr}/**` · `decisions/ADR-NNN-*.md`(只新建,不改老 ADR)· `agent/证据/影响面-{cr}.yaml`
-- ❌ 禁写:`specs/**`(specs 修改走 writeback 流程,不在 design 阶段直改) · `generated/**`(归 brief)
+Dispatch a subagent using the `arch-solution-designer` agent definition.
 
-详见 `internal/orchestration/playbook.md` § state_delta merge protocol。
+```text
+Read CR.md after impact analysis.
+Write sections 1-7 and 9-13 only.
+Preserve section 8 and section 14.
+Use graph node ids and rules paths for traceability.
+Use cr-md-editor.js set-section --actor arch-solution-designer.
+```
 
-## 参考
+### arch-senior-reviewer
 
-- `internal/orchestration/playbook.md`
-- `internal/acceptance/design.yaml`
-- `internal/schemas/cr-impact.schema.json` / `cr-review.schema.json` / `cr-traceability.schema.json`
-- `skills/arch-frame/SKILL.md`(HARD GATE)
-- `skills/arch-diff-judge/references/impact-playbook.md`
-- `skills/arch-options/references/options-rubric.md`
-- `skills/arch-adr/references/adr-playbook.md`
+Dispatch a subagent using the `arch-senior-reviewer` agent definition.
+
+```text
+Mode: design
+Input: CR.md, graph freshness report, rules findings, senior-design-review rubric.
+Return JSON verdict, overall_score, findings, blocking and retry_hints.
+If needs_revision, feed retry_hints back to arch-solution-designer or arch-impact-analyzer.
+```
+
+## 写权限
+
+见 `internal/tool-contracts/write-scope.yaml#skills.arch-design`。禁止写 wiki、rules、specs/repos/** 与业务代码。
+
+## CR.md 编辑器
+
+所有 CR.md 写入必须通过:
+
+```text
+node engine/bin/cr-md-editor.js create --file change-requests/CR-*/CR.md ...
+node engine/bin/cr-md-editor.js set-section --actor arch-frame|arch-impact-analyzer|arch-solution-designer|arch-design --section N --content-file section.md
+node engine/bin/cr-md-editor.js update-frontmatter --actor arch-impact-analyzer --json '{"impact":{"added_nodes":[],"modified_nodes":[],"removed_nodes":[],"estimated_files_changed":0}}'
+node engine/bin/cr-md-editor.js append-review --file change-requests/CR-*/CR.md --content-file review.md
+node engine/bin/cr-md-editor.js validate --file change-requests/CR-*/CR.md
+```
+
+编辑器执行段级写权限: `arch-review` 只能追加第 14 段,`arch-frame` 只能初始化第 1 段。
+
+## Impact / Review 工具
+
+影响面、rules 命中和 traceability 写回使用:
+
+```text
+node engine/bin/impact-analyzer.js --workspace .understand-arch/{project} --text "需求文本" --cr change-requests/CR-*/CR.md --cr-id CR-YYYY-NNN --output impact.json
+```
+
+该工具会:
+
+- 从 graph 匹配 `impact_node_ids`。
+- 扫描 `rules/*.md` 并输出 `rules_findings`。
+- 写 CR.md frontmatter#impact 与第 8 段。
+- 向 `cross-repo.json#change_requests[]` 与 `traceability[]` 写入引用。
+
+设计终审使用:
+
+```text
+node engine/bin/senior-review.js --mode design --cr change-requests/CR-*/CR.md
+```
+
+## References
+
+- `references/impact-analysis.md`:requirement-to-graph matching, CR.md section 8 writes and traceability rules.

@@ -5,30 +5,38 @@
     "email": "423310463@qq.com"
   },
   "metadata": {
-    "description": "面向软件架构师的 Claude Code 知识底座。维护项目 specs 基线 + 单次变更 CR + append-only ADR + 派生人类视图(overview / wiki / brief)。只产架构描述类产物,不生成业务代码 / IaC / DDL / CI。",
-    "version": "0.2.0-skeleton"
+    "description": "面向高级架构师的 Claude Code plugin。v2.0 支持单仓/多仓统一 graph、14 页 wiki、单文件 CR.md 方案设计、append-only ADR 与项目内 rules。",
+    "version": "2.0.0-rc1"
   },
   "plugins": [
     {
       "name": "understand-arch",
-      "description": "架构师工作流:onboard(建立或刷新 specs 基线)/ design(创建 CR 设计单次变更)/ audit(审视基线可信度与新鲜度)/ brief(从 specs/CR/ADR 生成人类视图)。4 个用户入口 + 9 个内部 skill。",
+      "description": "v2.0 架构师工作流:onboard/design/audit/wiki/diagram 五个用户入口 + analyze/frame/adr/review 四个内部 skill。",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/arch-onboard",
         "./skills/arch-design",
         "./skills/arch-audit",
-        "./skills/arch-brief",
-        "./skills/arch-frame",
-        "./skills/arch-analyze",
-        "./skills/arch-diff-judge",
-        "./skills/arch-options",
-        "./skills/arch-adr",
+        "./skills/arch-wiki",
         "./skills/arch-diagram",
-        "./skills/arch-review",
-        "./skills/arch-pack",
-        "./skills/arch-radar"
-      ]
+        "./skills/arch-analyze",
+        "./skills/arch-frame",
+        "./skills/arch-adr",
+        "./skills/arch-review"
+      ],
+      "agents": [
+        "./agents/arch-project-scanner.md",
+        "./agents/arch-file-analyzer.md",
+        "./agents/arch-architecture-analyzer.md",
+        "./agents/arch-domain-analyzer.md",
+        "./agents/arch-quality-analyzer.md",
+        "./agents/arch-graph-reviewer.md",
+        "./agents/arch-impact-analyzer.md",
+        "./agents/arch-solution-designer.md",
+        "./agents/arch-senior-reviewer.md"
+      ],
+      "hooks": "./hooks/hooks.json"
     }
   ]
 }

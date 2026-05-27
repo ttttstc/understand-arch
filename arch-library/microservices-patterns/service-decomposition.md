@@ -1,6 +1,6 @@
 # Service Decomposition
 
-> Scope: 服务拆分的原则、限界上下文、康威定律。`arch-frame` 在识别到微服务/多服务架构时,把这份加进 `arch-options` / `arch-review` 的上下文。
+> Scope: 服务拆分的原则、限界上下文、康威定律。`arch-frame` 在识别到微服务/多服务架构时,把这份加进 `arch-design` / `arch-review` 的上下文。
 
 ## 核心判断:该拆吗?
 
@@ -78,7 +78,7 @@ DDD 概念,**唯一**靠谱的拆分原则。不是按 CRUD 表拆,不是按技�
 - 共享 DB → 双写期 → 分库
 - 同步链 → 引入事件 + 异步化(注意要把 SLA 改成最终一致)
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 评估"是否拆 / 怎么拆"时强制问:
 - [ ] 业务驱动写下来了吗?不是"潮流"?
@@ -88,7 +88,7 @@ DDD 概念,**唯一**靠谱的拆分原则。不是按 CRUD 表拆,不是按技�
 - [ ] 团队能不能跟着切?谁负责新服务?
 - [ ] 接不接受运维成本翻倍?有人值班吗?
 
-## 参考(供 arch-radar 深挖时索引)
+## 参考(供 arch-wiki 深挖时索引)
 
 - Domain-Driven Design — Eric Evans
 - Building Microservices — Sam Newman

@@ -1,0 +1,8 @@
+phase: 1
+name: graph-phase-1-scan
+checks:
+  - id: repo-id-present
+    pass: "每条扫描记录带 repo_id"
+  - id: deterministic-only
+    pass: "文件树、语言、入口、配置来自确定性扫描"
+

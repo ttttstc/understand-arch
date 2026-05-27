@@ -1,6 +1,6 @@
 # Microservices Anti-Patterns
 
-> 微服务常见翻车姿势。`arch-review` 在审计 / `arch-options` 在权衡时,对照此清单识别已踩或将踩的坑。
+> 微服务常见翻车姿势。`arch-review` 在审计 / `arch-design` 在权衡时,对照此清单识别已踩或将踩的坑。
 
 ## 1. 分布式单体(Distributed Monolith)
 

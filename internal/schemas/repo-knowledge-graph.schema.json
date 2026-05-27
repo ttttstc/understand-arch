@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/v2/repo-knowledge-graph.schema.json",
+  "title": "understand-arch v2 repo knowledge graph",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "kind", "repo_id", "repo_meta", "nodes", "edges", "layers", "freshness", "scan_meta"],
+  "properties": {
+    "version": { "type": "string", "const": "2.0" },
+    "kind": { "type": "string", "const": "codebase" },
+    "repo_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "repo_meta": { "$ref": "#/$defs/repoMeta" },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "layers": { "type": "array", "items": { "type": "object" } },
+    "tour": { "type": "array", "items": { "type": "object" } },
+    "freshness": { "type": "object" },
+    "scan_meta": { "type": "object" },
+    "known_unknowns_repo": { "type": "array", "items": { "$ref": "#/$defs/knownUnknown" } }
+  },
+  "$defs": {
+    "repoMeta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "path", "git_remote", "git_commit_hash", "languages", "frameworks", "primary_language", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "path": { "type": "string" },
+        "git_remote": { "type": "string" },
+        "git_commit_hash": { "type": "string" },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "frameworks": { "type": "array", "items": { "type": "string" } },
+        "primary_language": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "name", "summary", "tags", "complexity", "repo_id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*::[a-zA-Z0-9-_]+$" },
+        "repo_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "type": {
+          "type": "string",
+          "enum": ["file", "function", "class", "module", "concept", "config", "document", "service", "table", "endpoint", "pipeline", "schema", "resource", "domain", "flow", "step", "article", "entity", "topic", "claim", "source"]
+        },
+        "name": { "type": "string" },
+        "filePath": { "type": "string" },
+        "lineRange": { "type": "array", "prefixItems": [{ "type": "integer" }, { "type": "integer" }], "minItems": 2, "maxItems": 2 },
+        "summary": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "complexity": { "type": "string", "enum": ["simple", "moderate", "complex"] },
+        "languageNotes": { "type": "string" },
+        "domainMeta": { "type": "object" },
+        "knowledgeMeta": { "type": "object" },
+        "criticality": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "maturity": { "type": "string", "enum": ["experimental", "growing", "stable", "deprecated"] },
+        "importance": { "type": "string", "enum": ["core", "supporting", "edge"] },
+        "boundary": { "type": "string", "enum": ["internal", "public", "external"] },
+        "communication": { "type": "string", "enum": ["sync", "async", "event"] },
+        "data_sensitivity": { "type": "string", "enum": ["public", "internal", "pii", "secret"] },
+        "sla": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "availability": { "type": "string" },
+            "latency_p99_ms": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "linked_adrs": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+        "linked_crs": { "type": "array", "items": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" } },
+        "linked_risks": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidenceRef" } }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source", "target", "type", "direction", "weight"],
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "type": { "type": "string" },
+        "direction": { "type": "string", "enum": ["forward", "backward", "bidirectional"] },
+        "description": { "type": "string" },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "cross_repo": { "type": "boolean" }
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_id", "file", "source", "extracted_at"],
+      "properties": {
+        "repo_id": { "type": "string" },
+        "file": { "type": "string" },
+        "line_range": { "type": "array", "prefixItems": [{ "type": "integer" }, { "type": "integer" }], "minItems": 2, "maxItems": 2 },
+        "source": { "type": "string", "enum": ["engine", "llm", "human"] },
+        "extracted_at": { "type": "string" }
+      }
+    },
+    "knownUnknown": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "statement", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "statement": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    }
+  }
+}

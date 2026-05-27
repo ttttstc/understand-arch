@@ -125,7 +125,7 @@ cutover 后保持 dual write 至少 1 周 — **回滚选项**还在。
 - **没有容量预算**:并行就挂 → 误以为 "parallel 不可行"
 - **太早删老系统**:切流后 1 周就删 → 失去回退,等真出问题手忙脚乱
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 选 dual-write / dual-read / shadow traffic? 为什么?
 - [ ] 对比 match 阈值是多少? 谁负责追每条 diff?

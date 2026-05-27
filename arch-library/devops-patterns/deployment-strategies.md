@@ -117,7 +117,7 @@ Expand-Contract 套路:
 - **金丝雀只看 CPU**:不看业务指标 → 业务挂了 CPU 正常,装作没事
 - **feature flag 没清理**:三年前的 flag 还在 → 测试矩阵爆炸
 
-## 决策辅助清单(给 arch-options)
+## 决策辅助清单(给 arch-design)
 
 - [ ] 这次变更风险等级?(低 → rolling / 中 → canary / 高 → blue-green + flag)
 - [ ] DB 是否变化?如果是,有没有走 expand-contract?

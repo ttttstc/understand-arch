@@ -1,0 +1,23 @@
+phase: 6
+name: graph-phase-6-quality
+checks:
+  - id: nfr-coverage
+    weight: high
+    question: "8 类 NFR(performance/availability/security/scalability/maintainability/observability/compliance/cost)是否每类至少 1 条"
+    pass: "每类至少 1 条 + 有 measurement 字段"
+  - id: risk-confidence
+    weight: high
+    question: "每条 risk 是否带 confidence + evidence_refs"
+    pass: "100%"
+  - id: debt-actionability
+    weight: medium
+    question: "technical_debt 是否每条都能让研发知道要做什么"
+    pass: "≥80% 含 cost_estimate 或 business_impact"
+  - id: known-unknowns-honesty
+    weight: medium
+    question: "known_unknowns 是否诚实标了'我们不知道什么'"
+    pass: "至少 1 条(架构师标准:任何项目都有 unknown)"
+  - id: weasel-words
+    weight: high
+    question: "有没有'应该/通常/大概/一般'等弱化词"
+    pass: "0 条"

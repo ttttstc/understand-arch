@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.dev/schemas/v2/cr.schema.json",
+  "title": "understand-arch v2 CR.md frontmatter",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["cr_id", "title", "status", "owner", "created", "prd_link", "affects_repos", "impact"],
+  "properties": {
+    "cr_id": { "type": "string", "pattern": "^CR-[0-9]{4}-[0-9]{3}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["draft", "in_review", "ready", "merged", "rolled_back"] },
+    "owner": { "type": "string" },
+    "created": { "type": "string" },
+    "prd_link": { "type": "string" },
+    "affects_repos": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+    },
+    "impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added_nodes", "modified_nodes", "removed_nodes", "estimated_files_changed"],
+      "properties": {
+        "added_nodes": { "type": "array", "items": { "$ref": "#/$defs/nodeRef" } },
+        "modified_nodes": { "type": "array", "items": { "$ref": "#/$defs/nodeRef" } },
+        "removed_nodes": { "type": "array", "items": { "$ref": "#/$defs/nodeRef" } },
+        "estimated_files_changed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "introduced_adrs": { "type": "array", "items": { "type": "string", "pattern": "^ADR-[0-9]{3}$" } },
+    "traceability": { "type": "array", "items": { "type": "object" } }
+  },
+  "$defs": {
+    "nodeRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*::"
+    }
+  }
+}

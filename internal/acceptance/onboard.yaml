@@ -1,100 +1,37 @@
-mode: onboard
-purpose: "Create or refresh a trusted architecture baseline under specs/."
-
-structural_checks:
-  - id: specs-files
-    description: "specs baseline bundle exists (specs/ 100% 事实层,无 markdown;v1.0 收敛:capabilities 内嵌 baseline)"
-    check: files_exist
-    targets:
-      - specs/baseline.yaml
-      - specs/quality.yaml
-      - specs/risks.yaml
-      - specs/decisions.yaml
-      - specs/traceability.yaml
-      - state.yaml
-  - id: overview-generated
-    description: "generated/overview.md 已由 arch-pack 产出(人类入口)"
-    check: file_exists
-    target: generated/overview.md
-  - id: no-writes-outside-scope
-    description: "本次 onboard 各 skill 落盘文件均在 write-scope contract 允许范围内"
-    check: scope_audit
-    contract: internal/tool-contracts/write-scope.yaml
-    against: .metrics.jsonl   # 当前活跃 user-facing skill dispatch 时记录 allowed_writes
-  - id: specs-schemas
-    description: "all core specs yaml pass schema"
-    check: schema_bundle
-    targets:
-      - file: specs/baseline.yaml
-        schema: internal/schemas/specs-baseline.schema.json
-      - file: specs/quality.yaml
-        schema: internal/schemas/specs-quality.schema.json
-      - file: specs/risks.yaml
-        schema: internal/schemas/specs-risks.schema.json
-      - file: specs/decisions.yaml
-        schema: internal/schemas/specs-decisions.schema.json
-      - file: specs/traceability.yaml
-        schema: internal/schemas/specs-traceability.schema.json
-      - file: state.yaml
-        schema: internal/schemas/state.schema.json
-  - id: diagram-sources
-    description: "at least 2 stable Mermaid sources exist for current architecture"
-    check: file_count_gte
-    target: specs/diagrams/*.mmd
-    expected: 2
-
-semantic_checks:
-  - id: baseline-complete
-    question: "只读 specs，是否能讲清系统现在是什么样？"
-    severity: required
-    rubric:
-      - baseline.yaml 覆盖仓库、组件、接口、数据模型、部署、外部依赖
-      - overview.md 不引入脱离 YAML 的新事实
-  - id: four-plus-one
-    question: "4+1 视图覆盖状态是否明确？"
-    severity: required
-    rubric:
-      - baseline.yaml.view_coverage.status 是 complete | partial | missing
-      - status != complete 时 note 字段须解释缺哪几维(v1.0 松绑:不强制 5 子字段必填)
-  - id: freshness
-    question: "specs 是否带有新鲜度判断所需字段？"
-    severity: required
-    rubric:
-      - baseline.yaml 含 last_scanned_commit 和 freshness_status
-      - 无 Git 时必须显式说明 unknown 或 git_unavailable
-  - id: risks-and-debt
-    question: "风险与技术债是否足够支持架构审视？"
-    severity: required
-    rubric:
-      - risks.yaml 中风险按严重度可排序
-      - 技术债条目含影响与偿还策略
-  - id: traceability
-    question: "关键结论是否可回链 evidence？"
-    severity: required
-    rubric:
-      - YAML 顶层和关键条目包含 evidence_refs
-      - traceability.yaml 能把 specs 与 ADR 或其他资产连起来
-  - id: capabilities-coverage
-    question: "业务能力地图是否达到最小可用门槛？"
-    severity: required
-    rubric:
-      - baseline.yaml#capabilities 至少含 3 条 user_facing=true 的能力(过少则标 known_unknowns 解释为什么)
-      - 每条能力的 supporting_components.component 引用都能在 baseline.yaml#components 找到
-      - 每条能力的 gaps[] 若引用 R-NNN/Q-NNN,目标必须存在
-  - id: ua-integration-trace
-    question: "若以 ua-augmented mode 跑,specs 是否带 UA 来源标记?(standalone mode 此项自动 N/A pass)"
-    severity: conditional
-    when: ".metrics.jsonl 最近一条 arch-analyze 记录 mode=ua-augmented"
-    rubric:
-      - baseline.yaml#last_scanned_commit 与 UA gitCommitHash 一致(或显式标 stale)
-      - evidence_refs 至少部分含 source=ua-knowledge-graph 标记
-      - .metrics.jsonl 含 ua_augmented 段(ua_graph_path / ua_freshness / nodes_consumed)
-      - 若 ua_freshness=stale,baseline.yaml.freshness_status=stale 必须同步
-
-threshold:
-  structural: 100%
-  semantic: 7/7    # ua-integration-trace 在 standalone 下自动 pass,不增加难度
-
-retry_policy:
-  max_retries: 2
-  on_failure: "retry arch-analyze or current user-facing skill with verifier notes"
+gate: onboard
+version: "2.0"
+applies_to: arch-onboard
+structural:
+  - id: workspace-root
+    must_exist:
+      - ".understand-arch/.gitignore"
+      - ".understand-arch/{project}/state.yaml"
+      - ".understand-arch/{project}/specs/repos.yaml"
+      - ".understand-arch/{project}/specs/cross-repo.json"
+  - id: per-repo-graph
+    rule: "repos.yaml 每个 repo 都必须有 specs/repos/{repo_id}/knowledge-graph.json 与 .fingerprint.json"
+  - id: wiki-pages
+    rule: "wiki/README.md + 14 页全部存在"
+semantic:
+  - id: node-id-prefix
+    rule: "所有 node.id 都匹配 {repo_id}::{local-id}"
+  - id: cross-edge-split
+    rule: "跨仓 edge 只能写入 cross-repo.json#cross_edges"
+  - id: cross-edge-evidence
+    rule: "每条 cross_edges[] 都必须 cross_repo=true,且带 evidence_refs 或来自确定性仓内 edge 分流"
+  - id: traceable-wiki
+    rule: "wiki 关键断言可回链 graph node id、ADR/CR 路径或 rules path"
+reviewer:
+  agent: arch-graph-reviewer
+  modes:
+    - phase-1
+    - phase-3
+    - phase-4
+    - phase-5
+    - phase-6
+    - phase-7
+    - phase-8
+verdict:
+  pass: "全部 structural 通过且 reviewer 无 blocker"
+  needs_revision: "存在 major findings 或 traceability 低于 95%"
+  fail: "schema 不通过、graph 缺失或写出 scope"

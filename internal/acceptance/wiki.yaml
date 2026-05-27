@@ -1,0 +1,24 @@
+gate: wiki
+version: "2.0"
+applies_to: arch-wiki
+structural:
+  - id: fourteen-pages
+    rule: "wiki/README.md + 01-14 页面全部存在"
+  - id: cache
+    optional: "wiki/.cache.json 可存在,但不得作为事实源"
+semantic:
+  - id: graph-source
+    rule: "wiki 不创造新事实;关键断言引用 graph node id、ADR/CR 路径或 rules path"
+  - id: audience-fit
+    rule: "cto/architect 受众必须跑 full review;newcomer/pm 可跑 lite review"
+  - id: limitations
+    rule: "03-interfaces.md 保留已知局限"
+reviewer:
+  deterministic_tool: "engine/bin/wiki-review.js"
+  modes:
+    full: "首次生成或 audience=cto|architect;检查 rules 摘要与 Mermaid 占位"
+    lite: "日常刷新;检查页面、graph node id 回链与已知局限"
+verdict:
+  pass: "overall_score >= 0.85 且无 blocker"
+  needs_revision: "overall_score 0.6-0.85"
+  fail: "overall_score < 0.6 或 wiki 与 graph 矛盾"

@@ -1,114 +1,53 @@
 # understand-arch
 
-> A Docs-as-Code architecture knowledge suite for Claude Code.
+> A Claude Code plugin for senior architects. Maintain an evidence-backed architecture knowledge base for any project — single-repo or multi-repo.
 
-[中文](./README.zh.md) · [Full Spec](./docs/spec-v1.0.md)
+[中文](./README.zh.md)
 
 ---
 
 ## What it is
 
-`understand-arch` is **not** another doc-generator that produces a fresh wall of markdown every time you ask. It maintains a **trusted, versioned, agent-readable architecture baseline** for a project, and records every change as a delta against that baseline.
+`understand-arch` turns your codebase into a living architecture knowledge base you can trust:
 
-At any point in time, the suite can answer:
+- **Knowledge graph** — every component, interface, data model, deployment and business capability is a node with evidence, kept in sync with your code
+- **Wiki** — 14 human-readable pages that always trace back to the graph (no fabrication)
+- **Design documents** — one-file `CR.md` per change request (14 RFC-style sections), generated from PRD + current graph
+- **Decisions** — append-only ADR ledger
+- **Rules** — your team's architecture conventions, naturally enforced in design reviews
 
-- What does the system look like right now? *(specs)*
-- What does this change touch, and how do we roll it back? *(CR)*
-- Which conclusions have evidence? *(traceability)*
-- What might be out of date? *(freshness state machine)*
+All artifacts live inside one directory in your project root: `.understand-arch/`. Nothing else is touched.
 
-## Public commands
+## What it can do
 
-v1.0 exposes only **four user-facing entries**. Everything else is internal orchestration.
+**Onboard a project (single or multi-repo)**
+> "Help me understand this codebase" → `/arch-onboard`
 
-| Command | What you'd say | What happens |
-|---|---|---|
-| `/arch-onboard` | "Help me understand this codebase" / "Build a baseline" | Scans the repo, produces `specs/` (5 schema-locked YAMLs + Mermaid diagrams) |
-| `/arch-design` | "Design this PRD" / "Open a CR for X" | Creates `change-requests/CR-*/` with impact / options / ADR / review |
-| `/arch-audit` | "Is the baseline still trustworthy?" | Reviews `specs/` without re-scanning; flags freshness; optionally runs drift audit |
-| `/arch-brief` | "Make a wiki for new joiners" / "Brief for the CTO" | Re-organizes existing facts into `generated/overview.md`, 5-page wiki, or audience-tailored briefs |
+Scans every registered repo, builds a per-repo `knowledge-graph.json` plus a cross-repo graph. Detects components, interfaces, data models, deployments and business capabilities with evidence. Produces 14 wiki pages so any team member can ramp up.
 
-`arch-review`, `arch-options`, `arch-adr`, `arch-diagram`, `arch-pack`, `arch-radar` are all internal — invoked by the four entries above when needed.
+**Design a change against the current architecture**
+> "Here's the PRD, design it" → `/arch-design`
 
-## Workspace layout
+Reads PRD + current graph → finds the affected nodes (cross-repo aware) → drafts a single `CR.md` with 14 sections (background, impact, solution, alternatives, NFR, risks, change list, rollout plan, rollback, testing, traceability, …). Reviewed by a senior-architect agent before it's marked ready.
 
-```text
-arch/{project}/
-├── specs/                            # 100% fact layer (yaml + Mermaid only, no markdown)
-│   ├── baseline.yaml                 # components, interfaces, data models, deployments, capabilities[] (v1.0 inlined)
-│   ├── quality.yaml                  # NFRs, org KB, runtime/release/rollback constraints
-│   ├── risks.yaml                    # risks + tech debt ledger
-│   ├── decisions.yaml                # ADR index + superseded[] relationships
-│   ├── traceability.yaml             # CR ↔ specs ↔ ADR ↔ release links
-│   └── diagrams/                     # stable C4 Mermaid sources
-├── decisions/                        # append-only ADR markdown (files NEVER modified)
-│   └── ADR-NNN-*.md
-├── change-requests/
-│   └── CR-YYYY-NNN-{slug}/
-│       ├── cr.md
-│       ├── impact.yaml
-│       ├── review.yaml
-│       ├── traceability.yaml
-│       └── options.md                # conditional, only if real architectural choice exists
-├── generated/                        # derived human views — deletable, regeneratable
-│   ├── overview.md                   # 1-page stable entry (11 sections, ≤200 lines)
-│   ├── wiki/01-..06-*.md             # 6-page onboarding wiki (incl. 06-capability radar)
-│   ├── audit/                        # {date}-健康度.md (audit-emitted integrated problem view)
-│   ├── diagrams/                     # rendered SVG/PNG
-│   └── briefs/                       # audience-tailored summaries
-├── state.yaml                        # workflow state machine (writer = the active user-facing skill)
-└── .metrics.jsonl                    # per-skill-run telemetry
-```
+**Check whether the baseline still matches reality**
+> "Is the architecture baseline still trustworthy?" → `/arch-audit`
 
-## Governance pillars
+Compares stored fingerprints with the current commit. Flags drift between graph and reality, broken traceability, and degraded acceptance gates. Suggests refresh if needed.
 
-These are what make the suite stand up over time, especially as LLMs get more capable at producing prose:
+**Re-render or refresh the wiki**
+> "Update the wiki" / "Give me a CTO-level overview" → `/arch-wiki`
 
-1. **Specs are the only fact source** — `specs/*.yaml` is schema-locked. Anything in `generated/`, `cr.md`, an ADR body, or a brief that contradicts specs is a bug.
-2. **Append-only history** — `decisions/ADR-*.md` files are never modified after commit. Supersede relationships are recorded in `specs/decisions.yaml#superseded[]`. `state.yaml.history` and `state.yaml.overrides` are append-only too.
-3. **Freshness state machine** — every baseline carries `freshness_status: fresh|possibly_stale|stale|unknown`, computed from commit diff against architecture-sensitive paths. Stale baselines block design with a Chinese refresh prompt.
-4. **Single-writer state** — only the currently active user-facing skill (`arch-onboard` / `arch-design` / `arch-audit` / `arch-brief`) writes `state.yaml`. Internal skills return a `state_delta` for it to merge (protocol shared in `internal/orchestration/playbook.md`). Eliminates concurrent-state corruption.
-5. **Write-scope contract** — `internal/tool-contracts/write-scope.yaml` declares, per skill, which paths are writable. `arch-pack` cannot write `specs/`; `arch-review` cannot write anything except `review.yaml`; `arch-analyze` cannot write `decisions/` — and so on. v1.0 enforces via acceptance audit; v1.1 will enforce via PreToolUse hook.
-6. **Trace closure** — every assertion in a YAML must carry `evidence_refs`. Every prose claim in `overview.md` or wiki must trace back to a YAML field or an ADR/CR path. No weasel words.
+Re-renders the 14 pages from the latest graph. Supports audience modes: `cto`, `newcomer`, `pm`, `architect`. Senior-architect agent reviews wiki quality (full review for first-time/cto/architect, lite review for routine refresh).
 
-## What it produces / refuses to produce
+**Draw 4+1 / C4 architecture diagrams**
+> `/arch-diagram`
 
-| ✅ Allowed | ❌ Refused |
-|---|---|
-| `*.md` (overview, wiki, ADR, CR, briefs) | Terraform / Helm / Pulumi |
-| `*.yaml` (schema-locked facts) | DDL / ORM migrations |
-| `*.mmd` (Mermaid sources) | `.github/workflows/*` / `.gitlab-ci.yml` |
-| `*.svg` / `*.png` (rendered diagrams) | service scaffolds / OpenAPI client code |
-|   | business code |
-
-Tool-level safety: the write-scope contract refuses any of the forbidden patterns even if a skill is somehow prompted to produce them.
-
-## What's bundled
-
-| Layer | Contents |
-|---|---|
-| 13 skills (4 user-facing + 9 internal) | `arch-onboard / arch-design / arch-audit / arch-brief (user-facing) + arch-analyze / arch-frame / arch-diff-judge / arch-options / arch-adr / arch-diagram / arch-review / arch-pack / arch-radar (internal)` — each with `SKILL.md` + executable `references/` (rubrics, templates, playbooks) |
-| Schemas | 5 specs schemas + 3 CR schemas + state schema + 5 org KB schemas |
-| Acceptance | 4 per-entry YAMLs with `structural_checks` + `semantic_checks` + `scope_audit` |
-| Tool contracts | `internal/tool-contracts/write-scope.yaml` — per-skill write/read/forbidden matrix |
-| Templates | `arch/_template/` workspace skeleton + `arch/sample/` worked example |
-| KB seeds (`arch-library/`) | 8 domain seeds, all under 200 lines: `typescript-patterns/` × 4 · `microservices-patterns/` × 3 · `devops-patterns/` × 3 · `migration-patterns/` × 3 · `nfr-checklists/` × 4 · `anti-patterns/` × 1 |
-
-AI/agent architecture KB (`arch-library/agent-architecture/`) is intentionally deferred — re-add when AI-domain support lands.
-
-## Architecture-sensitive language
-
-User-facing prompts default to **Chinese first** (e.g., "当前架构基线可能已过期"), with English technical terms in parentheses when first introduced. YAML keys and schema fields stay in stable English.
+v2.0 ships a placeholder; image generation is planned for v2.1. The wiki already includes Mermaid sources you can render today.
 
 ## Installation
 
-### Prerequisites
-
-- Claude Code with plugin marketplace support
-
-### Install from GitHub
-
-In Claude Code, run in order:
+In Claude Code, run:
 
 ```text
 /plugin marketplace add https://github.com/ttttstc/understand-arch
@@ -116,29 +55,30 @@ In Claude Code, run in order:
 /reload-plugins
 ```
 
-Claude Code reads the plugin definition from [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json).
-
-### Verify
-
-After `/reload-plugins`, type `/arch-` at any prompt — autocompletion should suggest:
+That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the five commands appear:
 
 - `/arch-onboard`
 - `/arch-design`
 - `/arch-audit`
-- `/arch-brief`
+- `/arch-wiki`
+- `/arch-diagram`
 
-### Don't see `/arch-*` commands?
-
-Troubleshoot in order:
+### Don't see the commands?
 
 1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new skills.
 2. **Is the plugin installed?** Run `/plugin list` and check for `understand-arch`.
-3. **Command format**: it's `/arch-onboard` (dash), **not** `/arch:onboard` (colon syntax isn't supported by Claude Code).
+3. **Command format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
 4. **Force reload**: restart Claude Code, then `/reload-plugins` again.
 
-### Optional: Understand-Anything integration
+### Optional: enable git-commit auto-refresh
 
-`understand-arch` does **not** require [Understand-Anything](https://github.com/Lum1104/Understand-Anything). If you already installed it and ran `/understand`, producing `.understand-anything/knowledge-graph.json`, `arch-analyze` will auto-detect it and switch to ua-augmented mode (faster + more accurate scanning). Without UA, the suite falls back to its standalone scanner with no capability loss.
+By default, the baseline is refreshed only when you run `/arch-onboard` or `/arch-audit`. If you want it to react to every git commit:
+
+```text
+/arch-onboard --enable-hooks
+```
+
+This flips `hooks_enabled: true` in your project's state file. Disable any time by setting it back to `false`.
 
 ## How to start
 
@@ -146,33 +86,41 @@ Troubleshoot in order:
 /arch-onboard
 ```
 
-The first run scans your repo, writes a `specs/` baseline, computes `freshness_status`, and surfaces any `known_unknowns` (e.g., components without owners) in Chinese. Subsequent `/arch-design`, `/arch-audit`, `/arch-brief` work against the same workspace.
+First run will:
+1. Scan your repository (multi-repo? it will discover sibling repos and ask before registering)
+2. Build the knowledge graph
+3. Render the 14-page wiki
+4. Tell you what it couldn't determine (known unknowns), so you can decide what to refine
 
-Natural language works too:
+Subsequent commands work against the same workspace. Natural language also routes:
 
-- "Help me understand this codebase" → auto-routes to `/arch-onboard`
+- "Help me understand this codebase" → `/arch-onboard`
 - "Design this PRD" → `/arch-design`
-- "Are the specs still trustworthy?" → `/arch-audit`
-- "Brief for the CTO" → `/arch-brief`
+- "Is the baseline still trustworthy?" → `/arch-audit`
+- "Brief for the CTO" → `/arch-wiki --audience=cto`
 
-## Status
+## What you'll see on your filesystem
 
-**v1.0 specs-CR model is in place**, including:
+```
+your-project/
+├── src/
+├── package.json
+├── …
+└── .understand-arch/           ← the only directory we add
+    └── {project}/
+        ├── specs/              ← knowledge graph (committable)
+        ├── wiki/               ← 14 readable pages (committable)
+        ├── rules/              ← your team conventions (you edit)
+        ├── decisions/          ← ADR ledger (committable, append-only)
+        ├── change-requests/    ← CR.md files (committable)
+        ├── state.yaml          ← workflow state (committable)
+        └── intermediate/       ← scanner scratch (gitignored)
+```
 
-- Spec + 13 skills (4 user-facing + 9 internal) + **14 JSON schemas** (v1.0 收敛:capabilities inlined into baseline) + 4 acceptance gates + write-scope contract + **19 references** + 18 KB seed documents
-- `arch/_template/` scaffold and `arch/sample/` worked example
-- **Multi-agent parallel scan orchestration** (`scan-shard` contract + slicing rules + main-context aggregation) — solves context overflow on large repos
-- **Business capability map** (`specs/baseline.yaml#capabilities[]`, v1.0 inlined into baseline) — capability × maturity × importance × supporting components × gaps, for business-axis reporting and gap analysis
-- **Integrated health-check view** (`generated/audit/{date}-健康度.md`) — audit-emit aggregation of risks/debt/open_questions/KB drift/anti-patterns/drift findings, 10 sections ≤250 lines, one-stop project health snapshot
-- **Understand-Anything integration** (optional) — if [UA plugin](https://github.com/Lum1104/Understand-Anything) (31K+ ⭐) is installed, `arch-analyze` auto-detects `.understand-anything/knowledge-graph.json` and switches to ua-augmented mode, converting UA's nodes/edges directly into our specs; not installed = falls back to standalone with no capability loss
-
-What's not in v1.0 (see [v1.1 candidates](./docs/spec-v1.0.md#v11-candidates)):
-
-- `arch-review --mode=fitness` for ADR fitness specs
-- PreToolUse hook for write-scope hard enforcement
-- True LLM-rendered wiki / RAG over specs/CR (overview.md is a 1-page index, not a Q&A entry)
-- AI/agent architecture KB seeds
+The auto-generated `.gitignore` keeps `intermediate/` and metrics out of git. Everything else is meant to be versioned alongside your code.
 
 ## License
 
-License: see [LICENSE](./LICENSE).
+MIT — see [LICENSE](./LICENSE).
+
+Architecture-scan engine forked from [Understand-Anything](https://github.com/Lum1104/Understand-Anything) (MIT). See [engine/NOTICE](./engine/NOTICE).

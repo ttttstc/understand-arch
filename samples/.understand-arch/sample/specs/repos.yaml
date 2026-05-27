@@ -1,0 +1,7 @@
+version: "1.0"
+repos:
+  - id: sample
+    path: ../../sample-repo
+    git_remote: ""
+    primary_language: markdown
+    description: "v2.0 sample single-repo workspace"
