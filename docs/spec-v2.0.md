@@ -126,13 +126,6 @@ repos:
 
 ### 1.3 v1.0 → v2.0 数据模型对照
 
-详细对照见 §1.4(原表保留),核心变化:
-- `specs/baseline.yaml` → 拆到各仓 `specs/repos/{repo_id}/knowledge-graph.json#nodes/edges/layers`
-- `specs/quality.yaml / risks.yaml / decisions.yaml / traceability.yaml` → 合入 `specs/cross-repo.json`
-- 新增 `specs/repos.yaml` + `specs/cross-repo.json` 两个文件
-
-### 1.4 v1.0 → v2.0 数据模型对照(详细)
-
 | v1.0 | v2.0 |
 |---|---|
 | `specs/baseline.yaml` | 合入各仓 `specs/repos/{repo_id}/knowledge-graph.json#nodes / edges / layers` |
@@ -140,11 +133,13 @@ repos:
 | `specs/risks.yaml` | 合入 `specs/cross-repo.json#risks[] / technical_debt[]` |
 | `specs/decisions.yaml` | 合入 `specs/cross-repo.json#architecture_decisions[]` |
 | `specs/traceability.yaml` | 合入 `specs/cross-repo.json#traceability[]` |
-| `specs/diagrams/*.mmd` | wiki/12-diagrams.md 内嵌 (v2.0 占位) |
-| `~/.understand-arch/kb/*.yaml` | `.understand-arch/{project}/rules/*.md` |
+| `specs/diagrams/*.mmd` | `wiki/14-diagrams.md` 内嵌(v2.0 占位,v2.1 实现) |
+| `~/.understand-arch/kb/*.yaml` | `.understand-arch/{project}/rules/*.md`(项目级) |
 | `generated/overview.md` + `generated/wiki/*` | `.understand-arch/{project}/wiki/*` |
 | `generated/audit/*` | wiki 各对应页 + `arch-review` 临时报告 |
-| `generated/briefs/*` | `/arch-wiki` 受众化输出 mode |
+| `generated/briefs/*` | `/arch-wiki --audience=cto\|newcomer\|pm\|architect` 受众化输出 |
+| (无)`change-requests/CR-*/cr.md / impact.yaml / impact.md / changes.md / solution-design.md / review.yaml` 6 文件 | **单文件** `change-requests/CR-*/CR.md`(YAML frontmatter + 14 段) |
+| (无)单仓假设 | 多仓:`specs/repos.yaml` + `specs/repos/{repo_id}/*` + `specs/cross-repo.json` |
 
 ### 1.5 目录侵入面策略(v2.0)
 
@@ -166,7 +161,7 @@ repos:
     │   ├── change-requests/                    # ✅ 进 git
     │   ├── state.yaml                          # ✅ 进 git
     │   ├── .metrics.jsonl                      # ❌ ignored
-    │   └── intermediate/                       # ❌ ignored (engine 7-phase 临时产物)
+    │   └── intermediate/                       # ❌ ignored (engine Phase 0-8 临时产物)
     └── (可能多个 {project-name}/)
 ```
 
@@ -199,7 +194,7 @@ repos:
 
 #### 1.5.4 intermediate/ 用途
 
-engine 跑 7 phases 时,每个 phase 把输出写到 `intermediate/`,下一个 phase 读它继续加工:
+engine 跑 Phase 0-8 时(共 8 阶段,详见 §3.7),每个 phase 把输出写到 `intermediate/`,下一个 phase 读它继续加工:
 
 ```
 Phase 1 SCAN          → intermediate/scan-result-{repo_id}.json
@@ -377,59 +372,6 @@ interface EvidenceRef {
 ```
 
 ### 2.6 NodeType (21 种,沿用 UA)
-
-### 2.2 ProjectMeta
-
-```typescript
-interface ProjectMeta {
-  name: string
-  languages: string[]                         // 检测到的语言
-  frameworks: string[]                        // 检测到的框架
-  description: string                         // LLM 产
-  analyzedAt: string                          // ISO 8601
-  gitCommitHash: string
-}
-```
-
-### 2.3 GraphNode(UA 原生 + v2.0 扩展字段)
-
-```typescript
-interface GraphNode {
-  // UA 原生
-  id: string
-  type: NodeType                              // 21 种,见 2.4
-  name: string
-  filePath?: string
-  lineRange?: [number, number]
-  summary: string
-  tags: string[]
-  complexity: "simple" | "moderate" | "complex"
-  languageNotes?: string
-  domainMeta?: DomainMeta                     // domain/flow/step 节点用
-  knowledgeMeta?: KnowledgeMeta               // 知识层节点用(我们不主用)
-
-  // v2.0 扩展(全部 optional)
-  criticality?: "critical" | "high" | "medium" | "low"
-  maturity?: "experimental" | "growing" | "stable" | "deprecated"
-  importance?: "core" | "supporting" | "edge"
-  boundary?: "internal" | "public" | "external"
-  communication?: "sync" | "async" | "event"           // 接口节点用
-  data_sensitivity?: "public" | "internal" | "pii" | "secret"   // 数据节点用
-  sla?: { availability?: string; latency_p99_ms?: number }
-  linked_adrs?: string[]                      // ["ADR-001"]
-  linked_crs?: string[]                       // ["CR-2026-003"]
-  linked_risks?: string[]                     // ["R-001"]
-  evidence_refs?: EvidenceRef[]
-  confidence?: "high" | "medium" | "low"      // 扩展字段的抽取置信度
-}
-
-interface EvidenceRef {
-  file: string                                // 仓库相对路径
-  line_range?: [number, number]
-  source: "engine" | "llm" | "human"
-  extracted_at: string                        // ISO 8601
-}
-```
 
 | 分类 | 类型 | v2.0 主用 |
 |---|---|---|
@@ -649,7 +591,7 @@ interface ScanMeta {
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │ 1. Orchestrator (skills/arch-analyze/SKILL.md)                     │  编排层
-│    - 7 phases: Pre-flight → Scan → Batch → Analyze → Assemble →    │
+│    - Phase 0-8: Pre-flight → Scan → Batch → Analyze → Assemble →   │
 │      Structure → Domain → Quality → Review                         │
 │    - 增量更新决策、subdomain 合并、worktree 处理                    │
 │    - 并行控制(file-analyzer up to 5)                             │
@@ -681,7 +623,7 @@ interface ScanMeta {
 
 | UA 资产 | v2.0 归宿 | 说明 |
 |---|---|---|
-| `skills/understand/SKILL.md` (844 行,7 phases) | `skills/arch-analyze/SKILL.md` | 改写编排逻辑,产物对齐 v2.0 graph |
+| `skills/understand/SKILL.md` (844 行,7 phases) | `skills/arch-analyze/SKILL.md`(扩展为 Phase 0-8 含跨仓 FINALIZE) | 改写编排逻辑,产物对齐 v2.0 graph |
 | `skills/understand/*.mjs` 工具脚本 | `engine/tools/*.mjs` | 直接搬,改 import path |
 | `skills/understand/*.py` 合并脚本 | `engine/tools/*.py` | 直接搬 |
 | `agents/project-scanner.md` | `agents/arch-project-scanner.md` | 改 prompt 产 v2.0 字段 |
@@ -746,7 +688,7 @@ understand-arch/
     ├── arch-wiki/
     ├── arch-diagram/
     ├── arch-analyze/                          # ★ 编排层(改写自 UA understand SKILL.md)
-    │   ├── SKILL.md                            # 7 phases 编排
+    │   ├── SKILL.md                            # Phase 0-8 编排
     │   └── references/
     ├── arch-frame/
     ├── arch-adr/
@@ -773,46 +715,56 @@ understand-arch/
 - `plugins/discovery.ts`(插件发现机制)
 - 知识图谱节点抽取(article/entity/topic/claim/source 类型保留兼容,但不抽)
 
-### 3.5 Subagent Fork 范围(6 个 agents/arch-*.md)
+### 3.5 Subagent Fork 范围(9 个 agents/arch-*.md,见 §4.3 完整清单)
 
 每个 agent prompt 改造原则:
 1. **保留**:UA 原 prompt 的扫描方法论(file batching、graph 构造规则、validation 规则)
-2. **适配**:产物 schema 改为产 v2.0 GraphNode 扩展字段(criticality / maturity / importance / boundary / communication / data_sensitivity / sla / linked_adrs / linked_crs / linked_risks / confidence)
+2. **适配**:产物 schema 改为产 v2.0 GraphNode 扩展字段(criticality / maturity / importance / boundary / communication / data_sensitivity / sla / linked_adrs / linked_crs / linked_risks / confidence)+ `repo_id::{local-id}` ID 格式
 3. **新增 v2.0 字段强约束**:LLM 推断字段必须带 `confidence` + `evidence_refs`,否则 graph-reviewer fail
 
-`arch-quality-analyzer.md`(v2.0 新增)单独写,职责:
-- 从代码 + graph + rules/*.md 推断 NFR / risks / technical_debt
-- 强制每条产物带 confidence(high/medium/low)与 evidence_refs
-- 输出写入 graph 顶层 `quality_attributes[]` / `risks[]` / `technical_debt[]`
+**4 个 v2.0 新增 subagent prompt 单独写**(参考 §4.3.2 / §4.3.3):
+- `arch-quality-analyzer.md`:从代码 + graph + rules/*.md 推断 NFR / risks / technical_debt;强制 confidence + evidence_refs;输出 `quality_attributes[]` / `risks[]` / `technical_debt[]`
+- `arch-impact-analyzer.md`:CR 影响面追踪(跨仓 graph 二级传播)+ 改动清单(文件/函数/接口级)
+- `arch-solution-designer.md`:CR.md 14 段主体撰写(参考 §4.1.2.1 模板)
+- `arch-senior-reviewer.md`:高级架构师终审(rubric 驱动,JSON 评审协议,见 §4.3.3)
 
 ### 3.6 Engine 包名 + 入口
 
 - npm 包名: `@understand-arch/scanner-engine` (scoped)
-- 多个工具入口(对应 7 phases 中的确定性步骤):
-  ```bash
-  # Phase 1.5 BATCH
-  node ${PLUGIN_ROOT}/engine/bin/compute-batches.js ${PROJECT_ROOT}
-  # Phase 3 ASSEMBLE
-  python ${PLUGIN_ROOT}/engine/bin/merge-batch-graphs.py ${PROJECT_ROOT}
-  # Phase 4 FINGERPRINT
-  node ${PLUGIN_ROOT}/engine/bin/build-fingerprints.js ${PROJECT_ROOT}
-  ```
-- Skill 编排层(`arch-analyze` SKILL.md)按需调用对应 bin
+- **完整入口清单**(对应 8 phases 中的确定性步骤):
+
+  | Phase | Engine bin 入口 | 类型 | 输入 / 输出 |
+  |---|---|---|---|
+  | Phase 0 Pre-flight | `engine/bin/preflight.js` | Node | 检查 python/node/git + 读 repos.yaml |
+  | Phase 1 SCAN(脚本侧) | `engine/bin/scan-project.js` | Node | 扫文件树(供 arch-project-scanner 参考) |
+  | Phase 1 验收 | `engine/bin/validate-phase-1.js` | Node | 输入 scan-result-{repo_id}.json,跑 §11.2 phase-1-scan rubric |
+  | Phase 1.5 BATCH | `engine/bin/compute-batches.js` | Node | 输入 scan-result,输出 batches-{repo_id}.json |
+  | Phase 3 ASSEMBLE | `engine/bin/merge-batch-graphs.py` | Python | 合并 batch-*.json → assembled-graph-{repo_id}.json |
+  | Phase 3 验收 | `engine/bin/validate-phase-3.js` | Node | 节点密度异常检测(§11.2 phase-3-assemble rubric) |
+  | Phase 4 FINGERPRINT | `engine/bin/build-fingerprints.js` | Node | 输入 assembled-graph,输出 .fingerprint.json |
+  | Phase 4 STRUCTURE 辅助 | `engine/bin/extract-structure.js` | Node | 抽 function/class signature(供 arch-architecture-analyzer 减小 prompt) |
+  | Phase 4 STRUCTURE 辅助 | `engine/bin/extract-import-map.js` | Node | 抽 import 关系(供 batching + cross-batch 校验) |
+  | Phase 8 FINALIZE | `engine/bin/finalize-cross-repo.js` | Node | 合并各仓 graph + 抽 cross_edges + 写 cross-repo.json |
+  | Phase 8 跨仓子图 | `engine/bin/merge-subdomain-graphs.py` | Python | 合并跨仓子图(沿用 UA) |
+  | output-writer | `engine/bin/write-outputs.js` | Node | 最终写 specs/repos/*/{knowledge-graph.json, .fingerprint.json} + specs/cross-repo.json |
+
+- Skill 编排层(`arch-analyze` SKILL.md)按 8 phase 编排按需调用对应 bin
+- Phase 2/4-7 的语义抽取走 subagent dispatch,不通过 engine bin
 
 ### 3.7 引擎产物 vs Subagent 产物
 
-| 阶段 | 产物 | 责任 |
-|---|---|---|
-| Phase 0 Pre-flight | 决定 full/incremental + worktree 检测 | orchestrator (skill) |
-| Phase 1 SCAN | `intermediate/scan-result.json`(文件清单 + 语言/框架检测) | arch-project-scanner subagent |
-| Phase 1.5 BATCH | `intermediate/batches.json`(语义分批) | engine bin (确定性) |
-| Phase 2 ANALYZE | `intermediate/batch-N.json[]`(每批 GraphNode + GraphEdge) | arch-file-analyzer subagent ×N 并行 |
-| Phase 3 ASSEMBLE | `intermediate/assembled-graph.json` | engine bin (确定性合并) |
-| Phase 4 STRUCTURE | `assembled-graph.json#layers + 架构层节点` | arch-architecture-analyzer subagent |
-| Phase 5 DOMAIN | `assembled-graph.json#nodes(domain/flow/step)` + maturity/importance | arch-domain-analyzer subagent |
-| Phase 6 QUALITY | `assembled-graph.json#quality_attributes/risks/technical_debt` | arch-quality-analyzer subagent ★ v2.0 |
-| Phase 7 REVIEW | confidence/evidence 闭合校验 + 修复建议 | arch-graph-reviewer subagent |
-| Phase 8 FINALIZE | `specs/repos/{repo_id}/{knowledge-graph.json, .fingerprint.json}` + `specs/cross-repo.json` | engine bin (output-writer) |
+| 阶段 | 产物 | 责任 | 验收(见 §11.2) |
+|---|---|---|---|
+| Phase 0 Pre-flight | 决定 full/incremental + worktree 检测 + repos.yaml 读 | orchestrator + `engine/bin/preflight.js` | — |
+| Phase 1 SCAN | `intermediate/scan-result-{repo_id}.json` | arch-project-scanner subagent | graph-reviewer phase-1-scan(脚本) |
+| Phase 1.5 BATCH | `intermediate/batches-{repo_id}.json` | `engine/bin/compute-batches.js` | — |
+| Phase 2 ANALYZE | `intermediate/batch-N.json[]`(per repo) | arch-file-analyzer subagent ×N 并行 | (取消抽样审,合并到 Phase 3) |
+| Phase 3 ASSEMBLE | `intermediate/assembled-graph-{repo_id}.json` | `engine/bin/merge-batch-graphs.py` + `extract-structure.js` + `build-fingerprints.js` | graph-reviewer phase-3-assemble(脚本,节点密度) |
+| Phase 4 STRUCTURE | `intermediate/layers-{repo_id}.json` | arch-architecture-analyzer subagent | graph-reviewer phase-4-structure(subagent) |
+| Phase 5 DOMAIN | `intermediate/domain-{repo_id}.json`(本仓)+ `intermediate/cross-repo/capabilities-cross.json`(跨仓) | arch-domain-analyzer subagent | graph-reviewer phase-5-domain(subagent) |
+| Phase 6 QUALITY | `intermediate/quality-{repo_id}.json` | arch-quality-analyzer subagent ★ v2.0 | graph-reviewer phase-6-quality(subagent) |
+| Phase 7 REVIEW | `intermediate/review-phase-7-{repo_id}.json` | arch-graph-reviewer subagent(`phase-7-final` mode) | 自审 |
+| Phase 8 FINALIZE | `specs/repos/{repo_id}/{knowledge-graph.json, .fingerprint.json}` + `specs/cross-repo.json` | `engine/bin/finalize-cross-repo.js` + `engine/bin/write-outputs.js` | graph-reviewer phase-8-cross-repo(subagent) |
 
 ### 3.8 License 与归属
 
@@ -938,7 +890,7 @@ UA 用 2 个 hook 实现"代码改了 graph 自动失效 + 增量更新",v2.0 �
 #### 3.11.2 v2.0 新增测试
 
 - `engine/src/extensions/__tests__/`:测 arch-schema / arch-validator / output-writer
-- `engine/tests/integration/`:跑全套 7 phases 编排小型 fixture 项目,验证产物结构
+- `engine/tests/integration/`:跑全套 Phase 0-8 编排小型 fixture 项目,验证产物结构
 
 #### 3.11.3 测试命令
 
@@ -1004,7 +956,7 @@ packages:
 
 | UA skill | 用途 | v2.0 处置 |
 |---|---|---|
-| `understand` (主扫描) | 7 phases 扫描 | ✅ 复刻为 `skills/arch-analyze/SKILL.md` |
+| `understand` (主扫描) | 7 phases 扫描 | ✅ 复刻为 `skills/arch-analyze/SKILL.md`,v2.0 扩展为 Phase 0-8(加 Phase 0 多仓 pre-flight + Phase 8 跨仓 FINALIZE) |
 | `understand-onboard` | 新人 onboarding 视图(graph 外的引导) | ❌ 不复刻 — 我们 `wiki/15-onboarding.md` + arch-wiki 已 cover |
 | `understand-explain` | 解释单个节点/路径 | ❌ 不复刻 — wiki 已分层呈现 |
 | `understand-chat` | RAG 对话 | ❌ v2.0 不做,v2.1 候选 |
@@ -1188,7 +1140,7 @@ Phase 8 用 3 个 subagent,但**项目级 1 次**,M 预算够。
 
 Phase 2 实施时按需选择(详见 `skills/arch-analyze/references/scheduler-playbook.md`)。
 
-### 3.14 UA `src/*-builder.ts` 处置
+### 3.16 UA `src/*-builder.ts` 处置
 
 完全**不复刻**。`src/onboard-builder.ts / explain-builder.ts / diff-analyzer.ts / understand-chat.ts / context-builder.ts` 都是 UA user-facing skill 的实现,与我们 v2.0 user-facing skill(arch-onboard / arch-design / arch-audit / arch-wiki / arch-diagram)**定位不同**,自己写更干净。
 
@@ -1391,6 +1343,51 @@ impact:
 - web/RateLimitBanner.tsx 依赖 api/POST /rate-limit/status(新增)
 ```
 
+#### 4.1.2.3 多 subagent 协作写 CR.md 协议(防覆盖)
+
+CR.md 是 v2.0 单文件大一统产物,但有 **4 个角色按顺序写入**(arch-frame → arch-impact-analyzer → arch-solution-designer → arch-review)。必须遵守以下协议防覆盖:
+
+**1. 顺序约束(由 arch-design SKILL 编排,串行触发)**
+
+```
+arch-frame(写空白 frontmatter + § 1 草稿)
+   ↓
+arch-impact-analyzer(更新 frontmatter#impact + 写 § 8 改动清单)
+   ↓
+arch-solution-designer(写 § 1-7 + § 9-13 段,§ 1 内容覆盖 arch-frame 草稿)
+   ↓
+arch-review(append § 14 Review,append-only,永不覆盖前 13 段)
+```
+
+**2. 局部更新工具**
+
+每个 subagent 写 CR.md 时:
+- **读全文 → 解析为结构化对象**(yaml frontmatter + markdown sections by H2 header)
+- **只改自己负责的段** → 序列化回 markdown
+- **写盘**(原子写:tmp + rename)
+
+参考 `engine/bin/cr-md-editor.js`(v2.0 新增工具),提供 API:
+- `readCR(path)` → `{frontmatter, sections: { "1": "...", "2": "...", ..., "14": "..." }}`
+- `updateSection(cr, sectionId, content)`
+- `appendToSection(cr, sectionId, content)`(给 arch-review 用,§ 14 append-only)
+- `updateFrontmatter(cr, partial)`
+- `writeCR(path, cr)`(原子写)
+
+**3. 段级写权限矩阵**
+
+| Subagent | 可写段 | 写模式 |
+|---|---|---|
+| arch-frame | frontmatter(初始)+ § 1 | overwrite |
+| arch-impact-analyzer | frontmatter#impact + § 8 | overwrite |
+| arch-solution-designer | § 1-7 + § 9-13 | overwrite(§ 1 可覆盖 arch-frame 草稿) |
+| arch-review | § 14 | **append-only**(每次评审追加一条,不覆盖) |
+
+任何 subagent 写超范围 = acceptance gate fail。
+
+**4. 并发约束**
+
+CR.md 不允许 4 个角色并行写。`/arch-design` SKILL **必须串行 dispatch**。如果未来需要并行,需引入文件锁机制(v2.0 不做)。
+
 #### 4.1.3 `/arch-audit`
 
 **触发**: "基线还能信吗" / "/arch-audit"
@@ -1456,10 +1453,10 @@ arch-diagram 正在开发中,v2.1 见。
 
 #### 4.2.1 `arch-analyze`(编排层)
 
-**唯一职责**: 7 phases 编排,调度 6 个 graph 链 subagent(见 §4.3.1)+ engine 工具脚本,产 graph + fingerprint(senior-reviewer 不归 arch-analyze 调,归 arch-design / arch-wiki 调)
+**唯一职责**: Phase 0-8 编排,调度 6 个 graph 链 subagent(见 §4.3.1)+ engine 工具脚本(见 §3.6 完整入口清单),产 graph + fingerprint(senior-reviewer 不归 arch-analyze 调,归 arch-design / arch-wiki 调)
 
 **Modes**:
-- `full` — 全量 7 phases
+- `full` — 全量 Phase 0-8
 - `incremental` — 仅扫 fingerprint 变化部分(沿用 UA 增量逻辑)
 - `fingerprint-check` — 不扫,只算 freshness(Phase 0 + engine build-fingerprints)
 - `review-only` — 跳过 Phase 1-6,只跑 Phase 7 graph-reviewer
@@ -1855,8 +1852,6 @@ Notion 风格,章节列表 + 摘要 + 链接:
 
 ### 7.3 加载策略
 
-### 7.3 加载策略
-
 #### 7.3.1 一般规则(banned-patterns / compliance / network-boundaries / naming / tech-radar)
 
 - 不进 graph(Q-detail-3=c 决策)
@@ -1886,7 +1881,21 @@ Notion 风格,章节列表 + 摘要 + 链接:
 沿用 v1.0,**微调**:
 
 - `public_entry` 枚举: `"onboard" | "design" | "audit" | "wiki" | "diagram"`(原 `brief` → `wiki`,新增 `diagram`)
-- `history[].skill` 枚举: `["arch-onboard", "arch-design", "arch-audit", "arch-wiki", "arch-diagram", "arch-analyze", "arch-frame", "arch-adr", "arch-review", "arch-senior-reviewer", "arch-graph-reviewer", "user"]`(扩到 12 个,新增 senior + graph reviewer 直接事件)
+- `history[].skill` 枚举:**19 个**(9 skill + 9 subagent + user)
+  ```
+  [
+    // 5 user-facing skills
+    "arch-onboard", "arch-design", "arch-audit", "arch-wiki", "arch-diagram",
+    // 4 internal skills
+    "arch-analyze", "arch-frame", "arch-adr", "arch-review",
+    // 9 subagents
+    "arch-project-scanner", "arch-file-analyzer", "arch-architecture-analyzer",
+    "arch-domain-analyzer", "arch-quality-analyzer", "arch-graph-reviewer",
+    "arch-impact-analyzer", "arch-solution-designer", "arch-senior-reviewer",
+    // 用户事件
+    "user"
+  ]
+  ```
 - ❌ 删除 `kb_loaded` 字段(rules/ 不再有"加载状态"概念,LLM 现读)
 - ★ **新增** `hooks_enabled: bool`(默认 false,控制 §3.10 hooks 是否生效)
 
@@ -2415,13 +2424,19 @@ internal/schemas/
 
 ---
 
-## 15. 落地路线(Phase 0 → Phase 9)
+## 15. 落地路线(Impl-Phase 0 → Impl-Phase 9)
+
+> **术语澄清**:
+> - **Impl-Phase**(本节):**实施阶段**,从 spec 到代码上线的 10 个里程碑,本 spec 编号 0-9
+> - **Phase**(§3.7 / §3.15):**单次扫描执行阶段**,arch-analyze 跑 graph 时的 9 个步骤,编号 0-8
+> 两套独立,不要混淆。
+
 
 | Phase | 内容 | 状态 |
 |---|---|---|
 | 0 | spec-v2.0 outline + 完整 spec(含多仓 + arch-design 重写) | ✅ |
 | 1 | Fork UA + license check (MIT) | ✅ |
-| 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 7-phase 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
+| 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 Phase 0-8 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
 | 3 | **9 个 subagent**:① 改造 4 复刻(project-scanner / file-analyzer / architecture-analyzer / domain-analyzer)适配 v2.0 字段 + repo_id 前缀;② 扩展 1 个 arch-graph-reviewer(多 phase mode);③ 新写 4 个(arch-quality-analyzer / arch-impact-analyzer / arch-solution-designer / **arch-senior-reviewer**) | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
 | 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(单文件 CR.md 14 段) / arch-audit / arch-wiki(14 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
@@ -2432,7 +2447,103 @@ internal/schemas/
 
 ---
 
-## 16. 未进 v2.0(v2.1+ 候选)
+## 16. 实施合同(给 codex /goal 模式)
+
+> 本节是**给自动实施 agent(codex)** 的执行合同。所有关键决策、不变量(invariant)、验收 checkpoint 集中在这里,实施时不得违反。
+
+### 16.1 不变量(Invariants,违反 = bug)
+
+1. **目录侵入面**:用户项目根目录只能新增 1 个目录 `.understand-arch/`,其它任何位置不得新增文件或目录
+2. **品牌一致性**:`.understand-arch/{project}/` 内部不得再出现 `.understand-arch/` 嵌套
+3. **graph 是唯一事实源**:wiki / CR.md / ADR 中任何事实如与 graph 矛盾 = bug
+4. **Append-only 不变**:`decisions/ADR-*.md` commit 后永不修改;`CR.md § 14 Review`、`state.yaml.history`、`state.yaml.overrides` 仅追加
+5. **Node ID 全局唯一**:格式 `{repo_id}::{local-id}`,跨仓 edge `source.repo_id != target.repo_id` 必须写入 `cross-repo.json#cross_edges`
+6. **LLM 推断字段强 confidence**:`quality_attributes / risks / technical_debt` 100% 带 `confidence + evidence_refs`,否则 graph-reviewer 必 fail
+7. **CR.md 段级写权限**:见 §4.1.2.3,违反 = acceptance gate fail
+8. **单仓 N=1 退化**:所有代码路径必须支持 N=1 单仓 + N>1 多仓,**无分叉判断**
+9. **hooks 默认关闭**:`hooks.json` 文件存在,但所有 command 前置 `state.yaml#hooks_enabled == true` 检查
+10. **中文纯化**:所有用户可见提示纯中文(技术标识符 / 字段名除外,详见 §10.1)
+
+### 16.2 实施顺序(强依赖)
+
+按 §15 Impl-Phase 0-9 顺序实施(注意区分 §3.7 单次扫描的 Phase 0-8),跨阶段强依赖:
+
+```
+Phase 1 license check (✅ 已完成)
+  ↓
+Phase 2 Fork UA 三层 + monorepo 架子
+  ├ engine/(packages/core fork + tools fork)
+  ├ agents/arch-*.md(占位文件,内容空)
+  ├ skills/arch-analyze/SKILL.md(占位)
+  ├ package.json + pnpm-workspace.yaml + tsconfig.base.json
+  └ 搬 UA __tests__/
+  ↓
+Phase 3 改造 4 复刻 + 扩展 1 + 新写 4 个 subagent prompt
+  ├ 4 复刻:适配 v2.0 字段 + repo_id 前缀
+  ├ 1 扩展 graph-reviewer:多 phase mode
+  └ 4 新写:quality-analyzer / impact-analyzer / solution-designer / senior-reviewer
+  ↓
+Phase 4 engine/src/extensions/(arch-schema.ts / arch-validator.ts / output-writer.ts + cr-md-editor.js)
+  ↓
+Phase 5 重写 8 个 user-facing + 配套 skill(arch-onboard/design/audit/wiki/diagram/frame/adr/review)
+  ↓
+Phase 6 schemas(5)+ acceptance(4)+ rubrics(10)+ write-scope + README + rules 模板(6 份)+ plugin manifest
+  ↓
+Phase 7 hooks(默认关闭)
+  ↓
+Phase 8 esbuild bundle engine 到 bin/
+  ↓
+Phase 9 e2e 验证(单仓 + 多仓 + hook 开启场景)
+```
+
+### 16.3 关键 checkpoint(每个 Phase 完成时必须验证)
+
+| Phase | checkpoint |
+|---|---|
+| 2 | `pnpm install` 能跑通 + UA `__tests__` 全部 pass + `engine/bin/` 目录存在 |
+| 3 | 9 个 `agents/arch-*.md` 都有 YAML frontmatter + content + `based_on` 字段 |
+| 4 | `engine/src/extensions/arch-schema.ts` 导出 TS 类型 + `engine/bin/cr-md-editor.js` 实现 §4.1.2.3 所有 API |
+| 5 | 9 skill 的 SKILL.md 都有 frontmatter(name + description + triggers)+ Phase 0-8 编排逻辑(仅 arch-analyze)+ 跑通 dispatch |
+| 6 | 5 schemas 通过 ajv 校验 + 4 acceptance YAML 加载成功 + 10 rubrics 加载成功 + write-scope.yaml 解析 |
+| 7 | hooks/hooks.json 默认 disabled + `--enable-hooks` 后 git commit 触发 hook |
+| 8 | `engine/bin/*.js` 单文件可执行(node 直接跑,免 npm install) |
+| 9 | `.understand-arch/sample/` 单仓 + 真实多仓项目跑完全链路 + 所有 acceptance gate pass |
+
+### 16.4 决策摘要表(防止 codex 误解)
+
+| 关键决策 | 值 | spec 章节 |
+|---|---|---|
+| 用户入口 skill | 5 个(/arch-onboard / /arch-design / /arch-audit / /arch-wiki / /arch-diagram) | §4.1 |
+| 内部 skill | 4 个(arch-analyze / arch-frame / arch-adr / arch-review) | §4.2 |
+| Subagent | **9 个**(详见 §4.3) | §4.3 |
+| Phase 数 | 0-8(共 9 阶段) | §3.7 |
+| 多仓并行 worker | M=5(可调) | §3.15 |
+| wiki 页数 | 14 页 | §5.2 |
+| CR.md 结构 | YAML frontmatter + 14 段(单文件) | §4.1.2.1 |
+| Schemas | 5 份 | §13 |
+| Rubrics | 10 份 | §11.8 |
+| Acceptance gates | 4 个 | §11.4 |
+| Rules 模板 | 6 份(含 dependencies.md) | §7.2 |
+| Engine bin 入口 | 11 个(详见 §3.6) | §3.6 |
+| Node ID 格式 | `{repo_id}::{local-id}` | §2.3 |
+| hooks 默认 | disabled | §3.10 |
+| 视图层 | wiki/(14 页),无 generated/ | §5 |
+| 配置目录 | 项目内 rules/,无 ~/.understand-arch/kb/ | §7 |
+| Diff 工具 | engine/bin/cr-md-editor.js(§4.1.2.3) | §4.1.2.3 |
+
+### 16.5 禁止行为(violation = 整 PR reject)
+
+- 引入 `arch/` 顶级目录(必须用 `.understand-arch/`)
+- 引入 `~/.understand-arch/` 全局配置(必须项目级)
+- CR.md 拆为多文件
+- wiki 单页加字数硬限
+- subagent 写超 §4.1.2.3 段级权限范围
+- 任何 hook 默认开启
+- 用 LLM 跑 Phase 1/3 确定性脚本能完成的事
+- 中文提示与英文混杂(英文术语必须括号注或仅技术标识符)
+- 复刻 UA tour/lesson/embedding/article/chat/dashboard(明确不搬)
+
+## 17. 未进 v2.0(v2.1+ 候选)
 
 - `/arch-diagram` 真正实现图片生成(C4 + 4+1 视图)
 - PreToolUse hook 硬拦截 write-scope
