@@ -34,7 +34,7 @@
           "repo_id": "sample",
           "file": "README.md",
           "source": "engine",
-          "extracted_at": "2026-05-27T14:09:01.213Z"
+          "extracted_at": "2026-05-27T15:25:12.453Z"
         }
       ],
       "confidence": "high"
@@ -57,7 +57,7 @@
           "repo_id": "sample",
           "file": "src/app.ts",
           "source": "engine",
-          "extracted_at": "2026-05-27T14:09:01.213Z"
+          "extracted_at": "2026-05-27T15:25:12.453Z"
         }
       ],
       "confidence": "high"
@@ -84,7 +84,7 @@
           "repo_id": "sample",
           "file": "src/app.ts",
           "source": "engine",
-          "extracted_at": "2026-05-27T14:09:01.213Z",
+          "extracted_at": "2026-05-27T15:25:12.453Z",
           "line_range": [
             1,
             3
@@ -129,7 +129,7 @@
   "scan_meta": {
     "engine_version": "2.0.0-skeleton",
     "based_on": "Understand-Anything scan-project/extract-import-map/extract-structure",
-    "scanned_at": "2026-05-27T14:09:01.213Z",
+    "scanned_at": "2026-05-27T15:25:12.453Z",
     "files_scanned": 2,
     "languages_detected": [
       "markdown",

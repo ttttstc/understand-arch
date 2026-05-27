@@ -19,15 +19,110 @@ description: |
 
 ## Phase 0-8
 
-0. PREPARE:加载 repos.yaml、rules 摘要、state 与已有 fingerprint。
-1. SCAN:确定性扫描文件树、语言、包管理、入口、配置、接口、数据、部署线索。
-2. BATCH:按 repo 内目录或 package 切片,每片控制在可审范围。
-3. ANALYZE:调用 4 个复刻 subagent 分析文件、架构、领域线索。
-4. ASSEMBLE:合并 batch 输出为仓内 graph 草稿。
-5. STRUCTURE:识别 layers 与结构风险。
-6. DOMAIN:抽取 capabilities、flows、domain nodes。
-7. QUALITY:抽取 NFR、风险、技术债,所有 LLM 推断字段必须带 `confidence` 与 `evidence_refs`。
-8. FINALIZE:评审后写 `specs/repos/{repo_id}/knowledge-graph.json`、`.fingerprint.json`,并合成 `specs/cross-repo.json`。
+0. Pre-flight:加载 repos.yaml、rules 摘要、state、已有 fingerprint,决定 full/incremental。
+1. SCAN:调度 `arch-project-scanner`,写 `intermediate/scan-result-{repo_id}.json`。
+1.5. BATCH:运行 `engine/bin/compute-batches.js`,写 `intermediate/batches-{repo_id}.json`。
+2. ANALYZE:调度 `arch-file-analyzer` 并行分析 batch,写 `intermediate/batch-{n}.json`。
+3. ASSEMBLE:运行 `merge-batch-graphs.py` + v2 adapter,写 `intermediate/assembled-graph-{repo_id}.json`。
+4. STRUCTURE:调度 `arch-architecture-analyzer`,写 `intermediate/layers-{repo_id}.json`。
+5. DOMAIN:调度 `arch-domain-analyzer`,写 `intermediate/domain-{repo_id}.json`。
+6. QUALITY:调度 `arch-quality-analyzer`,写 `intermediate/quality-{repo_id}.json`;所有 LLM 推断字段必须带 `confidence` 与 `evidence_refs`。
+7. REVIEW:调度 `arch-graph-reviewer --mode=phase-7-final`,写 `intermediate/review-phase-7-{repo_id}.json`。
+8. FINALIZE:运行 `finalize-cross-repo.js` + `write-outputs.js`,写 `specs/repos/{repo_id}/knowledge-graph.json`、`.fingerprint.json` 与 `specs/cross-repo.json`。
+
+## Subagent Dispatch 模板
+
+### Phase 1 SCAN
+
+Dispatch a subagent using the `arch-project-scanner` agent definition.
+
+Append the following additional context:
+
+```text
+Project: {projectName} — {projectDescription}
+Workspace: {workspace}
+Repo id: {repo_id}
+Repo root: {repoRoot}
+README(first 3000 chars): {README_CONTENT}
+Manifest: {MANIFEST_CONTENT}
+Rules summary: {rulesSummary}
+```
+
+Pass these parameters:
+
+```text
+Run Phase 1 SCAN for repo {repo_id}.
+Use UA deterministic scanner tools.
+Write output to {workspace}/intermediate/scan-result-{repo_id}.json.
+Do not write graph/wiki/CR/ADR.
+```
+
+### Phase 2 ANALYZE
+
+Dispatch a subagent using the `arch-file-analyzer` agent definition.
+
+Append the following additional context:
+
+```text
+Project: {projectName} — {projectDescription}
+Repo id: {repo_id}
+Batch: {batchIndex}/{batchTotal}
+Batch import data: {batchImportData}
+Cross-batch neighbors: {neighbors}
+Rules summary: {rulesSummary}
+```
+
+Pass these parameters:
+
+```text
+Analyze this batch and produce v2 GraphNode/GraphEdge objects.
+Project root: {repoRoot}
+Output: {workspace}/intermediate/batch-{batchIndex}.json
+All node ids must use {repo_id}:: prefix.
+Only emit repo-local edges.
+```
+
+### Phase 4 STRUCTURE
+
+Dispatch a subagent using the `arch-architecture-analyzer` agent definition.
+
+```text
+Analyze {workspace}/intermediate/assembled-graph-{repo_id}.json.
+Use directory structure, imports, fileCategory and rules to derive layers.
+Write {workspace}/intermediate/layers-{repo_id}.json.
+```
+
+### Phase 5 DOMAIN
+
+Dispatch a subagent using the `arch-domain-analyzer` agent definition.
+
+```text
+Read graph + layers + README + cross-repo context.
+Infer capabilities, flows and domain nodes with confidence/evidence_refs.
+Write {workspace}/intermediate/domain-{repo_id}.json.
+```
+
+### Phase 6 QUALITY
+
+Dispatch a subagent using the `arch-quality-analyzer` agent definition.
+
+```text
+Read graph + layers + domain + rules.
+Infer quality_attributes, risks and technical_debt candidates.
+Every inferred item must include confidence and evidence_refs.
+Write {workspace}/intermediate/quality-{repo_id}.json.
+```
+
+### Phase 7 REVIEW
+
+Dispatch a subagent using the `arch-graph-reviewer` agent definition.
+
+```text
+Review Phase 7 final repo graph readiness for {repo_id}.
+Mode: phase-7-final
+Inputs: scan-result, batches, assembled graph, layers, domain, quality, warnings.
+Write {workspace}/intermediate/review-phase-7-{repo_id}.json.
+```
 
 ## Engine 调用
 

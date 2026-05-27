@@ -11,7 +11,7 @@
     "status": { "type": "string", "enum": ["idle", "running", "completed", "blocked", "degraded"] },
     "current_skill": { "type": ["string", "null"] },
     "current_phase": { "type": ["string", "null"] },
-    "hooks_enabled": { "type": "boolean", "const": false },
+    "hooks_enabled": { "type": "boolean", "default": false },
     "last_graph_refresh": { "type": ["string", "null"] },
     "history": {
       "type": "array",
@@ -43,4 +43,3 @@
     }
   }
 }
-

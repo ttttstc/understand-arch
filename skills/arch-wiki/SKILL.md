@@ -36,6 +36,46 @@ description: |
 - 不设置单页字数上限,以讲清楚为准。
 - `14-diagrams.md` 在 v2.0 只放 4+1 视图占位与 Mermaid 文本,图片生成留给 v2.1。
 
+## Subagent Dispatch 模板
+
+### wiki renderer
+
+Dispatch a subagent using the `arch-senior-reviewer` agent definition only for review; content production is orchestrated by this skill using graph as source.
+
+Append the following additional context to the wiki rendering prompt:
+
+```text
+Workspace: .understand-arch/{project}
+Audience: cto|newcomer|pm|architect|default
+Repo graphs: specs/repos/*/knowledge-graph.json
+Cross repo graph: specs/cross-repo.json
+Rules: rules/*.md
+ADR index: decisions/*.md
+CR index: change-requests/*/CR.md
+Traceability requirement: every prose assertion must link to graph node id, rules path, ADR path, or CR path.
+```
+
+Pass these parameters:
+
+```text
+Render README.md and pages 01-14.
+Do not create facts that are absent from graph/cross-repo/rules/ADR/CR.
+Keep 03-interfaces.md ending with a section titled 已知局限.
+Keep 14-diagrams.md as Mermaid placeholder for v2.0.
+Write only wiki/**.
+```
+
+### wiki review
+
+Dispatch a subagent using the `arch-senior-reviewer` agent definition.
+
+```text
+Mode: wiki-full for first run or audience=cto|architect.
+Mode: wiki-lite for daily refresh.
+Input: wiki pages, graph node ids, rules paths, ADR/CR paths.
+Return JSON verdict, findings, overall_score and retry_hints.
+```
+
 ## Engine 调用
 
 确定性渲染入口:

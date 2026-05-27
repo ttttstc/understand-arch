@@ -1,4 +1,3 @@
 # 10 Decisions
 
-暂无 ADR。
-
+暂无。

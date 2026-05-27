@@ -4,7 +4,7 @@
 const fs = require("fs");
 const path = require("path");
 const { parseArgs, readJson, writeJson } = require("./_lib");
-const { replaceSection } = require("./cr-md-editor");
+const { replaceSection, updateFrontmatterBlock } = require("./cr-md-editor");
 
 function readTextArg(args) {
   if (args.text) return args.text;
@@ -104,34 +104,38 @@ function analyzeImpact(workspace, text) {
   };
 }
 
-function sectionContent(result, section) {
-  if (section === 4) {
-    return [
-      "## 影响节点",
-      result.impacted_nodes.length ? result.impacted_nodes.map((node) => `- \`${node.id}\` ${node.name} (${node.type}, score=${node.score})`).join("\n") : "暂无自动命中节点。",
+function sectionContent(result) {
+  const byRepo = new Map();
+  for (const node of result.impacted_nodes) {
+    if (!byRepo.has(node.repo_id)) byRepo.set(node.repo_id, []);
+    byRepo.get(node.repo_id).push(node);
+  }
+  const repoRows = byRepo.size
+    ? [...byRepo.entries()].map(([repo, nodes]) => `| ${repo} | 0 | ${nodes.length} | 0 | ${nodes.filter((node) => node.type === "endpoint").length} | 0 |`).join("\n")
+    : "| 待确认 | 0 | 0 | 0 | 0 | 0 |";
+  return [
+    "### 8.1 跨仓总览",
+    "| 仓 | 新增文件 | 修改文件 | 删除文件 | 新增接口 | 修改接口 |",
+    "|---|---:|---:|---:|---:|---:|",
+    repoRows,
+    "",
+    "### 8.2 仓级改动",
+    byRepo.size ? [...byRepo.entries()].map(([repo, nodes]) => [
+      `#### 仓:${repo}`,
       "",
-      "## 跨仓关联",
-      result.related_cross_edges.length ? result.related_cross_edges.map((edge) => `- \`${edge.source}\` -> \`${edge.target}\` (${edge.type})`).join("\n") : "暂无自动命中的跨仓关联。"
-    ].join("\n");
-  }
-  if (section === 5) {
-    const byRepo = new Map();
-    for (const node of result.impacted_nodes) {
-      if (!byRepo.has(node.repo_id)) byRepo.set(node.repo_id, []);
-      byRepo.get(node.repo_id).push(node);
-    }
-    return byRepo.size ? [...byRepo.entries()].map(([repo, nodes]) => `## ${repo}\n${nodes.map((node) => `- \`${node.id}\` ${node.name}`).join("\n")}`).join("\n\n") : "暂无自动命中仓库或组件。";
-  }
-  if (section === 11) {
-    return [
-      "## Rules findings",
-      result.rules_findings.length ? result.rules_findings.map((finding) => `- \`${finding.rule_path}\` ${finding.statement}`).join("\n") : "未命中 rules/*.md 关键词。",
-      "",
-      "## Known unknowns",
-      result.known_unknowns.length ? result.known_unknowns.map((item) => `- ${item.id}: ${item.statement}`).join("\n") : "暂无。"
-    ].join("\n");
-  }
-  throw new Error(`unsupported impact section ${section}`);
+      "修改节点:",
+      nodes.map((node) => `- \`${node.id}\` ${node.name} (${node.type}, score=${node.score})`).join("\n")
+    ].join("\n")).join("\n\n") : "- 暂无自动命中仓库或组件,需要人工确认影响面。",
+    "",
+    "### 8.3 规则命中",
+    result.rules_findings.length ? result.rules_findings.map((finding) => `- \`${finding.rule_path}\` ${finding.statement}`).join("\n") : "- 未命中 rules/*.md 关键词。",
+    "",
+    "### 8.4 依赖关系",
+    result.related_cross_edges.length ? result.related_cross_edges.map((edge) => `- \`${edge.source}\` -> \`${edge.target}\` (${edge.type})`).join("\n") : "- 暂无自动命中的跨仓关联。",
+    "",
+    "### 8.5 已知未知",
+    result.known_unknowns.length ? result.known_unknowns.map((item) => `- ${item.id}: ${item.statement}`).join("\n") : "- 暂无。"
+  ].join("\n");
 }
 
 function patchCrossRepo(workspace, crId, crDir, result) {
@@ -164,9 +168,15 @@ function main() {
 
   if (args.cr) {
     let markdown = fs.readFileSync(args.cr, "utf8");
-    for (const section of [4, 5, 11]) {
-      markdown = replaceSection(markdown, section, sectionContent(result, section));
-    }
+    markdown = updateFrontmatterBlock(markdown, {
+      impact: {
+        added_nodes: [],
+        modified_nodes: result.impact_node_ids,
+        removed_nodes: [],
+        estimated_files_changed: result.impact_node_ids.length
+      }
+    });
+    markdown = replaceSection(markdown, 8, sectionContent(result));
     fs.writeFileSync(args.cr, markdown);
     if (args["cr-id"]) patchCrossRepo(workspace, args["cr-id"], path.dirname(args.cr), result);
   }
@@ -184,4 +194,3 @@ if (require.main === module) {
     process.exit(1);
   }
 }
-

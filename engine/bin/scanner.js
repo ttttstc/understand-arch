@@ -25,6 +25,13 @@ if (args["fingerprint-check"]) {
     const child = spawnSync(process.execPath, [path.join(__dirname, "analyze-workspace.js"), "--workspace", workspace], {
       stdio: "inherit"
     });
-    process.exitCode = child.status ?? 1;
+    if ((child.status ?? 1) === 0) {
+      const wiki = spawnSync(process.execPath, [path.join(__dirname, "render-wiki.js"), "--workspace", workspace], {
+        stdio: "inherit"
+      });
+      process.exitCode = wiki.status ?? 1;
+    } else {
+      process.exitCode = child.status ?? 1;
+    }
   }
 }

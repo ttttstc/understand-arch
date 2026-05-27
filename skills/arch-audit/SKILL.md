@@ -17,6 +17,40 @@ description: |
 - `--drift`:调度 `arch-analyze --mode=drift-audit`,对比代码事实与 graph。
 - `--repair-suggestion`:只给修复建议,不改事实层。
 
+## Subagent Dispatch 模板
+
+### fingerprint-check
+
+Dispatch a subagent using the `arch-analyze` skill.
+
+```text
+Mode: fingerprint-check
+Workspace: .understand-arch/{project}
+Read specs/repos.yaml and specs/repos/*/.fingerprint.json.
+Do not rewrite knowledge-graph.json.
+Return freshness status per repo.
+```
+
+### drift detail
+
+Dispatch a subagent using the `arch-graph-reviewer` agent definition only when the user selects "查看漂移详情".
+
+```text
+Mode: phase-7-final or drift detail
+Inputs: current graph, fingerprint diff, changed files, state overrides.
+Return degraded/stale findings and retry_hints.
+Do not write graph/wiki/CR/ADR.
+```
+
+### override
+
+```text
+If user chooses override, call state-editor.js override.
+Reason must be at least 20 characters.
+Set state.status=degraded.
+Show override history in the audit report.
+```
+
 ## Engine 调用
 
 ```text

@@ -175,6 +175,9 @@ for (const agent of agentFiles) {
   if (!body.includes("based_on:")) {
     fail(`Agent ${agent} missing based_on frontmatter`);
   }
+  if (body.split(/\r?\n/).length < 100) {
+    fail(`Agent ${agent} must contain a real prompt with at least 100 lines`);
+  }
 }
 
 const rubricFiles = listFiles("internal/rubrics", (name) => name.endsWith(".yaml"));

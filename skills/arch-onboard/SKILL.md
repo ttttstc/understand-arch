@@ -28,6 +28,53 @@ description: |
 6. 调度 `arch-review`:按 onboard acceptance 做结构、语义与 traceability 检查。
 7. 写 `state.yaml` 和 `.metrics.jsonl`,所有用户可见提示使用中文。
 
+## Subagent Dispatch 模板
+
+### arch-analyze
+
+Dispatch a subagent using the `arch-analyze` skill.
+
+Append the following additional context:
+
+```text
+Project: {projectName}
+Workspace: .understand-arch/{project}
+Repos registry: specs/repos.yaml
+Mode: full or targeted-refresh
+Rules directory: rules/
+```
+
+Pass these parameters:
+
+```text
+Run v2.0 Phase 0 Pre-flight, Phase 1 SCAN, Phase 1.5 BATCH, Phase 2 ANALYZE,
+Phase 3 ASSEMBLE, Phase 4 STRUCTURE, Phase 5 DOMAIN, Phase 6 QUALITY,
+Phase 7 REVIEW, and Phase 8 FINALIZE.
+Write specs/repos/{repo_id}/knowledge-graph.json, .fingerprint.json and specs/cross-repo.json.
+Do not write wiki/ directly from arch-analyze.
+```
+
+### arch-wiki
+
+Dispatch a subagent using the `arch-wiki` skill.
+
+```text
+Read graph + rules + ADR + CR.
+Render wiki/README.md and wiki/01-overview.md through wiki/14-diagrams.md.
+Use audience=architect for initial onboard unless user requested another audience.
+Run wiki-review.js --mode full after first generation.
+```
+
+### arch-review
+
+Dispatch a subagent using the `arch-graph-reviewer` agent definition.
+
+```text
+Mode: phase-8-cross-repo
+Review repos.yaml, every repo graph, every fingerprint, cross-repo.json and wiki traceability.
+Return JSON findings and retry_hints.
+```
+
 ## 验收
 
 必须通过 `internal/acceptance/onboard.yaml`:
@@ -41,4 +88,3 @@ description: |
 ## 写权限
 
 见 `internal/tool-contracts/write-scope.yaml#skills.arch-onboard`。本 skill 直接写 `state.yaml`、`specs/repos.yaml`、`.metrics.jsonl`,通过调度间接写 graph 与 wiki。禁止写 `decisions/**`、`change-requests/**`、`rules/**` 的用户已有内容。
-
