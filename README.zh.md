@@ -55,17 +55,18 @@ v2.0 暂为占位实现,图片生成留给 v2.1。当前 wiki 中已包含 Merma
 /reload-plugins
 ```
 
-完成。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 5 个补全:
+完成。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 6 个一级命令:
 
 - `/arch-onboard`
 - `/arch-design`
 - `/arch-audit`
 - `/arch-wiki`
 - `/arch-diagram`
+- `/arch-dashboard`
 
 ### 看不到命令?
 
-1. **是否执行了 `/reload-plugins`?** 没执行 Claude Code 不会扫到新 skill。
+1. **是否执行了 `/reload-plugins`?** 没执行 Claude Code 不会扫到新 command/skill。
 2. **检查插件是否真装上**:`/plugin list` 应能看到 `understand-arch`。
 3. **命令格式**:`/arch-onboard`(短横线连接),**不是** `/arch:onboard`(冒号语法不支持)。
 4. **强制重载**:重启 Claude Code,再 `/reload-plugins`。

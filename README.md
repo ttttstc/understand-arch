@@ -55,17 +55,18 @@ In Claude Code, run:
 /reload-plugins
 ```
 
-That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the five commands appear:
+That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the six top-level commands appear:
 
 - `/arch-onboard`
 - `/arch-design`
 - `/arch-audit`
 - `/arch-wiki`
 - `/arch-diagram`
+- `/arch-dashboard`
 
 ### Don't see the commands?
 
-1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new skills.
+1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new commands/skills.
 2. **Is the plugin installed?** Run `/plugin list` and check for `understand-arch`.
 3. **Command format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
 4. **Force reload**: restart Claude Code, then `/reload-plugins` again.
