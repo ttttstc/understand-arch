@@ -2,9 +2,10 @@
 name: arch-diagram
 description: |
   v2.0 图表入口占位。读取 graph 并说明可生成的 4+1 / C4 视图,但不写任何图像文件。
+argument-hint: ["[--view=logical|process|physical|development|scenarios]"]
 ---
 
-# arch-diagram
+# /arch-diagram
 
 ## 定位
 

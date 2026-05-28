@@ -2,9 +2,10 @@
 name: arch-audit
 description: |
   审视 v2.0 graph 与 wiki 是否仍可信。默认做 freshness 与完整性检查;用户选择后才运行重型 drift audit。
+argument-hint: ["[--drift|--refresh]"]
 ---
 
-# arch-audit
+# /arch-audit
 
 ## 定位
 

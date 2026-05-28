@@ -1,42 +1,17 @@
 {
   "name": "understand-arch",
-  "owner": {
-    "name": "泥巴猪",
-    "email": "423310463@qq.com"
-  },
   "metadata": {
     "description": "面向高级架构师的 Claude Code plugin。v2.0 支持单仓/多仓统一 graph、14 页 wiki、单文件 CR.md 方案设计、append-only ADR 与项目内 rules。",
     "version": "2.0.0-rc1"
   },
+  "owner": {
+    "name": "泥巴猪",
+    "email": "423310463@qq.com"
+  },
   "plugins": [
     {
       "name": "understand-arch",
-      "description": "v2.0 架构师工作流:onboard/design/audit/wiki/diagram 五个用户入口 + analyze/frame/adr/review 四个内部 skill。",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/arch-onboard",
-        "./skills/arch-design",
-        "./skills/arch-audit",
-        "./skills/arch-wiki",
-        "./skills/arch-diagram",
-        "./skills/arch-analyze",
-        "./skills/arch-frame",
-        "./skills/arch-adr",
-        "./skills/arch-review"
-      ],
-      "agents": [
-        "./agents/arch-project-scanner.md",
-        "./agents/arch-file-analyzer.md",
-        "./agents/arch-architecture-analyzer.md",
-        "./agents/arch-domain-analyzer.md",
-        "./agents/arch-quality-analyzer.md",
-        "./agents/arch-graph-reviewer.md",
-        "./agents/arch-impact-analyzer.md",
-        "./agents/arch-solution-designer.md",
-        "./agents/arch-senior-reviewer.md"
-      ],
-      "hooks": "./hooks/hooks.json"
+      "source": "./"
     }
   ]
 }
