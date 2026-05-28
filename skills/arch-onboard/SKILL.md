@@ -1,95 +1,33 @@
 ---
 name: arch-onboard
-description: |
-  建立或刷新 understand-arch v2.0 workspace。扫描单仓或多仓,生成 `.understand-arch/{project}/specs/repos.yaml`,
-  分仓 graph、跨仓 graph 与 14 页 wiki。适用于首次接手业务系统、重建架构基线、刷新多仓架构视图。
-argument-hint: ["[--refresh|--enable-hooks|--repo <id>:<path>]"]
+description: Onboard a single-repo or multi-repo system with the v3.0 pipeline, producing per-repo code graphs, arch-layer.json, wiki, and dashboard inputs.
+argument-hint: ["[project-name] [--repo <path>]..."]
 ---
 
 # /arch-onboard
 
-## 定位
+Run the complete understand-arch v3.0 onboarding flow. Treat single-repo as multi-repo with N=1.
 
-`arch-onboard` 是用户入口 skill,负责把当前业务系统初始化为 v2.0 工作区。它只协调事实层与视图层生成,不写业务代码、不写 IaC、不写 DDL、不写 CI。
+## Contract
 
-## 输入
+- Do not run LLM semantic inference in Node or Python.
+- Dispatch `/arch-analyze` for every repo. That skill owns Phase 0-6 and inherits the UA scanner orchestration.
+- Use `engine/arch/cross-repo-linker.mjs` only for deterministic cross-repo edges.
+- Dispatch `arch-enrich` for Phase 7-12.
+- Fail if any of `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
 
-- 当前目录作为业务系统根目录。
-- 可选 `--project <name>` 指定 `.understand-arch/{project}/` 名称。
-- 可选 `--refresh` 强制重扫。
-- 可选 `--repos <id=path,...>` 跳过交互式多仓发现。
+## Flow
 
-## 工作流
+1. Resolve `PROJECT_ROOT` and `ARCH_PROJECT_ID`.
+2. Create `$PROJECT_ROOT/.understand-arch/$ARCH_PROJECT_ID/specs/repos.json`.
+3. For each repo entry, keep `ARCH_PROJECT_ID=<project-id>`, set `ARCH_REPO_ID=<repo_id>`, and dispatch `arch-analyze` with the repo path.
+4. Run:
 
-1. 工作区准备:在用户项目根目录仅创建 `.understand-arch/` 一个入口目录,并确保 `.understand-arch/.gitignore` 包含 `*/intermediate/` 与 `*/.metrics.jsonl`。
-2. 多仓注册:扫描当前目录及一层子目录的 `.git/`,引导用户确认仓库清单,写 `specs/repos.yaml`。
-3. 规则初始化:从 `templates/rules/` 复制 6 份中文规则模板到 `rules/`,已存在则不覆盖。
-4. 调度 `arch-analyze`:按 repos.yaml 对每仓运行 Phase 0-8,写 `specs/repos/{repo_id}/knowledge-graph.json`、`.fingerprint.json` 与 `specs/cross-repo.json`。
-5. 调度 `arch-wiki`:基于 graph 与 rules 生成 `wiki/README.md` + 14 页。
-6. 调度 `arch-review`:按 onboard acceptance 做结构、语义与 traceability 检查。
-7. 写 `state.yaml` 和 `.metrics.jsonl`,所有用户可见提示使用中文。
+   ```bash
+   ARCH_PROJECT_ROOT="$PROJECT_ROOT/.understand-arch/$ARCH_PROJECT_ID" \
+     node <PLUGIN_ROOT>/engine/arch/cross-repo-linker.mjs "$PROJECT_ROOT"
+   ```
 
-## Subagent Dispatch 模板
-
-### arch-analyze
-
-Dispatch a subagent using the `arch-analyze` skill.
-
-Append the following additional context:
-
-```text
-Project: {projectName}
-Workspace: .understand-arch/{project}
-Repos registry: specs/repos.yaml
-Mode: full or targeted-refresh
-Rules directory: rules/
-```
-
-Pass these parameters:
-
-```text
-Run v2.0 Phase 0 Pre-flight, Phase 1 SCAN, Phase 1.5 BATCH, Phase 2 ANALYZE,
-Phase 3 ASSEMBLE, Phase 4 STRUCTURE, Phase 5 DOMAIN, Phase 6 QUALITY,
-Phase 7 REVIEW, and Phase 8 FINALIZE.
-Write specs/repos/{repo_id}/knowledge-graph.json, .fingerprint.json and specs/cross-repo.json.
-Do not write wiki/ directly from arch-analyze.
-```
-
-### arch-wiki
-
-Dispatch a subagent using the `arch-wiki` skill.
-
-```text
-Read graph + rules + ADR + CR.
-Render wiki/README.md and wiki/01-overview.md through wiki/14-diagrams.md.
-Use audience=architect for initial onboard unless user requested another audience.
-Run wiki-review.js --mode full after first generation.
-```
-
-### arch-review
-
-Dispatch a subagent using the `arch-graph-reviewer` agent definition.
-
-```text
-Mode: phase-8-cross-repo
-Review repos.yaml, every repo graph, every fingerprint, cross-repo.json and wiki traceability.
-Return JSON findings and retry_hints.
-```
-
-## 验收
-
-必须通过 `internal/acceptance/onboard.yaml`:
-
-- `repos.yaml` 存在且至少 1 个 repo。
-- 每个 repo 都有 `specs/repos/{repo_id}/knowledge-graph.json` 与 `.fingerprint.json`。
-- `specs/cross-repo.json` 存在。
-- wiki 14 页全部生成,且结论可回链 graph node id 或 rules path。
-- 没有写出 `.understand-arch/` 以外的架构资产。
-
-## References
-
-- `references/onboarding-flow.md`:多仓发现、rules 初始化、首次扫描和中文交互模板。
-
-## 写权限
-
-见 `internal/tool-contracts/write-scope.yaml#skills.arch-onboard`。本 skill 直接写 `state.yaml`、`specs/repos.yaml`、`.metrics.jsonl`,通过调度间接写 graph 与 wiki。禁止写 `decisions/**`、`change-requests/**`、`rules/**` 的用户已有内容。
+5. Dispatch `arch-enrich` with graph paths and cross-edge output.
+6. Dispatch `arch-wiki` to render the 14-page wiki.
+7. Tell the user where the outputs landed.

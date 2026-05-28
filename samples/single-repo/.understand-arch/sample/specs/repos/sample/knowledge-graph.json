@@ -1,0 +1,66 @@
+{
+  "version": "3.0",
+  "kind": "codebase",
+  "project": {
+    "name": "sample",
+    "languages": ["TypeScript"],
+    "frameworks": [],
+    "description": "Tiny sample order service.",
+    "analyzedAt": "2026-05-28T00:00:00.000Z",
+    "gitCommitHash": "sample"
+  },
+  "nodes": [
+    {
+      "id": "sample::file:src/app.ts",
+      "type": "file",
+      "name": "app.ts",
+      "filePath": "src/app.ts",
+      "summary": "Application entry point.",
+      "tags": ["entry"],
+      "complexity": "simple"
+    },
+    {
+      "id": "sample::module:orders",
+      "type": "module",
+      "name": "orders",
+      "filePath": "src/orders.ts",
+      "summary": "Order creation module.",
+      "tags": ["orders"],
+      "complexity": "simple"
+    },
+    {
+      "id": "sample::function:src/orders.ts:createOrder",
+      "type": "function",
+      "name": "createOrder",
+      "filePath": "src/orders.ts",
+      "summary": "Creates an order identifier for a user.",
+      "tags": ["orders"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "sample::file:src/app.ts",
+      "target": "sample::module:orders",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.9
+    },
+    {
+      "source": "sample::module:orders",
+      "target": "sample::function:src/orders.ts:createOrder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    }
+  ],
+  "layers": [
+    {
+      "id": "application",
+      "name": "Application",
+      "description": "Entry and domain logic.",
+      "nodeIds": ["sample::file:src/app.ts", "sample::module:orders"]
+    }
+  ],
+  "tour": []
+}

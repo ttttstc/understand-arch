@@ -1,11 +1,5 @@
-# 依赖补充
+# Dependency Rules
 
-## 目的
-
-记录扫描器无法可靠推断、但架构设计必须知道的人工依赖事实。
-
-## 示例
-
-- `web` 依赖 `api` 的用户鉴权接口。
-- `api` 通过消息队列异步通知 `worker`。
-
+- Record externally visible service, package, schema, and event dependencies.
+- Treat cross-repo dependencies as architecture-layer `cross_edges`; do not collapse them with UA graph merge.
+- Cite evidence for each dependency rule violation.

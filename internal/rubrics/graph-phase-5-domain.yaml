@@ -1,6 +1,0 @@
-phase: 5
-name: graph-phase-5-domain
-checks:
-  - id: capability-evidence
-    pass: "capabilities 有 supporting_node_ids、confidence、evidence_refs"
-

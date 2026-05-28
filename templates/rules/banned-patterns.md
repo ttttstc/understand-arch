@@ -1,12 +1,5 @@
-# 禁用模式
+# Banned Pattern Rules
 
-## 目的
-
-记录本业务系统不允许出现的架构与实现模式。
-
-## 规则
-
-- 禁止绕过已定义的服务边界直接访问其它仓的数据存储。
-- 禁止在没有 ADR 或 CR 记录的情况下引入新的跨仓同步依赖。
-- 禁止把临时脚本升级为生产链路入口。
-
+- Do not approve changes that introduce hidden cross-repo coupling without an explicit cross edge.
+- Do not accept architecture wiki pages that contain placeholders or generic filler.
+- Do not mark hook-triggered updates fresh when validation gates failed.

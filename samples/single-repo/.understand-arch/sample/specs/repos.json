@@ -1,0 +1,11 @@
+{
+  "repos": [
+    {
+      "repo_id": "sample",
+      "name": "sample",
+      "path": ".",
+      "graph_path": ".understand-arch/sample/specs/repos/sample/knowledge-graph.json",
+      "fingerprint_path": ".understand-arch/sample/specs/repos/sample/.fingerprint.json"
+    }
+  ]
+}

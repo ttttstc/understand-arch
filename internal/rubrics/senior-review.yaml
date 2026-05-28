@@ -1,0 +1,12 @@
+name: senior-review
+version: 3.0
+must_reject:
+  - empty architecture layer after onboard
+  - CR review that only validates markdown shape
+  - wiki pages with placeholder text
+  - graph output with only file/function nodes when module/service boundaries are evident
+scoring:
+  findings_are_actionable: 0.35
+  evidence_is_cited: 0.25
+  risk_reasoning_is_specific: 0.20
+  retry_hints_are_concrete: 0.20

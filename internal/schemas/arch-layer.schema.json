@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.local/schemas/arch-layer.schema.json",
+  "title": "understand-arch v3.0 architecture layer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "project",
+    "cross_edges",
+    "capabilities",
+    "quality_attributes",
+    "risks",
+    "technical_debt",
+    "architecture_decisions",
+    "change_requests",
+    "traceability",
+    "known_unknowns",
+    "freshness"
+  ],
+  "properties": {
+    "version": { "const": "3.0" },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "repos", "analyzed_at"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "analyzed_at": { "type": "string", "minLength": 1 },
+        "repos": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/repoMeta" }
+        }
+      }
+    },
+    "cross_edges": { "type": "array", "items": { "$ref": "#/$defs/crossEdge" } },
+    "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } },
+    "quality_attributes": { "type": "array", "items": { "$ref": "#/$defs/qualityAttribute" } },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/risk" } },
+    "technical_debt": { "type": "array", "items": { "$ref": "#/$defs/technicalDebt" } },
+    "architecture_decisions": { "type": "array", "items": { "$ref": "#/$defs/adrRef" } },
+    "change_requests": { "type": "array", "items": { "$ref": "#/$defs/crRef" } },
+    "traceability": { "type": "array", "items": { "$ref": "#/$defs/traceLink" } },
+    "known_unknowns": { "type": "array", "items": { "$ref": "#/$defs/knownUnknown" } },
+    "tour": { "type": "array", "items": { "$ref": "#/$defs/tourStep" }, "default": [] },
+    "freshness": { "$ref": "#/$defs/freshness" }
+  },
+  "$defs": {
+    "confidence": { "enum": ["low", "medium", "high"] },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "repoMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_id", "name", "path", "graph_path"],
+      "properties": {
+        "repo_id": { "type": "string", "pattern": "^[a-zA-Z0-9_.-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "graph_path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "crossEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "target", "type", "cross_repo", "evidence_refs", "confidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["imports", "calls", "publishes", "subscribes", "depends_on", "shares_schema", "serves", "documents", "unknown"] },
+        "cross_repo": { "const": true },
+        "description": { "type": "string" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description", "maturity", "importance", "supporting_node_ids", "gaps", "confidence", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "maturity": { "enum": ["nascent", "growing", "stable", "optimized", "legacy"] },
+        "importance": { "enum": ["low", "medium", "high", "critical"] },
+        "supporting_node_ids": { "type": "array", "items": { "type": "string" } },
+        "gaps": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "qualityAttribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "description", "status", "node_ids", "confidence", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["performance", "security", "reliability", "scalability", "maintainability", "observability", "cost", "compliance"] },
+        "description": { "type": "string" },
+        "status": { "enum": ["strong", "adequate", "weak", "unknown"] },
+        "node_ids": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "category", "severity", "likelihood", "node_ids", "mitigation", "confidence", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["architecture", "security", "operations", "delivery", "compliance"] },
+        "severity": { "enum": ["low", "medium", "high", "critical"] },
+        "likelihood": { "enum": ["low", "medium", "high"] },
+        "node_ids": { "type": "array", "items": { "type": "string" } },
+        "mitigation": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "technicalDebt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "category", "severity", "node_ids", "recommendation", "confidence", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["coupling", "complexity", "duplication", "obsolete_dependency", "missing_test"] },
+        "severity": { "enum": ["low", "medium", "high", "critical"] },
+        "node_ids": { "type": "array", "items": { "type": "string" } },
+        "recommendation": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    },
+    "adrRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "path", "status", "node_ids"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "path": { "type": "string" },
+        "status": { "enum": ["proposed", "accepted", "deprecated", "superseded"] },
+        "node_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "crRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "path", "status", "node_ids"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "path": { "type": "string" },
+        "status": { "enum": ["draft", "review", "approved", "rejected", "implemented"] },
+        "node_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "traceLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "type"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "type": { "enum": ["supports", "impacts", "decides", "mitigates", "documents"] }
+      }
+    },
+    "knownUnknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "reason", "owner", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "reason": { "type": "string" },
+        "owner": { "type": "string" },
+        "status": { "enum": ["open", "investigating", "closed"] }
+      }
+    },
+    "tourStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "title", "description", "nodeIds"],
+      "properties": {
+        "order": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "nodeIds": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_at", "repos"],
+      "properties": {
+        "generated_at": { "type": "string" },
+        "repos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo_id", "fingerprint_path"],
+            "properties": {
+              "repo_id": { "type": "string" },
+              "fingerprint_path": { "type": "string" },
+              "git_commit": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

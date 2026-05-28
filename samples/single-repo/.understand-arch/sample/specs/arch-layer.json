@@ -1,0 +1,103 @@
+{
+  "version": "3.0",
+  "project": {
+    "name": "sample",
+    "description": "",
+    "analyzed_at": "2026-05-28T05:37:41.081Z",
+    "repos": [
+      {
+        "repo_id": "sample",
+        "name": "sample",
+        "path": "D:\\AI\\workspace\\understand-arch\\samples\\single-repo",
+        "graph_path": "D:\\AI\\workspace\\understand-arch\\samples\\single-repo\\.understand-arch\\sample\\specs\\repos\\sample\\knowledge-graph.json"
+      }
+    ]
+  },
+  "cross_edges": [],
+  "capabilities": [
+    {
+      "id": "order-creation",
+      "name": "Order Creation",
+      "description": "Creates an order identifier through the application entry point and orders module.",
+      "maturity": "nascent",
+      "importance": "high",
+      "supporting_node_ids": [
+        "sample::file:src/app.ts",
+        "sample::module:orders",
+        "sample::function:src/orders.ts:createOrder"
+      ],
+      "gaps": [
+        "No persistence, idempotency, or validation is visible in the sample graph."
+      ],
+      "confidence": "high",
+      "evidence_refs": [
+        "sample::module:orders",
+        "sample::function:src/orders.ts:createOrder"
+      ]
+    }
+  ],
+  "quality_attributes": [
+    {
+      "id": "maintainability-simple-boundary",
+      "type": "maintainability",
+      "description": "The sample has a small entry point and a separated orders module.",
+      "status": "adequate",
+      "node_ids": [
+        "sample::file:src/app.ts",
+        "sample::module:orders"
+      ],
+      "confidence": "medium",
+      "evidence_refs": [
+        "sample::file:src/app.ts",
+        "sample::module:orders"
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-no-order-validation",
+      "title": "Order creation has no visible validation",
+      "category": "architecture",
+      "severity": "medium",
+      "likelihood": "medium",
+      "node_ids": [
+        "sample::function:src/orders.ts:createOrder"
+      ],
+      "mitigation": "Add input validation and idempotency behavior before using this path as a production order flow.",
+      "confidence": "medium",
+      "evidence_refs": [
+        "sample::function:src/orders.ts:createOrder"
+      ]
+    }
+  ],
+  "technical_debt": [
+    {
+      "id": "debt-no-tests",
+      "title": "No sample tests are present",
+      "category": "missing_test",
+      "severity": "low",
+      "node_ids": [
+        "sample::module:orders"
+      ],
+      "recommendation": "Add a unit test around createOrder before expanding the sample.",
+      "confidence": "medium",
+      "evidence_refs": [
+        "sample::module:orders"
+      ]
+    }
+  ],
+  "architecture_decisions": [],
+  "change_requests": [],
+  "traceability": [],
+  "known_unknowns": [],
+  "tour": [],
+  "freshness": {
+    "generated_at": "2026-05-28T05:37:41.081Z",
+    "repos": [
+      {
+        "repo_id": "sample",
+        "fingerprint_path": "D:\\AI\\workspace\\understand-arch\\samples\\single-repo\\.understand-arch\\sample\\specs\\repos\\sample\\.fingerprint.json"
+      }
+    ]
+  }
+}

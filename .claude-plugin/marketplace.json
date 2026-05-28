@@ -1,17 +1,5 @@
 {
   "name": "understand-arch",
-  "metadata": {
-    "description": "面向高级架构师的 Claude Code plugin。v2.0 支持单仓/多仓统一 graph、14 页 wiki、单文件 CR.md 方案设计、append-only ADR 与项目内 rules。",
-    "version": "2.0.0-rc1"
-  },
-  "owner": {
-    "name": "泥巴猪",
-    "email": "423310463@qq.com"
-  },
-  "plugins": [
-    {
-      "name": "understand-arch",
-      "source": "./"
-    }
-  ]
+  "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
+  "version": "3.0.0-rc1"
 }
