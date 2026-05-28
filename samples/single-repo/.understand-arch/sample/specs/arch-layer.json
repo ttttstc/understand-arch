@@ -13,6 +13,55 @@
       }
     ]
   },
+  "architecture_style": {
+    "primary": "layered",
+    "secondary": ["modular-monolith"],
+    "rationale": "The sample separates a small application entry point from the orders module, so the most honest style judgement is a tiny layered modular structure rather than a service architecture.",
+    "tradeoffs": ["Simple to read and change, but not yet representative of production deployment or persistence boundaries."],
+    "confidence": "medium",
+    "evidence_refs": ["sample::file:src/app.ts", "sample::module:orders"]
+  },
+  "component_profiles": [
+    {
+      "id": "component:orders",
+      "name": "Orders Module",
+      "role": "domain",
+      "responsibilities": ["Create an order identifier for a user-facing order flow."],
+      "collaborators": ["sample::file:src/app.ts"],
+      "complexity": "low",
+      "change_risk": "medium",
+      "narrative": "The orders module is the only visible domain component. It owns order creation behavior, and changes here affect the sample's core capability even though the implementation is intentionally small.",
+      "node_ids": ["sample::module:orders", "sample::function:src/orders.ts:createOrder"],
+      "confidence": "high",
+      "evidence_refs": ["sample::module:orders", "sample::function:src/orders.ts:createOrder"]
+    }
+  ],
+  "tech_stack": [
+    {
+      "id": "tech:typescript",
+      "name": "TypeScript",
+      "category": "language",
+      "purpose": "Implements the sample application and orders module.",
+      "selection_rationale": "The graph identifies TypeScript source files as the implementation surface.",
+      "risks": ["The sample is too small to infer runtime or framework constraints."],
+      "node_ids": ["sample::file:src/app.ts", "sample::module:orders"],
+      "confidence": "high",
+      "evidence_refs": ["sample::file:src/app.ts", "sample::module:orders"]
+    }
+  ],
+  "external_dependencies": [],
+  "boundaries": [
+    {
+      "id": "boundary:sample-repo",
+      "name": "Sample Repository Boundary",
+      "kind": "repo",
+      "description": "All identified code facts live inside the single sample repository.",
+      "inside_node_ids": ["sample::file:src/app.ts", "sample::module:orders"],
+      "outside": ["No external repos identified"],
+      "confidence": "high",
+      "evidence_refs": ["sample::file:src/app.ts", "sample::module:orders"]
+    }
+  ],
   "cross_edges": [],
   "capabilities": [
     {
@@ -36,6 +85,29 @@
       ]
     }
   ],
+  "flows": [
+    {
+      "id": "flow:create-order",
+      "name": "Create Order",
+      "trigger": "Application entry point invokes order creation.",
+      "steps": [
+        {
+          "order": 1,
+          "description": "The application entry point imports the orders module.",
+          "node_ids": ["sample::file:src/app.ts", "sample::module:orders"]
+        },
+        {
+          "order": 2,
+          "description": "The orders module contains createOrder, which creates an order identifier.",
+          "node_ids": ["sample::module:orders", "sample::function:src/orders.ts:createOrder"]
+        }
+      ],
+      "outcome": "A user-specific order identifier is produced.",
+      "node_ids": ["sample::file:src/app.ts", "sample::module:orders", "sample::function:src/orders.ts:createOrder"],
+      "confidence": "high",
+      "evidence_refs": ["sample::file:src/app.ts", "sample::module:orders", "sample::function:src/orders.ts:createOrder"]
+    }
+  ],
   "quality_attributes": [
     {
       "id": "maintainability-simple-boundary",
@@ -51,6 +123,30 @@
         "sample::file:src/app.ts",
         "sample::module:orders"
       ]
+    }
+  ],
+  "complexity_hotspots": [
+    {
+      "id": "hotspot:orders-core-flow",
+      "title": "Orders module is the core sample flow",
+      "type": "critical-flow",
+      "severity": "medium",
+      "why_it_matters": "The only visible capability depends on the orders module, so future sample expansion will concentrate change there.",
+      "node_ids": ["sample::module:orders"],
+      "confidence": "medium",
+      "evidence_refs": ["sample::module:orders"]
+    }
+  ],
+  "extension_constraints": [
+    {
+      "id": "constraint:no-persistence-boundary",
+      "title": "No persistence boundary is visible",
+      "constraint_type": "data-model",
+      "impact": "medium",
+      "recommendation": "Introduce a clear data model before treating order creation as production architecture.",
+      "node_ids": ["sample::function:src/orders.ts:createOrder"],
+      "confidence": "medium",
+      "evidence_refs": ["sample::function:src/orders.ts:createOrder"]
     }
   ],
   "risks": [
@@ -90,7 +186,20 @@
   "change_requests": [],
   "traceability": [],
   "known_unknowns": [],
-  "tour": [],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Understand the sample entry point",
+      "description": "Start at app.ts to see how the tiny sample invokes the order creation module.",
+      "nodeIds": ["sample::file:src/app.ts", "component:orders"]
+    },
+    {
+      "order": 2,
+      "title": "Inspect the order creation capability",
+      "description": "Move to the orders module and createOrder function, which carry the only visible business capability.",
+      "nodeIds": ["sample::module:orders", "sample::function:src/orders.ts:createOrder", "flow:create-order"]
+    }
+  ],
   "freshness": {
     "generated_at": "2026-05-28T05:37:41.081Z",
     "repos": [

@@ -53,9 +53,13 @@ node <PLUGIN_ROOT>/engine/arch/arch-layer-writer.mjs validate "<workspace-root>"
 
 Also check:
 
+- architecture_style present with confidence/evidence_refs
+- component_profiles non-empty
 - capabilities non-empty
+- flows projected when present
 - quality_attributes non-empty
 - risks non-empty
+- complexity_hotspots and extension_constraints have confidence/evidence_refs when present
 - evidence_refs present
 - confidence present
 - node ids resolve to repo graphs

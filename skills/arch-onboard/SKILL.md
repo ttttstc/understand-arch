@@ -13,9 +13,10 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 - Dispatch `/arch-analyze` for every repo. That skill owns Phase 0-6 and inherits the UA scanner orchestration.
 - Keep each repo graph independent at `specs/repos/<repo_id>/knowledge-graph.json`.
 - Use `engine/arch/cross-repo-linker.mjs` only for deterministic cross-repo edges.
-- Dispatch `arch-enrich` for Phase 7-12.
-- Dispatch `arch-wiki` for the 14-page human projection.
-- Fail if any of `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
+- Dispatch `arch-enrich` for Phase 7-13.
+- Dispatch `arch-wiki` for `ARCHITECTURE.md` plus the 14-page human projection.
+- Fail if any of `arch-layer.architecture_style`, `arch-layer.component_profiles`, `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
+- Write `eval-report.json` and include its trust label in the final report.
 - Hooks are disabled unless the user passes `--enable-hooks`.
 
 ## Resolve Project
@@ -116,7 +117,7 @@ Run arch-enrich for <ARCH_PROJECT_ROOT>.
 Use specs/repos.json and every per-repo graph.
 Consume intermediate/cross-edges.json.
 Produce specs/arch-layer.json.
-Reject empty capabilities, quality_attributes, or risks.
+Reject empty narrative fields, capabilities, quality_attributes, or risks.
 ```
 
 ## Phase D - Wiki
@@ -124,18 +125,28 @@ Reject empty capabilities, quality_attributes, or risks.
 Dispatch `/arch-wiki`:
 
 ```text
-Render the 14-page wiki for <ARCH_PROJECT_ROOT>.
+Render ARCHITECTURE.md plus the 14-page wiki for <ARCH_PROJECT_ROOT>.
 Audience: newcomer unless the user requested another audience.
 Run wiki-reviewer and arch-senior-reviewer for full review on first onboard.
 ```
 
-## Phase E - Dashboard Readiness
+## Phase E - Eval And Dashboard Readiness
+
+Run:
+
+```bash
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "$ARCH_PROJECT_ROOT"
+```
+
+Fail if `eval-report.metrics.hallucination_rate` is greater than 0.
 
 Validate that dashboard inputs exist:
 
 - `specs/repos.json`
 - at least one `specs/repos/<repo_id>/knowledge-graph.json`
 - `specs/arch-layer.json`
+- `eval-report.json`
+- `wiki/ARCHITECTURE.md`
 - `wiki/README.md`
 
 Tell the user they can run `/arch-dashboard <ARCH_PROJECT_ROOT>`.
@@ -148,7 +159,9 @@ Report:
 - repos scanned
 - graph node/edge counts per repo
 - architecture layer counts
+- narrative field counts
 - wiki page count
+- eval trust label and hallucination rate
 - hook status
 - paths to outputs
 - any validation findings
@@ -157,6 +170,8 @@ Report:
 
 - Missing graph: fail onboard.
 - Empty architecture layer: fail onboard.
+- Empty narrative layer: fail onboard.
+- Eval hallucination_rate greater than 0: fail onboard.
 - Wiki placeholder found: fail onboard.
 - Senior reviewer reject: fail onboard.
 - Unknown repo path: fail before dispatching.

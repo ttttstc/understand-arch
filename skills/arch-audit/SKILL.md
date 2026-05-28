@@ -6,7 +6,7 @@ argument-hint: ["[arch-project-dir] [--full]"]
 
 # /arch-audit
 
-Use this when the user asks whether the architecture baseline is trustworthy. The audit checks code graph freshness, architecture-layer completeness, wiki projection, dashboard readiness, rules/ADR consistency, and CR review quality.
+Use this when the user asks whether the architecture baseline is trustworthy. The audit checks code graph freshness, architecture-layer completeness, wiki projection, eval-report trust signals, dashboard readiness, rules/ADR consistency, and CR review quality.
 
 ## Inputs
 
@@ -15,6 +15,7 @@ Use this when the user asks whether the architecture baseline is trustworthy. Th
 - `specs/arch-layer.json`
 - `specs/freshness.json`
 - wiki pages
+- `eval-report.json`
 - rules, ADRs, CRs
 
 ## Deterministic Checks
@@ -38,12 +39,18 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/arch-laye
 node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-5. Check dashboard inputs:
+5. Regenerate first-layer eval:
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "<ARCH_PROJECT_ROOT>"
+```
+
+6. Check dashboard inputs:
    - at least one repo graph exists
    - `specs/arch-layer.json` exists
    - dashboard can be pointed at `ARCH_PROJECT_ROOT`
 
-6. Scan CRs:
+7. Scan CRs:
    - all CR.md files have 14 headings
    - section 14 exists
    - placeholders are absent
@@ -57,7 +64,7 @@ Mode: audit.
 Project: <ARCH_PROJECT_ROOT>
 Deterministic checks: <paste summary JSON>.
 Review whether the baseline can be trusted.
-Focus on freshness, drift, graph/module coverage, arch-layer evidence, wiki projection, and CR review quality.
+Focus on freshness, drift, graph/module coverage, arch-layer evidence, wiki projection, eval hallucination rate, and CR review quality.
 Return JSON only with verdict, findings, retry_hints, and summary.
 ```
 
@@ -77,6 +84,7 @@ The markdown report must include:
 - graph coverage status
 - architecture-layer status
 - wiki projection status
+- eval trust label, evidence closure rate, hallucination rate, coverage, consistency, and information density
 - dashboard readiness
 - CR/ADR/rules status
 - findings ordered by severity
@@ -93,5 +101,7 @@ The markdown report must include:
 - Missing baseline: ask for `/arch-onboard`.
 - Missing graph: fail.
 - Empty capabilities/quality/risk: fail.
+- Empty narrative fields: fail.
 - Wiki placeholders: fail.
+- Eval hallucination_rate greater than 0: fail.
 - Stale fingerprint with source changes: fail.

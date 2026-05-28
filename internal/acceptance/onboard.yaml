@@ -3,6 +3,8 @@ version: 3.0
 required_outputs:
   - specs/repos.json
   - specs/arch-layer.json
+  - eval-report.json
+  - wiki/ARCHITECTURE.md
   - wiki/01-overview.md
   - wiki/14-diagrams.md
 gates:
@@ -11,7 +13,10 @@ gates:
     check: every registered repo graph contains at least one module or service node
   - id: arch-layer-non-empty
     severity: fail
-    check: capabilities, quality_attributes, and risks must each contain at least one evidence-backed item
+    check: architecture_style, component_profiles, capabilities, quality_attributes, and risks must each contain at least one evidence-backed item
+  - id: eval-trustworthy
+    severity: fail
+    check: eval-report exists with hallucination_rate = 0 and trust_label not low
   - id: wiki-no-placeholders
     severity: fail
     check: wiki-projection-check must find no placeholder tokens

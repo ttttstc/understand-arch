@@ -1,5 +1,11 @@
 # Capabilities
 
-## Order Creation
+> 生成时间:2026-05-28T15:22:09.394Z  ·  基于 commit:6ea05653a7f15c99c9d3f55cf696d8c9a61b770e  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
-Creates an order identifier through the application entry point and orders module.
+## 能力地图
+
+- **Order Creation** (nascent, high)：Creates an order identifier through the application entry point and orders module. 缺口：No persistence, idempotency, or validation is visible in the sample graph.。 [evidence: sample::module:orders, sample::function:src/orders.ts:createOrder]
+
+## 能力链路
+
+- **Create Order**：触发条件是 Application entry point invokes order creation.，结果是 A user-specific order identifier is produced.。链路：1. The application entry point imports the orders module. (sample::file:src/app.ts, sample::module:orders) 2. The orders module contains createOrder, which creates an order identifier. (sample::module:orders, sample::function:src/orders.ts:createOrder) [evidence: sample::file:src/app.ts, sample::module:orders, sample::function:src/orders.ts:createOrder]

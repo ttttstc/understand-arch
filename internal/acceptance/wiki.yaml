@@ -1,6 +1,7 @@
 name: wiki
 version: 3.0
 pages:
+  - ARCHITECTURE.md
   - 01-overview.md
   - 02-components.md
   - 03-interfaces.md
@@ -16,12 +17,24 @@ pages:
   - 13-pending-changes.md
   - 14-diagrams.md
 gates:
+  - id: long-form-primary
+    severity: fail
+    check: ARCHITECTURE.md exists and contains executive summary, system shape, technology, capabilities, flows, risks, decisions, and unknowns
+  - id: timestamp-present
+    severity: fail
+    check: every wiki page has generation time, base commit, and source line
   - id: projection-complete
     severity: fail
-    check: non-empty arch-layer sections must be covered by their mapped wiki pages
+    check: non-empty arch-layer sections including narrative fields, flows, hotspots, and constraints must be covered by their mapped wiki pages
   - id: no-placeholders
     severity: fail
     check: no TODO, TBD, FIXME, placeholder, lorem ipsum, 待补充, or 占位 text
+  - id: three-state-honesty
+    severity: fail
+    check: present facts are projected, absent facts are honestly declared absent, and uncertain facts are represented as known_unknowns
   - id: evidence-visible
     severity: warn
-    check: capability, quality, and risk pages cite graph node ids or source paths
+    check: architecture judgements cite graph node ids, arch-layer ids, ADR/CR ids, rule paths, or source paths
+  - id: senior-q1-q7
+    severity: fail
+    check: full wiki review applies Q1 information density, Q2 decision support, Q3 coherence, Q4 evidence, Q5 insight depth, Q6 no hallucination, and Q7 audience fit

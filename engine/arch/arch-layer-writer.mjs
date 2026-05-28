@@ -25,6 +25,21 @@ function emptyLayer() {
         },
       ],
     },
+    architecture_style: {
+      primary: "unknown",
+      secondary: [],
+      rationale: "Architecture style has not been inferred yet.",
+      tradeoffs: [],
+      confidence: "low",
+      evidence_refs: [`repo:${projectId}`],
+    },
+    component_profiles: [],
+    tech_stack: [],
+    flows: [],
+    complexity_hotspots: [],
+    extension_constraints: [],
+    external_dependencies: [],
+    boundaries: [],
     cross_edges: [],
     capabilities: [],
     quality_attributes: [],
@@ -60,6 +75,13 @@ function validateShape(layer) {
   if (layer.version !== "3.0") throw new Error('version must be "3.0"');
   if (!layer.project || typeof layer.project !== "object") throw new Error("project is required");
   for (const key of [
+    "component_profiles",
+    "tech_stack",
+    "flows",
+    "complexity_hotspots",
+    "extension_constraints",
+    "external_dependencies",
+    "boundaries",
     "cross_edges",
     "capabilities",
     "quality_attributes",
@@ -72,22 +94,38 @@ function validateShape(layer) {
   ]) {
     requireArray(layer, key);
   }
+  if (!layer.architecture_style || typeof layer.architecture_style !== "object") {
+    throw new Error("architecture_style is required");
+  }
+  requireInference(layer.architecture_style, "architecture_style");
   for (const capability of layer.capabilities) {
-    if (!capability.confidence || !Array.isArray(capability.evidence_refs) || capability.evidence_refs.length === 0) {
-      throw new Error(`capability ${capability.id || capability.name || "<unknown>"} missing confidence/evidence_refs`);
-    }
+    requireInference(capability, `capability ${capability.id || capability.name || "<unknown>"}`);
   }
   for (const risk of layer.risks) {
-    if (!risk.confidence || !Array.isArray(risk.evidence_refs) || risk.evidence_refs.length === 0) {
-      throw new Error(`risk ${risk.id || risk.title || "<unknown>"} missing confidence/evidence_refs`);
-    }
+    requireInference(risk, `risk ${risk.id || risk.title || "<unknown>"}`);
   }
   for (const qa of layer.quality_attributes) {
-    if (!qa.confidence || !Array.isArray(qa.evidence_refs) || qa.evidence_refs.length === 0) {
-      throw new Error(`quality attribute ${qa.id || qa.type || "<unknown>"} missing confidence/evidence_refs`);
-    }
+    requireInference(qa, `quality attribute ${qa.id || qa.type || "<unknown>"}`);
+  }
+  for (const key of [
+    "component_profiles",
+    "tech_stack",
+    "flows",
+    "complexity_hotspots",
+    "extension_constraints",
+    "external_dependencies",
+    "boundaries",
+    "technical_debt",
+  ]) {
+    for (const item of layer[key]) requireInference(item, `${key} ${item.id || item.name || item.title || "<unknown>"}`);
   }
   return layer;
+}
+
+function requireInference(item, label) {
+  if (!item.confidence || !Array.isArray(item.evidence_refs) || item.evidence_refs.length === 0) {
+    throw new Error(`${label} missing confidence/evidence_refs`);
+  }
 }
 
 function writeLayer(layer) {
@@ -112,6 +150,8 @@ if (command === "init") {
       const byId = new Map(layer[key].map((item) => [item.id || JSON.stringify(item), item]));
       for (const item of patch[key]) byId.set(item.id || JSON.stringify(item), item);
       layer[key] = [...byId.values()];
+    } else if (key === "architecture_style" && patch[key] && typeof patch[key] === "object") {
+      layer[key] = { ...layer[key], ...patch[key] };
     } else if (key === "project" || key === "freshness") {
       layer[key] = { ...layer[key], ...patch[key] };
     }

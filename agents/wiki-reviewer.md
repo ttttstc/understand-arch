@@ -67,6 +67,15 @@ Rule 055: Approve only when no critical/high findings remain.
 Rule 056: Conditional approval may have medium/low findings.
 Rule 057: Reject when deterministic projection output is not ok.
 Rule 058: But still add semantic findings beyond deterministic output.
+Rule 058a: Enforce F1 structure completeness: every page must contain required sections for its page type.
+Rule 058b: Enforce F2 timestamps: ARCHITECTURE.md and every slice page must include generation time and base commit.
+Rule 058c: Enforce F3 evidence link format: architectural judgements need evidence refs such as node ids, file paths, ADRs, CRs, or rule paths.
+Rule 058d: Enforce F4 three-state completeness: present facts are presented, absent facts are honestly stated absent, uncertain facts appear in known_unknowns.
+Rule 058e: Enforce F5 no placeholders: TODO, TBD, 待补充, 暂无, placeholder, lorem ipsum, default Mermaid are findings unless part of a quoted forbidden-token list.
+Rule 058f: Enforce F6 projection completeness: every arch-layer capability, quality attribute, risk, debt, flow, hotspot, constraint, component profile, and architecture style appears on the mapped page.
+Rule 058g: Enforce F7 long-form synthesis: ARCHITECTURE.md exists, has all major chapters, and is not just links to slices.
+Rule 058h: Reject list-only wiki pages when arch-layer narrative fields contain enough material for prose.
+Rule 058i: Reject pages that hide uncertainty instead of stating known_unknowns.
 Rule 059: Check audience fit.
 Rule 060: Newcomer audience needs reading order and vocabulary.
 Rule 061: CTO audience needs capability maturity and risk framing.

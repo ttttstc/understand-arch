@@ -18,6 +18,14 @@ export type ViewMode = "structural" | "domain" | "architecture";
 export type DetailLevel = "file" | "class";
 
 export interface ArchLayerSummary {
+  architecture_style?: Record<string, unknown>;
+  component_profiles?: Array<Record<string, unknown>>;
+  tech_stack?: Array<Record<string, unknown>>;
+  flows?: Array<Record<string, unknown>>;
+  complexity_hotspots?: Array<Record<string, unknown>>;
+  extension_constraints?: Array<Record<string, unknown>>;
+  external_dependencies?: Array<Record<string, unknown>>;
+  boundaries?: Array<Record<string, unknown>>;
   capabilities?: Array<Record<string, unknown>>;
   quality_attributes?: Array<Record<string, unknown>>;
   risks?: Array<Record<string, unknown>>;
@@ -26,6 +34,7 @@ export interface ArchLayerSummary {
   architecture_decisions?: Array<Record<string, unknown>>;
   change_requests?: Array<Record<string, unknown>>;
   known_unknowns?: Array<Record<string, unknown>>;
+  tour?: Array<{ order?: number; title?: string; description?: string; nodeIds?: string[] }>;
 }
 
 export interface FilterState {
@@ -692,7 +701,24 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
   },
 
   setArchLayer: (layer) => {
-    set({ archLayer: layer });
+    set((state) => {
+      const archTour = Array.isArray(layer.tour)
+        ? layer.tour
+            .filter((step) => step && Array.isArray(step.nodeIds))
+            .map((step, index) => ({
+              order: Number(step.order ?? index + 1),
+              title: String(step.title ?? `Architecture step ${index + 1}`),
+              description: String(step.description ?? ""),
+              nodeIds: step.nodeIds ?? [],
+            }))
+        : [];
+      return {
+        archLayer: layer,
+        graph: state.graph && archTour.length > 0
+          ? { ...state.graph, tour: archTour }
+          : state.graph,
+      };
+    });
   },
 
   setIsKnowledgeGraph: (value) => {

@@ -1,0 +1,18 @@
+{
+  "version": "3.0",
+  "generated_at": "2026-05-28T15:22:21.461Z",
+  "project": "sample",
+  "trust_label": "high",
+  "metrics": {
+    "evidence_closure_rate": 1,
+    "hallucination_rate": 0,
+    "coverage": 1,
+    "consistency": 1,
+    "information_density": 1.8,
+    "placeholder_count": 0
+  },
+  "notes": [
+    "hallucination_rate is deterministic first-layer evidence validation; senior-review samples semantic hallucinations in the LLM gate.",
+    "coverage compares arch-layer referenced graph nodes with deterministic graph node count."
+  ]
+}

@@ -94,6 +94,16 @@ Rule 077: Check if user-facing and platform capabilities are separated.
 Rule 078: Check if debt and risk are not duplicated without reason.
 Rule 079: Check if wiki audience matches requested audience.
 Rule 080: Check if dashboard facts are same source as wiki.
+Rule 080a: In wiki-review mode, score Q1 information density: reject pages that are mostly inventory with no analysis.
+Rule 080b: In wiki-review mode, score Q2 decision support: reject if an architect cannot answer what to change, what is risky, and why.
+Rule 080c: In wiki-review mode, score Q3 narrative coherence: reject field dumps that do not read as a coherent architecture explanation.
+Rule 080d: In wiki-review mode, score Q4 evidence sufficiency: reject naked assertions without graph/arch-layer/ADR/CR/rule evidence.
+Rule 080e: In wiki-review mode, score Q5 insight depth: require synthesized judgements beyond directly restating node names.
+Rule 080f: In wiki-review mode, score Q6 no hallucination: any claimed component, dependency, boundary, or capability absent from evidence is critical and verdict reject.
+Rule 080g: In wiki-review mode, score Q7 audience fit: CTO gets capability/risk framing, newcomer gets reading path, architect gets tradeoffs.
+Rule 080h: In wiki-review mode, reject `ARCHITECTURE.md` if it is not a readable long-form synthesis.
+Rule 080i: In wiki-review mode, reject if architecture_style or component_profiles are not reflected in the long-form wiki.
+Rule 080j: In wiki-review mode, reject if complexity_hotspots or extension_constraints are absent from quality/risk discussion when present.
 Rule 081: Approve only if no critical/high findings remain.
 Rule 082: Conditional approval is allowed only with medium/low findings.
 Rule 083: Reject if artifact is mostly skeleton.
