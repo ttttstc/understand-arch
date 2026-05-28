@@ -55,7 +55,7 @@ v2.0 暂为占位实现,图片生成留给 v2.1。当前 wiki 中已包含 Merma
 /reload-plugins
 ```
 
-完成。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 6 个一级命令:
+完成。插件 manifest 保持极简,Claude Code 会直接从 `skills/*/SKILL.md` 自动发现 slash command。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 6 个一级 plugin skill:
 
 - `/arch-onboard`
 - `/arch-design`
@@ -66,9 +66,9 @@ v2.0 暂为占位实现,图片生成留给 v2.1。当前 wiki 中已包含 Merma
 
 ### 看不到命令?
 
-1. **是否执行了 `/reload-plugins`?** 没执行 Claude Code 不会扫到新 command/skill。
+1. **是否执行了 `/reload-plugins`?** 没执行 Claude Code 不会扫到新安装的 plugin skill。
 2. **检查插件是否真装上**:`/plugin list` 应能看到 `understand-arch`。
-3. **命令格式**:`/arch-onboard`(短横线连接),**不是** `/arch:onboard`(冒号语法不支持)。
+3. **Slash 名称格式**:`/arch-onboard`(短横线连接),**不是** `/arch:onboard`(冒号语法不支持)。
 4. **强制重载**:重启 Claude Code,再 `/reload-plugins`。
 
 ### 可选:开启 git commit 自动刷新

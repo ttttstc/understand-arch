@@ -55,7 +55,7 @@ In Claude Code, run:
 /reload-plugins
 ```
 
-That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the six top-level commands appear:
+That's it. The plugin manifest stays minimal, and Claude Code discovers slash commands directly from `skills/*/SKILL.md`. After `/reload-plugins`, type `/arch-` at any prompt to verify the six top-level plugin skills appear:
 
 - `/arch-onboard`
 - `/arch-design`
@@ -66,9 +66,9 @@ That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the si
 
 ### Don't see the commands?
 
-1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new commands/skills.
+1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up newly installed plugin skills.
 2. **Is the plugin installed?** Run `/plugin list` and check for `understand-arch`.
-3. **Command format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
+3. **Slash name format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
 4. **Force reload**: restart Claude Code, then `/reload-plugins` again.
 
 ### Optional: enable git-commit auto-refresh

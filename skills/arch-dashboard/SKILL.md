@@ -1,7 +1,7 @@
 ---
 name: arch-dashboard
-description: Launch the understand-arch dashboard for code graph plus architecture layer views.
-argument-hint: ["[arch-project-dir] [repo-id]"]
+description: Launch the interactive web dashboard to visualize understand-arch code graphs and architecture layers
+argument-hint: [arch-project-dir]
 ---
 
 # /arch-dashboard
