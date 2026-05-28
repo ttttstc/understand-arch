@@ -3,9 +3,10 @@ name: arch-onboard
 description: |
   建立或刷新 understand-arch v2.0 workspace。扫描单仓或多仓,生成 `.understand-arch/{project}/specs/repos.yaml`,
   分仓 graph、跨仓 graph 与 14 页 wiki。适用于首次接手业务系统、重建架构基线、刷新多仓架构视图。
+argument-hint: ["[--refresh|--enable-hooks|--repo <id>:<path>]"]
 ---
 
-# arch-onboard
+# /arch-onboard
 
 ## 定位
 

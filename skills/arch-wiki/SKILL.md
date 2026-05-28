@@ -3,9 +3,10 @@ name: arch-wiki
 description: |
   从 v2.0 graph、ADR、CR 与 rules 生成 `.understand-arch/{project}/wiki/` 14 页人类视图。
   支持 newcomer、cto、pm、architect 受众化,但不创造新事实。
+argument-hint: ["[--audience=cto|newcomer|pm|architect] [--refresh]"]
 ---
 
-# arch-wiki
+# /arch-wiki
 
 ## 定位
 

@@ -3,9 +3,10 @@ name: arch-design
 description: |
   面向高级架构师的方案设计入口。基于 PRD 或变更诉求创建 v2.0 单文件 CR.md,
   输出影响面、改动点、方案、风险、发布回滚与评审,并维护 cross-repo traceability。
+argument-hint: ["[<prd-path> | <inline requirement text>]"]
 ---
 
-# arch-design
+# /arch-design
 
 ## 定位
 

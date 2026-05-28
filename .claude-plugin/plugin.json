@@ -1,28 +1,5 @@
 {
   "name": "understand-arch",
   "version": "2.0.0-rc1",
-  "description": "Senior-architect workflow plugin for v2.0 graph, wiki, CR and ADR assets.",
-  "skills": [
-    "./skills/arch-onboard",
-    "./skills/arch-design",
-    "./skills/arch-audit",
-    "./skills/arch-wiki",
-    "./skills/arch-diagram",
-    "./skills/arch-analyze",
-    "./skills/arch-frame",
-    "./skills/arch-adr",
-    "./skills/arch-review"
-  ],
-  "agents": [
-    "./agents/arch-project-scanner.md",
-    "./agents/arch-file-analyzer.md",
-    "./agents/arch-architecture-analyzer.md",
-    "./agents/arch-domain-analyzer.md",
-    "./agents/arch-quality-analyzer.md",
-    "./agents/arch-graph-reviewer.md",
-    "./agents/arch-impact-analyzer.md",
-    "./agents/arch-solution-designer.md",
-    "./agents/arch-senior-reviewer.md"
-  ],
-  "hooks": "./hooks/hooks.json"
+  "description": "Senior-architect workflow plugin for Claude Code. Maintain a trustworthy, evidence-backed architecture knowledge base (graph + wiki + CR + ADR + rules) for single-repo or multi-repo projects."
 }
