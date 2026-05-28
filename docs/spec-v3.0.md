@@ -38,10 +38,16 @@ understand-arch v3.0 = UA(代码 → 知识图谱,继承不重写) + 架构师�
 | 命令 | `arch-*` 系列(6 用户入口);UA `/understand` 编排逻辑继承但不暴露命令 |
 | Dashboard | **升级**显示架构师层;独立 `/arch-dashboard` 入口 |
 | Agent 命名 | UA 原生 agent 保留原名(底层引擎标识);架构师层用 `arch-*` 前缀 |
-| 删除 | UA 的 knowledge / chat / tour / language-lesson 模式 |
+| 删除 | UA 的 knowledge / chat / language-lesson 模式(tour **保留改造**为架构导览) |
 | 验收 | 三层:代码层继承 UA graph-reviewer / 架构师层扩展 / wiki+dashboard 新建,统一"脚本+LLM"范式 |
 | 空缺判别 | 严格:onboard 扫完架构师层必须有内容,否则 onboard fail |
 | 目录侵入面 | 用户项目根只放 `.understand-arch/` 一个目录 |
+| **wiki 厚度** | arch-layer 加叙事层(architecture_style/component_profiles/tech_stack/flows/complexity_hotspots/extension_constraints),独立 `arch-narrative-analyzer` 产;wiki 厚 = arch-layer 厚 |
+| **wiki 主产物** | `ARCHITECTURE.md` 长文(可通读),14 页退为切片;每页带时间戳 |
+| **wiki 验收总纲** | 完整识别 + 不捏造 + 如实声明(三态);格式 F1-F7 + 质量 Q1-Q7;refiner 自动修一轮 |
+| **Eval** | 方案 2:第一层自动化(eval-report 内置,每份基线带可信度标签)+ benchmark 项目集 + 决策任务 eval |
+| 护城河 | 能支撑决策的深度分析(根)+ 沉淀为可信可演进资产(杠杆);不是"分析本身",是"分析够硬且可复利" |
+| Subagent / Skill | 13 subagent(7 继承 + 6 新增)/ 11 skill(6 用户入口 + 5 内部) |
 
 ---
 
@@ -224,20 +230,39 @@ understand-arch/
 interface ArchLayer {
   version: "3.0"
   project: { name, description, repos: RepoMeta[], analyzed_at }
-  cross_edges: CrossEdge[]              // 跨仓边(cross-repo linker 产)
+
+  // ── 叙事层(arch-narrative-analyzer 产,决策 D=b)── 让 wiki 从"清单"变"分析" ──
+  architecture_style: ArchStyle          // 架构风格判定(分层/微服务/事件驱动… + 证据)
+  component_profiles: ComponentProfile[] // 每核心组件:职责/角色/依赖/复杂度叙事
+  tech_stack: TechStackItem[]            // 技术选型 + 推断理由 + 风险
+  external_dependencies: ExternalDep[]   // 外部依赖/集成点
+  boundaries: Boundary[]                 // 系统边界
+
+  // ── 能力 / 链路 ──
   capabilities: Capability[]            // 能力地图(arch-capability-analyzer 产)
+  flows: Flow[]                         // 端到端业务链路(场景串联,非孤立节点)
+
+  // ── 质量 / 风险 ──
   quality_attributes: QualityAttribute[]// NFR(arch-quality-analyzer 产)
   risks: Risk[]                         // 风险(同上)
   technical_debt: TechnicalDebt[]       // 技术债(同上)
+  complexity_hotspots: Hotspot[]        // 复杂度热点(确定性可算 + LLM 解读)
+  extension_constraints: ExtConstraint[]// 扩展瓶颈 / 改哪危险
+
+  // ── 决策 / 变更 / 导览 / 元 ──
   architecture_decisions: ADRRef[]      // ADR 索引(arch-adr 产)
   change_requests: CRRef[]              // CR 索引(arch-design 产)
   traceability: TraceLink[]             // CR ↔ node ↔ ADR
+  cross_edges: CrossEdge[]              // 跨仓边(cross-repo linker 产)
+  tour: TourStep[]                      // 架构导览(arch-tour,§9.4)
   known_unknowns: KnownUnknown[]        // 诚实层
   freshness: FreshnessMeta              // 多仓 fingerprint 汇总
 }
 ```
 
-字段 enum/约束沿用 v2.0 已定义(capability maturity/importance、NFR 8 类、risk 5 类、debt 5 类、全部 LLM 推断字段强制 `confidence` + `evidence_refs`)。
+新增字段对应「架构师 10 问」(§1.3 / §11.6),全部 LLM 推断字段强制 `confidence` + `evidence_refs`。enum 约束:capability maturity/importance、NFR 8 类、risk 5 类、debt 5 类沿用 v2.0;architecture_style / component_profiles / tech_stack / flows / complexity_hotspots / extension_constraints 的字段定义见 `internal/schemas/arch-layer.schema.json`。
+
+**叙事字段是 wiki 厚度的来源**:wiki 厚 = arch-layer 厚 = 这些叙事字段由 LLM subagent 在 arch-enrich 阶段产出并存盘,`render-wiki` 只做确定性投影(铁律不破)。
 
 ---
 
@@ -264,15 +289,18 @@ Phase 5  DOMAIN          → domain-analyzer subagent
 Phase 6  GRAPH-REVIEW    → graph-reviewer subagent(代码层验收)
          ↓ 产出 UA 代码 graph(每仓一份)
 【arch-enrich:架构师 phase(v3.0 新增)★】
-Phase 7  CAPABILITY      → arch-capability-analyzer subagent   → arch-layer.capabilities
-Phase 8  QUALITY         → arch-quality-analyzer subagent      → arch-layer.{quality_attributes,risks,technical_debt}
-Phase 9  CROSS-REPO LINK → cross-repo-linker(确定性)+ 必要时 LLM 辅助 → arch-layer.cross_edges
-Phase 10 ARCH-TOUR       → tour-builder(改造为架构导览)subagent → arch-layer.tour(串 graph + capability/risk/ADR)
-Phase 11 ARCH-REVIEW     → graph-reviewer(扩展 mode)+ arch-layer 投影检查 + tour 引用检查 → 架构师层验收
-Phase 12 FINALIZE        → 写 specs/arch-layer.json + 多仓 fingerprint
+Phase 7  NARRATIVE       → arch-narrative-analyzer subagent    → arch-layer.{architecture_style,component_profiles,tech_stack,external_dependencies,boundaries}
+Phase 8  CAPABILITY      → arch-capability-analyzer subagent   → arch-layer.{capabilities,flows}
+Phase 9  QUALITY         → arch-quality-analyzer subagent      → arch-layer.{quality_attributes,risks,technical_debt,complexity_hotspots,extension_constraints}
+Phase 10 CROSS-REPO LINK → cross-repo-linker(确定性)+ 必要时 LLM 辅助 → arch-layer.cross_edges
+Phase 11 ARCH-TOUR       → tour-builder(改造为架构导览)subagent → arch-layer.tour(串 graph + capability/risk/ADR)
+Phase 12 ARCH-REVIEW     → graph-reviewer(扩展 mode)+ arch-layer 投影检查 + tour 引用检查 → 架构师层验收
+Phase 13 FINALIZE        → 写 specs/arch-layer.json + 多仓 fingerprint
 ```
 
-**铁律落地**:Phase 7/8/10 的 LLM 推断**全部是 SKILL 内 subagent dispatch**,不进任何 node 脚本(Phase 9 确定性为主,模糊跨仓判断走 dispatch)。
+**铁律落地**:Phase 7/8/9/11 的 LLM 推断**全部是 SKILL 内 subagent dispatch**,不进任何 node 脚本(Phase 10 确定性为主,模糊跨仓判断走 dispatch)。
+
+**Phase 7 NARRATIVE 是 wiki 厚度的核心**(决策 D=b):专职 subagent 产架构风格判定、组件职责叙事、技术栈选型理由 —— 这些是"架构师 10 问"里"读得懂、能评估"的直接答案,独立成 phase 保证质量(不与 architecture-analyzer 的分层本职混)。
 
 ### 5.2 大项目分片(吸取 Typola P0-B 教训)
 
@@ -290,8 +318,8 @@ Phase 12 FINALIZE        → 写 specs/arch-layer.json + 多仓 fingerprint
   → 读 repos.yaml(N 个仓)
   → 对每个仓:跑 arch-analyze 的 UA phase 0-6(产该仓 knowledge-graph.json,带 repo_id 前缀)
   → cross-repo-linker:跨仓关系抽取(见 6.2)
-  → 架构师 phase 7-11(跨仓维度:capability/quality 可跨仓)
-  → arch-wiki 渲染 + dashboard 渲染
+  → arch-enrich 架构师 phase 7-13(narrative/capability/quality 跨仓维度)
+  → arch-wiki 渲染(ARCHITECTURE.md + 14 切片)+ dashboard 渲染
 ```
 
 单仓 = N=1,走同一路径,无分叉。
@@ -309,7 +337,7 @@ Phase 12 FINALIZE        → 写 specs/arch-layer.json + 多仓 fingerprint
 
 ---
 
-## 7. Subagent 套件(7 继承 + 5 新增 = 12)
+## 7. Subagent 套件(7 继承 + 6 新增 = 13)
 
 ### 7.1 UA 原生继承(保留原名,不重写)
 
@@ -327,7 +355,8 @@ Phase 12 FINALIZE        → 写 specs/arch-layer.json + 多仓 fingerprint
 
 | Subagent | 职责 | 输出 | 强约束 |
 |---|---|---|---|
-| `arch-capability-analyzer` | 能力地图(capability × maturity × importance × gaps) | arch-layer.capabilities | confidence + evidence_refs |
+| `arch-narrative-analyzer` ★ | 架构风格判定 + 组件职责叙事 + 技术栈选型理由 + 外部依赖/边界(wiki 厚度核心,决策 D=b) | arch-layer.{architecture_style,component_profiles,tech_stack,external_dependencies,boundaries} | confidence + evidence_refs;叙事非清单 |
+| `arch-capability-analyzer` | 能力地图(capability × maturity × importance × gaps)+ 端到端业务链路 | arch-layer.{capabilities,flows} | confidence + evidence_refs |
 | `arch-quality-analyzer` | NFR / risk / technical_debt 推断 | arch-layer.{quality_attributes,risks,technical_debt} | confidence + evidence_refs |
 | `arch-impact-analyzer` | CR 影响面 + 改动清单(分 core / adjacent 两组,堵 Typola F5) | CR.md frontmatter#impact + § 8 | 命中权重分级 |
 | `arch-solution-designer` | CR.md 14 段方案撰写 | CR.md § 1-7 + § 9-13 | 引用 graph/rules/ADR/CR 证据 |
@@ -412,9 +441,20 @@ CR.md § 8 改动清单分组呈现,研发先看 core。
 
 ## 10. Wiki + Dashboard
 
-### 10.1 Wiki(14 页,沿用 v2.0 结构)
+### 10.1 Wiki(主产物长文 + 14 切片,决策 F=b)
 
-01-overview / 02-components / 03-interfaces / 04-data-models / 05-capabilities / 06-quality / 07-risks-and-debt / 08-deployments / 09-flows-and-scenarios / 10-decisions / 11-changes / 12-rules / 13-pending-changes / 14-diagrams + README。
+**主产物 = 一篇可通读的架构白皮书 `ARCHITECTURE.md`**(一般用户不会逐页点,直接从头读到尾)。14 页退为它的**切片视图**(锚点 / 单独刷新 / dashboard 用):
+
+01-overview / 02-components / 03-interfaces / 04-data-models / 05-capabilities / 06-quality / 07-risks-and-debt / 08-deployments / 09-flows-and-scenarios / 10-decisions / 11-changes / 12-rules / 13-pending-changes / 14-diagrams。
+
+**内容要求(从"清单"到"叙事")**:每页/每章是「分析 + 判断 + 证据回链」,不是节点罗列。叙事内容来自 arch-layer 的叙事字段(architecture_style / component_profiles / tech_stack / flows / complexity_hotspots / extension_constraints),`render-wiki` 只投影。
+
+**时间戳(用户要求)**:`ARCHITECTURE.md` 和每个切片头部必须有:
+```
+> 生成时间:{ISO 8601}  ·  基于 commit:{hash}  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+```
+
+**完整性总纲(用户定,§11.5)**:不遗漏识别到的要素、不捏造未找到的、对未识别/不涉及的如实声明。
 
 ### 10.2 Dashboard(升级,决策 8/10）
 
@@ -448,7 +488,53 @@ UA graph-reviewer 的范式:**先写确定性脚本跑检查 → 再 LLM 渲染 
 4. **CR 实质性(堵 F6)**:senior-reviewer 对满是占位的 CR 不得 pass;占位词计 finding
 5. **wiki-lite / wiki-full 二级**:日常刷新 lite(占位扫描+投影);首次/cto/architect full(加 senior 实质判断)
 
-### 11.4 验收 gate
+### 11.4 Wiki 验收标准(总纲 + 格式 + 质量)
+
+#### 11.4.0 总纲(用户定):完整识别 + 不捏造 + 如实声明
+
+wiki 质量不用"够不够厚"衡量,用"**够不够诚实地完整**"衡量。对每类架构要素做三态判定:
+
+| 要素真实状态 | wiki 必须 | 违反 = finding |
+|---|---|---|
+| 真实存在(代码/graph 有) | 识别并呈现 + 证据 | **遗漏** |
+| 不存在 / 不涉及 | 如实声明"未识别到 X"/"不涉及" | **捏造**(红线) |
+| 扫描受限无法确定 | 标 known_unknown,如实说"未能确定" | 假装确定 / 占位糊弄 |
+
+**召回边界(诚实):** graph→wiki 的遗漏脚本可保证;代码→graph 的召回遗漏 wiki 验收兜不住,靠 eval 第二层 benchmark + senior 抽样逼近,不承诺绝对全知。
+
+#### 11.4.1 格式验收(wiki-reviewer 脚本,确定性,先跑)
+
+| # | 标准 | pass |
+|---|---|---|
+| F1 | 结构完整 | 每页含其规定必备章节 |
+| F2 | 时间戳 | 每页 + ARCHITECTURE.md 头部有 生成时间 + 基于 commit |
+| F3 | 证据回链格式 | 每判断后跟 evidence(node-id/file:line/ADR/CR/rules path),格式合规 |
+| F4 | 要素完整性(三态) | 取代字数下限:真实存在→呈现、不存在→声明、不确定→known_unknown;遗漏/捏造/占位糊弄 = finding |
+| F5 | 无占位词 | 待补充/TODO/暂无/默认 Mermaid = finding(除合法空缺) |
+| F6 | 投影完整性 | arch-layer 有的(N 个 capability/risk…),对应页全覆盖 |
+| F7 | 长文合成 | ARCHITECTURE.md 存在、章节齐、可通读 |
+
+格式不过 → 直接 fail,不进 LLM(省 token)。
+
+#### 11.4.2 质量验收(arch-senior-reviewer,LLM,首次/受众化跑 full)
+
+| # | 维度 | 判断问题 | pass |
+|---|---|---|---|
+| Q1 | 信息密度 | 分析还是清单? | 核心页以分析/判断为主 |
+| Q2 | 决策支撑力 ★ | 读完能否回答本页对应架构问题? | 能,不需再翻代码 |
+| Q3 | 叙事连贯 | 成文还是字段堆砌? | 有逻辑递进可通读 |
+| Q4 | 证据充分 | 有裸断言吗? | 0 裸断言 |
+| Q5 | 洞察深度 ★ | 有超出代码直接可见的综合判断吗? | ≥ N 条洞察级判断 |
+| Q6 | 无幻觉 ★红线 | 断言的组件/依赖/能力代码里真存在? | **0 幻觉,违则直接 fail** |
+| Q7 | 受众适配 | audience mode 详略匹配? | cto 看能力/风险,newcomer 看上手路径 |
+
+#### 11.4.3 判级 + 触发 + refiner(决策 = b)
+
+- **判级**:pass(格式全过 + 无 blocker + score≥0.85)/ needs_revision(major)/ fail(格式不过 / Q6 幻觉 / Q2 答不了)
+- **触发**:首次 + `--audience=cto|architect` → wiki-full(F1-F7 + Q1-Q7);日常刷新 → wiki-lite(F1-F7 + Q4/Q6)
+- **refiner(b)**:needs_revision 时**自动把 senior findings 喂回渲染重产一轮**,仍不过才报用户(wiki 高频,自动修一轮体验更好)
+
+### 11.5 验收 gate
 
 | Gate | 对应 |
 |---|---|
@@ -457,6 +543,32 @@ UA graph-reviewer 的范式:**先写确定性脚本跑检查 → 再 LLM 渲染 
 | `audit.yaml` | fingerprint freshness + drift |
 | `wiki.yaml` | wiki 投影 + 占位 + senior wiki review |
 | `dashboard.yaml` ★ | dashboard 视图与 graph/arch-layer 一致(独立 gate,决策 12=A) |
+
+### 11.6 Eval(质量度量,方案 2:内置 + benchmark)
+
+护城河是"可信",必须**能证明可信**。架构分析无绝对 ground truth,故 eval 是**多信号交叉**,分三层(按能否自动化):
+
+#### 第一层:自动化 eval(内置产品,每次 onboard 自带可信度报告)
+
+`arch-onboard` / `arch-audit` 完成后产 `eval-report`,架构师据此判断"这份基线多可信":
+
+| 指标 | 测法 | 性质 |
+|---|---|---|
+| 证据闭合率 | 每判断是否有 evidence_refs 且 file:line 真实存在 | 确定性 |
+| **幻觉率** ★红线 | 独立 LLM 抽查"断言的组件/依赖代码里真存在吗" | 半自动 |
+| 覆盖度 | 识别节点数 vs 确定性扫描节点数比例 | 确定性 |
+| 一致性 | 同项目跑两次核心判断稳定性 | 确定性 |
+| 信息密度 | wiki 分析句/清单句比例 + 占位词数 | 确定性 |
+
+幻觉率、证据闭合率是红线,其余是趋势指标。**每份基线自带"可信度标签"** = 护城河可见化。
+
+#### 第二层:黄金对照 eval(开发期 benchmark)
+
+建 benchmark 项目集(3-5 个有高质量架构文档的开源项目),测:召回率(真实文档提到的我们识别了多少)/ 准确率 / 增量发现。每次能力迭代跑,看趋势。
+
+#### 第三层:决策任务 eval(定期 human)
+
+设计真实决策任务(加需求影响哪些 / 最大风险 / 重构先动哪),对照组(只看代码 vs 看 wiki),测完成时间 + 质量 + 遗漏。这是"真正减轻架构师工作"的北极星。
 
 ---
 
@@ -482,14 +594,15 @@ Impl-1  Hard fork UA 仓 → 改名 understand-arch → 删 knowledge/chat/tour/
 Impl-2  改输出路径 .understand-anything/ → .understand-arch/{project}/;node id 加 repo 前缀;UA 6 agent 保留
 Impl-3  arch-analyze SKILL = 继承 understand 编排 + 占位架构师 phase 框架
 Impl-4  engine/arch/ 确定性工具:cross-repo-linker / arch-layer-writer / cr-md-editor / wiki-projection-check / fingerprint-multi-repo
-Impl-5  5 个架构师 subagent prompt(capability/quality/impact/solution/senior,每个完整 prompt 非占位)
-Impl-6  arch-layer.schema.json + 架构师 phase 7-11 接入 arch-analyze
+Impl-5  6 个架构师 subagent prompt(narrative/capability/quality/impact/solution/senior,每个完整非占位)
+Impl-6  arch-layer.schema.json(全字段:叙事层+能力+质量+导览)+ 架构师 phase 7-13 接入 arch-enrich
 Impl-7  多仓编排(arch-onboard)+ cross-repo-linker 落地
-Impl-8  6 用户入口 + 4 内部 skill 全部 SKILL.md(含 dispatch 模板)
-Impl-9  wiki 14 页渲染 + wiki-reviewer + senior wiki review
-Impl-10 dashboard fork + 架构师层视图 + /arch-dashboard
-Impl-11 验收 5 gate + rubric + hooks(默认关闭)
-Impl-12 e2e:单仓 + 真实多仓(Typola 级)dogfood,全链路 LLM 推断必须真跑
+Impl-8  6 用户入口 + 5 内部 skill 全部 SKILL.md(含 dispatch 模板)
+Impl-9  wiki:ARCHITECTURE.md 长文主产物 + 14 切片 + 时间戳 + 叙事化渲染
+        + wiki-reviewer(总纲三态 + 格式 F1-F7)+ senior wiki review(质量 Q1-Q7)+ refiner 自动修一轮
+Impl-10 dashboard fork + 架构师层视图 + 架构导览 + /arch-dashboard
+Impl-11 验收 5 gate + rubric + hooks(默认关闭)+ eval 第一层(eval-report 内置)
+Impl-12 e2e:单仓 + 真实多仓(Typola 级)dogfood,全链路 LLM 推断真跑;benchmark 项目集(eval 第二层)
 ```
 
 ### 12.3 验收 checkpoint
@@ -498,10 +611,10 @@ Impl-12 e2e:单仓 + 真实多仓(Typola 级)dogfood,全链路 LLM 推断必须�
 |---|---|
 | 1 | UA 原生测试全 pass(`pnpm test`),证明 fork 没破坏底座 |
 | 3 | arch-analyze 能在 Claude 会话里跑通 UA 7-phase 产 graph(真 dispatch subagent) |
-| 5 | 5 个架构师 subagent prompt 每个 ≥100 行,非占位 |
+| 5 | 6 个架构师 subagent prompt 每个 ≥100 行,非占位(含 arch-narrative-analyzer) |
 | 7 | 真实多仓 onboard 产出每仓 graph + cross_edges 非空 |
-| 9 | wiki 投影完整性脚本能挡住骨架 wiki(Typola F4 场景测试) |
-| 12 | 真实项目跑完:graph 有 module/service、arch-layer 有 capability/NFR/risk(非空白),wiki 无占位,senior-review 对真实 CR 给出实质 findings |
+| 9 | wiki 投影完整性脚本能挡住骨架 wiki(Typola F4 场景);ARCHITECTURE.md 长文可通读、带时间戳;senior wiki review Q1-Q7 能挡住清单式 wiki |
+| 12 | 真实项目跑完:graph 有 module/service、arch-layer 有 capability/NFR/risk + 叙事层(architecture_style/component_profiles 非空)、wiki 无占位且能回答架构师 10 问、senior-review 对真实 CR 给实质 findings、eval-report 幻觉率 0 |
 
 ### 12.4 禁止行为
 
