@@ -1,0 +1,20 @@
+name: design
+version: 3.0
+required_outputs:
+  - change-requests/**/CR.md
+gates:
+  - id: cr-fourteen-sections
+    severity: fail
+    check: CR.md contains exactly the 14 standard headings in order
+  - id: impact-split
+    severity: fail
+    check: section 8 separates core impacted set from adjacent review set
+  - id: senior-review
+    severity: fail
+    check: section 14 contains arch-senior-reviewer verdict and findings
+  - id: no-placeholder
+    severity: fail
+    check: no TODO, TBD, placeholder, lorem ipsum, 待补充, or 占位 tokens
+  - id: evidence-grounded
+    severity: fail
+    check: design references graph, arch-layer, rule, ADR, or CR evidence

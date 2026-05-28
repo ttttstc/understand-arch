@@ -1,17 +1,69 @@
 ---
 name: arch-dashboard
 description: Launch the understand-arch dashboard for code graph plus architecture layer views.
-argument-hint: ["[project-path]"]
+argument-hint: ["[arch-project-dir] [repo-id]"]
 ---
 
 # /arch-dashboard
 
-Build core if needed, then start the forked dashboard:
+Launch the forked dashboard against the v3 project output tree.
+
+## Inputs
+
+- `ARCH_PROJECT_ROOT` or first argument: `.understand-arch/<project>`.
+- `ARCH_REPO_ID` or second argument: repo id to show by default.
+
+If repo id is omitted, read `specs/repos.json` and choose the first repo.
+
+## Preflight
+
+Verify:
+
+- `specs/repos.json` exists.
+- `specs/repos/<repo_id>/knowledge-graph.json` exists.
+- `specs/arch-layer.json` exists.
+- `dashboard/package.json` exists in the plugin root.
+- `engine/core/dist/index.js` exists; if not, build core.
+
+## Launch
 
 ```bash
+cd <PLUGIN_ROOT>
 pnpm --filter @understand-arch/core build
-cd <PLUGIN_ROOT>/dashboard
-ARCH_PROJECT_DIR=<arch-project-dir> ARCH_REPO_ID=<repo-id> pnpm dev
+cd dashboard
+ARCH_PROJECT_DIR="<ARCH_PROJECT_ROOT>" ARCH_REPO_ID="<repo_id>" pnpm dev
 ```
 
-The dashboard reads `specs/repos/<repo-id>/knowledge-graph.json` and `specs/arch-layer.json` from the same project output tree. If you already have a flat directory with both files, set `GRAPH_DIR=<that-dir>` instead.
+The dashboard serves:
+
+- `/knowledge-graph.json` from `specs/repos/<repo_id>/knowledge-graph.json`
+- `/arch-layer.json` from `specs/arch-layer.json`
+- `/domain-graph.json` when present
+- `/config.json` from project config when present
+
+## Required Views
+
+- Structural graph view inherited from UA dashboard.
+- Domain graph view when a domain graph exists.
+- Architecture layer view showing counts and cards for:
+  - capabilities
+  - quality attributes
+  - risks
+  - technical debt
+  - cross edges
+  - ADRs
+
+## Success Report
+
+Tell the user:
+
+- local URL
+- repo id being viewed
+- whether arch-layer loaded
+- whether dashboard is using token protection
+
+## Failure Rules
+
+- If graph is missing, ask user to run `/arch-analyze` or `/arch-onboard`.
+- If arch-layer is missing, ask user to run `arch-enrich`.
+- Do not synthesize dashboard data.

@@ -1,0 +1,21 @@
+name: audit
+version: 3.0
+required_outputs:
+  - audit/latest.md
+  - audit/latest.json
+gates:
+  - id: fingerprint-freshness
+    severity: fail
+    check: specs/freshness.json matches current repo fingerprint state
+  - id: arch-layer-validation
+    severity: fail
+    check: arch-layer-writer validate passes
+  - id: wiki-projection
+    severity: fail
+    check: wiki-projection-check passes
+  - id: dashboard-readiness
+    severity: warn
+    check: dashboard can load graph and arch-layer from the same project output tree
+  - id: senior-audit
+    severity: fail
+    check: arch-senior-reviewer audit verdict has no critical/high findings

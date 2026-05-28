@@ -27,7 +27,7 @@ For v3.0 callers, the code fact graph lands at `$ARCH_PROJECT_ROOT/specs/repos/$
 Throughout execution, report progress to the user at each phase transition and during batch processing. This keeps users informed on large codebases where analysis can take a long time.
 
 - **Phase transitions:** At the start of each phase, print a status line:
-  > `[Phase N/7] <phase name>...`
+  > `[Phase N/6] <phase name>...`
   >
   > Example: `[Phase 2/7] Analyzing files (12 batches)...`
 
@@ -744,13 +744,13 @@ Pass these parameters in the dispatch prompt:
    - Re-run the final graph validation after automated fixes
    - If critical issues remain after one fix attempt, save the graph anyway but include the warnings in the final report and mark dashboard auto-launch as skipped
 
-6. **If `issues` array is empty:** Proceed to Phase 7.
+6. **If `issues` array is empty:** Proceed to save the code fact graph.
 
 ---
 
-## Phase 7 — SAVE
+## Phase 6.5 — SAVE CODE FACT GRAPH
 
-Report to the user: `[Phase 7/7] Saving knowledge graph...`
+Report to the user: `[Phase 6.5/6] Saving code fact graph...`
 
 1. Write the final knowledge graph to `$ARCH_PROJECT_DIR/knowledge-graph.json`.
 
@@ -775,7 +775,7 @@ Report to the user: `[Phase 7/7] Saving knowledge graph...`
 
    The script uses `TreeSitterPlugin + PluginRegistry` exactly like `extract-structure.mjs`, so the baseline matches the comparison logic used during auto-updates.
 
-   **If the script exits non-zero or stdout does not include `Fingerprints baseline:`, abort Phase 7 and report the error. Do NOT proceed to step 3 (writing `meta.json`).**
+   **If the script exits non-zero or stdout does not include `Fingerprints baseline:`, abort the save stage and report the error. Do NOT proceed to step 3 (writing `meta.json`).**
 
 3. Write metadata to `$ARCH_PROJECT_DIR/meta.json` (only after step 2 succeeded):
    ```json
@@ -811,7 +811,7 @@ Report to the user: `[Phase 7/7] Saving knowledge graph...`
 ## Error Handling
 
 - If any subagent dispatch fails, retry **once** with the same prompt plus additional context about the failure.
-- Track all warnings and errors from each phase in a `$PHASE_WARNINGS` list. When using `--review`, pass this list to the graph-reviewer in Phase 6. On the default path, include accumulated warnings in the Phase 7 final report.
+- Track all warnings and errors from each phase in a `$PHASE_WARNINGS` list. When using `--review`, pass this list to the graph-reviewer in Phase 6. On the default path, include accumulated warnings in the save-stage final report.
 - If it fails a second time, skip that phase and continue with partial results.
 - ALWAYS save partial results — a partial graph is better than no graph.
 - Report any skipped phases or errors in the final summary so the user knows what happened.
