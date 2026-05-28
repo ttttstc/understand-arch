@@ -77,6 +77,12 @@ describe("IgnoreFilter", () => {
     it("ignores binary/asset files", () => {
       const filter = createIgnoreFilter(testDir);
       expect(filter.isIgnored("logo.png")).toBe(true);
+      expect(filter.isIgnored("photo.tiff")).toBe(true);
+      expect(filter.isIgnored("photo.heic")).toBe(true);
+      expect(filter.isIgnored("photo.dng")).toBe(true);
+      expect(filter.isIgnored("design.psd")).toBe(true);
+      expect(filter.isIgnored("illustration.eps")).toBe(true);
+      expect(filter.isIgnored("next-gen.jxl")).toBe(true);
       expect(filter.isIgnored("font.woff2")).toBe(true);
       expect(filter.isIgnored("doc.pdf")).toBe(true);
     });
