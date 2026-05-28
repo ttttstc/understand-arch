@@ -503,10 +503,30 @@ function enumerateViaWalk(projectRoot) {
   // runs on everything else.
   const HARD_SKIP_DIRS = new Set([
     'node_modules',
+    'bower_components',
     '.git',
     '.svn',
     '.hg',
     '__pycache__',
+    '.mypy_cache',
+    '.pytest_cache',
+    '.ruff_cache',
+    '.tox',
+    '.nox',
+    '.cache',
+    '.parcel-cache',
+    '.turbo',
+    '.vite',
+    '.next',
+    '.nuxt',
+    '.svelte-kit',
+    '.angular',
+    '.dart_tool',
+    '.gradle',
+    '.serverless',
+    '.terraform',
+    '.vercel',
+    '.netlify',
   ]);
 
   const out = [];

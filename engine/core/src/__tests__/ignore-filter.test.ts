@@ -40,6 +40,15 @@ describe("IgnoreFilter", () => {
       expect(DEFAULT_IGNORE_PATTERNS).toContain("out/");
       expect(DEFAULT_IGNORE_PATTERNS).toContain("coverage/");
     });
+
+    it("contains structure-irrelevant test, fixture, and generated patterns", () => {
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/*.test.*");
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/*.spec.*");
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/__tests__/**");
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/fixtures/**");
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/generated/**");
+      expect(DEFAULT_IGNORE_PATTERNS).toContain("**/*.pb.go");
+    });
   });
 
   describe("createIgnoreFilter with no user file", () => {
@@ -77,6 +86,18 @@ describe("IgnoreFilter", () => {
       expect(filter.isIgnored("bundle.min.js")).toBe(true);
       expect(filter.isIgnored("style.min.css")).toBe(true);
       expect(filter.isIgnored("source.map")).toBe(true);
+      expect(filter.isIgnored("src/api/generated/client.ts")).toBe(true);
+      expect(filter.isIgnored("proto/user.pb.go")).toBe(true);
+    });
+
+    it("ignores tests, snapshots, mocks, and fixtures by default", () => {
+      const filter = createIgnoreFilter(testDir);
+      expect(filter.isIgnored("src/user.test.ts")).toBe(true);
+      expect(filter.isIgnored("src/user.spec.ts")).toBe(true);
+      expect(filter.isIgnored("src/__tests__/user.ts")).toBe(true);
+      expect(filter.isIgnored("src/__snapshots__/user.snap")).toBe(true);
+      expect(filter.isIgnored("src/__mocks__/api.ts")).toBe(true);
+      expect(filter.isIgnored("fixtures/user.json")).toBe(true);
     });
 
     it("ignores IDE directories", () => {
@@ -121,10 +142,11 @@ describe("IgnoreFilter", () => {
     it("supports ! negation to override defaults", () => {
       writeFileSync(
         join(testDir, ".understand-arch", ".understandignore"),
-        "!dist/\n"
+        "!dist/\n!**/*.test.*\n"
       );
       const filter = createIgnoreFilter(testDir);
       expect(filter.isIgnored("dist/index.js")).toBe(false);
+      expect(filter.isIgnored("src/utils.test.ts")).toBe(false);
     });
 
     it("supports ** recursive matching", () => {

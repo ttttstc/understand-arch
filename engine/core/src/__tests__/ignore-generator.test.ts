@@ -31,10 +31,10 @@ describe("generateStarterIgnoreFile", () => {
     expect(lines).toHaveLength(0);
   });
 
-  it("suggests __tests__ when directory exists", () => {
+  it("does not suggest __tests__ because tests are default ignored", () => {
     mkdirSync(join(testDir, "__tests__"), { recursive: true });
     const content = generateStarterIgnoreFile(testDir);
-    expect(content).toContain("# __tests__/");
+    expect(content).not.toContain("# __tests__/");
   });
 
   it("suggests docs when directory exists", () => {
@@ -43,18 +43,18 @@ describe("generateStarterIgnoreFile", () => {
     expect(content).toContain("# docs/");
   });
 
-  it("suggests test and tests when they exist", () => {
+  it("does not suggest test and tests because tests are default ignored", () => {
     mkdirSync(join(testDir, "test"), { recursive: true });
     mkdirSync(join(testDir, "tests"), { recursive: true });
     const content = generateStarterIgnoreFile(testDir);
-    expect(content).toContain("# test/");
-    expect(content).toContain("# tests/");
+    expect(content).not.toContain("# test/");
+    expect(content).not.toContain("# tests/");
   });
 
-  it("suggests fixtures when directory exists", () => {
+  it("does not suggest fixtures because fixtures are default ignored", () => {
     mkdirSync(join(testDir, "fixtures"), { recursive: true });
     const content = generateStarterIgnoreFile(testDir);
-    expect(content).toContain("# fixtures/");
+    expect(content).not.toContain("# fixtures/");
   });
 
   it("suggests examples when directory exists", () => {
@@ -81,11 +81,10 @@ describe("generateStarterIgnoreFile", () => {
     expect(content).toContain("# scripts/");
   });
 
-  it("always includes generic test file suggestions", () => {
+  it("documents the default structural-noise skip categories", () => {
     const content = generateStarterIgnoreFile(testDir);
-    expect(content).toContain("# *.snap");
-    expect(content).toContain("# *.test.*");
-    expect(content).toContain("# *.spec.*");
+    expect(content).toContain("tests, mocks, fixtures, generated code");
+    expect(content).toContain("binary assets");
   });
 
   it("does not suggest directories that don't exist", () => {
@@ -97,29 +96,29 @@ describe("generateStarterIgnoreFile", () => {
 
   describe(".gitignore integration", () => {
     it("includes .gitignore patterns not covered by defaults", () => {
-      writeFileSync(join(testDir, ".gitignore"), ".env\nsecrets/\n*.pyc\n");
+      writeFileSync(join(testDir, ".gitignore"), "secrets/\n*.pyc\ncustom-cache/\n");
       const content = generateStarterIgnoreFile(testDir);
       expect(content).toContain("From .gitignore");
-      expect(content).toContain("# .env");
       expect(content).toContain("# secrets/");
       expect(content).toContain("# *.pyc");
+      expect(content).toContain("# custom-cache/");
     });
 
     it("excludes .gitignore patterns already in defaults", () => {
-      writeFileSync(join(testDir, ".gitignore"), "node_modules/\ndist/\n.env\n");
+      writeFileSync(join(testDir, ".gitignore"), "node_modules/\ndist/\n.env\nsecrets/\n");
       const content = generateStarterIgnoreFile(testDir);
-      // .env is not in defaults, should appear
-      expect(content).toContain("# .env");
-      // node_modules/ and dist/ are in defaults, should not appear in .gitignore section
+      expect(content).toContain("# secrets/");
+      // node_modules/, dist/, and .env are in defaults, should not appear in .gitignore section
       const gitignoreSection = content.split("From .gitignore")[1]?.split("---")[0] ?? "";
       expect(gitignoreSection).not.toContain("node_modules");
       expect(gitignoreSection).not.toContain("dist");
+      expect(gitignoreSection).not.toContain(".env");
     });
 
     it("skips .gitignore comments and blank lines", () => {
-      writeFileSync(join(testDir, ".gitignore"), "# a comment\n\n.env\n  \n");
+      writeFileSync(join(testDir, ".gitignore"), "# a comment\n\nsecrets/\n  \n");
       const content = generateStarterIgnoreFile(testDir);
-      expect(content).toContain("# .env");
+      expect(content).toContain("# secrets/");
       // Should not include the original comment as a pattern
       const gitignoreSection = content.split("From .gitignore")[1]?.split("---")[0] ?? "";
       expect(gitignoreSection).not.toContain("a comment");
@@ -127,7 +126,7 @@ describe("generateStarterIgnoreFile", () => {
 
     it("handles .gitignore with trailing-slash normalization for defaults", () => {
       // "dist" without trailing slash should still match "dist/" default
-      writeFileSync(join(testDir, ".gitignore"), "dist\ncoverage\n.env\n");
+      writeFileSync(join(testDir, ".gitignore"), "dist\ncoverage\nsecrets/\n");
       const content = generateStarterIgnoreFile(testDir);
       expect(content).toContain("From .gitignore");
       // Extract lines between the .gitignore header and the next section header
@@ -136,7 +135,7 @@ describe("generateStarterIgnoreFile", () => {
       const nextSectionIdx = lines.findIndex((l, i) => i > headerIdx && l.startsWith("# ---"));
       const sectionLines = lines.slice(headerIdx + 1, nextSectionIdx === -1 ? undefined : nextSectionIdx);
       const patterns = sectionLines.filter((l) => l.startsWith("# ") && !l.startsWith("# ---")).map((l) => l.slice(2));
-      expect(patterns).toContain(".env");
+      expect(patterns).toContain("secrets/");
       expect(patterns).not.toContain("dist");
       expect(patterns).not.toContain("coverage");
     });
@@ -153,7 +152,7 @@ describe("generateStarterIgnoreFile", () => {
     });
 
     it("all .gitignore suggestions are commented out", () => {
-      writeFileSync(join(testDir, ".gitignore"), ".env\nsecrets/\n*.pyc\n");
+      writeFileSync(join(testDir, ".gitignore"), "secrets/\n*.pyc\n");
       const content = generateStarterIgnoreFile(testDir);
       const lines = content.split("\n").filter((l) => l.trim() && !l.startsWith("#"));
       expect(lines).toHaveLength(0);

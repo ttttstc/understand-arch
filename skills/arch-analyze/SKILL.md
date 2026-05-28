@@ -235,33 +235,21 @@ Set up and verify the `.understandignore` file before scanning.
 
 1. Check if `$ARCH_PROJECT_DIR/.understandignore` exists.
 2. **If it does NOT exist**, generate a starter file:
-   - Run the following Node.js one-liner in `$PROJECT_ROOT` (reads `.gitignore` and deduplicates against built-in defaults):
+   - Run the following Node.js command in `$PROJECT_ROOT`. It uses the core ignore generator so the starter file always matches the built-in scanner defaults:
      ```bash
-     node -e "
-     const fs = require('fs');
-     const path = require('path');
+     PLUGIN_CORE="$PLUGIN_ROOT/engine/core/dist/index.js" node --input-type=module -e "
+     import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+     import { join } from 'node:path';
+     import { pathToFileURL } from 'node:url';
+     const { generateStarterIgnoreFile } = await import(pathToFileURL(process.env.PLUGIN_CORE).href);
      const root = process.cwd();
-     const defaults = ['node_modules/','node_modules','.git/','vendor/','venv/','.venv/','__pycache__/','dist/','dist','build/','build','out/','coverage/','coverage','.next/','.cache/','.turbo/','target/','obj/','*.lock','package-lock.json','yarn.lock','pnpm-lock.yaml','*.png','*.jpg','*.jpeg','*.gif','*.svg','*.ico','*.woff','*.woff2','*.ttf','*.eot','*.mp3','*.mp4','*.pdf','*.zip','*.tar','*.gz','*.min.js','*.min.css','*.map','*.generated.*','.idea/','.vscode/','LICENSE','.gitignore','.editorconfig','.prettierrc','.eslintrc*','*.log'];
-     const norm = p => p.replace(/\/+$/, '');
-     const defaultSet = new Set(defaults.map(norm));
-     const header = '# .understandignore — patterns for files/dirs to exclude from analysis\n# Syntax: same as .gitignore (globs, # comments, ! negation, trailing / for dirs)\n# Lines below are suggestions — uncomment to activate.\n# Use ! prefix to force-include something excluded by defaults.\n#\n# Built-in defaults (always excluded unless negated):\n#   node_modules/, .git/, dist/, build/, obj/, *.lock, *.min.js, etc.\n#\n';
-     let body = '';
-     const gitignorePath = path.join(root, '.gitignore');
-     if (fs.existsSync(gitignorePath)) {
-       const gi = fs.readFileSync(gitignorePath, 'utf-8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).filter(p => !defaultSet.has(norm(p)));
-       if (gi.length) { body += '# --- From .gitignore (uncomment to exclude) ---\n\n' + gi.map(p => '# ' + p).join('\n') + '\n\n'; }
-     }
-     const dirs = ['__tests__','test','tests','fixtures','testdata','docs','examples','scripts','migrations','.storybook'];
-     const found = dirs.filter(d => fs.existsSync(path.join(root, d)));
-     if (found.length) { body += '# --- Detected directories (uncomment to exclude) ---\n\n' + found.map(d => '# ' + d + '/').join('\n') + '\n\n'; }
-     body += '# --- Test file patterns (uncomment to exclude) ---\n\n# *.test.*\n# *.spec.*\n# *.snap\n';
-     const outDir = path.join(root, '.understand-arch');
-     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-     fs.writeFileSync(path.join(outDir, '.understandignore'), header + body);
+     const outDir = join(root, '.understand-arch');
+     if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
+     writeFileSync(join(outDir, '.understandignore'), generateStarterIgnoreFile(root));
      "
      ```
    - Report to the user:
-     > Generated `.understand-arch/.understandignore` with suggested exclusions based on your project structure. Please review it and uncomment any patterns you'd like to exclude from analysis. When ready, confirm to continue.
+     > Generated `.understand-arch/.understandignore` with optional project-specific exclusions. Built-in defaults already skip dependency/VCS/build/cache dirs, tests, mocks, fixtures, snapshots, generated code, lock files, binary assets, local env/secrets, IDE files, and logs. Use `!pattern` to force-include any default-excluded evidence, then confirm to continue.
    - **Wait for user confirmation before proceeding.**
 3. **If it already exists**, report:
    > Found `.understand-arch/.understandignore`. Review it if needed, then confirm to continue.
