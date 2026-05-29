@@ -38,3 +38,6 @@ gates:
   - id: senior-q1-q7
     severity: fail
     check: full wiki review applies Q1 information density, Q2 decision support, Q3 coherence, Q4 evidence, Q5 insight depth, Q6 no hallucination, and Q7 audience fit
+  - id: no-meta-narrative
+    severity: fail
+    check: Q8 holds; wiki reads as a project architecture document and contains no reading paths, glossaries, scan summaries, internal phases, field definitions, or tool limitation prose

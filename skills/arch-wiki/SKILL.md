@@ -67,8 +67,9 @@ Default audience is `newcomer`.
 7. Do not ask an LLM to invent wiki content. If the wiki is thin, rerun `arch-enrich` Phase 7/8/9 so arch-layer gets thicker, then render again.
 8. Do not put evidence in wiki output at all. No inline `[evidence:]` markers and no `## 证据来源` tables.
 9. Evidence remains only in `specs/arch-layer.json#evidence_refs` for audit, wiki-reviewer, senior-reviewer Q6, and eval checks.
-10. Write for a new architect first: start with reading path, mental model, terminology, and “how to read this chapter”, then preserve the full technical details.
-11. Do not turn pages into raw field dumps. Each page should explain why the facts matter before listing detailed components, capabilities, risks, or flows.
+10. Write like a standard architecture technical document: describe the project, its architecture, tradeoffs, components, capabilities, quality attributes, risks, and flows.
+11. Do not include meta narrative: no reading paths, mental-model tutorials, glossaries, scan summaries, internal phases, field definitions, tool limitations, or analyzer/reviewer/subagent terminology.
+12. Do not turn pages into raw field dumps. Keep project-specific conclusions and technical detail, but remove methodology filler.
 
 ## Page Mapping
 
@@ -134,7 +135,7 @@ If either reviewer returns `needs_revision`, `conditional` with high findings, o
 - `ARCHITECTURE.md` is roughly the same byte size as the 14 slices combined because it contains the full chapter content.
 - Every page has timestamp/source line.
 - Wiki prose and chapter endings contain no rendered evidence; `arch-layer.json#evidence_refs` remains valid for audit checks.
-- The opening chapters are approachable for a new architect: reading path, mental model, terminology, and progressive introductions exist before dense technical lists.
+- The wiki reads as a project architecture document, not a tool output report; Q8 no-meta-narrative holds.
 - Projection check returns ok.
 - `wiki-reviewer` verdict is approve or conditional.
 - `arch-senior-reviewer` is approve or conditional for full review audiences.

@@ -15,6 +15,10 @@ You must never invent architecture style, components, dependencies, or boundarie
 You must use known uncertainty honestly when evidence is thin.
 You must produce narrative, not a mechanical inventory.
 You must write as an architect explaining why the system is shaped this way.
+You must write only project architecture facts, judgements, responsibilities, tradeoffs, and constraints.
+Do not write meta narrative about tools, scans, phases, how to read the wiki, how to use understand-arch, or what a field means.
+Do not explain architecture terminology such as capability, component, boundary, risk, or quality attribute.
+Do not mention internal implementation terms such as arch-layer, graph scan, Phase 7, arch-enrich, analyzer, reviewer, or subagent in output values.
 Your output keys are exactly `architecture_style`, `component_profiles`, `tech_stack`, `external_dependencies`, and `boundaries`.
 Every inferred object must include `confidence`.
 Every inferred object must include non-empty `evidence_refs`.
@@ -162,6 +166,9 @@ Rule 064: Avoid sales language.
 Rule 065: Avoid raw bullet-list thinking inside narrative fields.
 Rule 066: Narratives should be readable paragraphs.
 Rule 067: JSON strings may contain full sentences.
+Rule 067a: Narrative fields must read like standard architecture documentation for the project itself.
+Rule 067b: Narrative fields must not include reading instructions, methodology, glossary-style explanations, scan metadata, or tool limitations.
+Rule 067c: Empty or uncertain facts must be stated in project language, not in internal analyzer language.
 Rule 068: Keep every id stable, lowercase, and colon-prefixed by type.
 Rule 069: All arrays must be present even if empty.
 Rule 070: `architecture_style` must always be present.

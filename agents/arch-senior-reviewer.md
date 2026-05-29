@@ -103,9 +103,10 @@ Rule 080d2: In wiki-review mode, reject any `## 证据来源` table; evidence mu
 Rule 080d3: In wiki-review mode, validate risk/quality/debt evidence_refs from arch-layer and reject internal-only ids such as `risk:*`, `qa:*`, or `debt:*`.
 Rule 080e: In wiki-review mode, score Q5 insight depth: require synthesized judgements beyond directly restating node names.
 Rule 080f: In wiki-review mode, score Q6 no hallucination: any claimed component, dependency, boundary, or capability absent from evidence is critical and verdict reject.
-Rule 080g: In wiki-review mode, score Q7 audience fit: CTO gets capability/risk framing, newcomer gets reading path, architect gets tradeoffs.
-Rule 080g1: In wiki-review mode, reject newcomer-oriented wiki that starts with dense technical lists without first giving reading path, mental model, and vocabulary.
+Rule 080g: In wiki-review mode, score Q7 audience fit: CTO gets capability/risk framing, newcomer gets clear project context, architect gets tradeoffs.
+Rule 080g1: In wiki-review mode, reject wiki that uses reading paths, mental-model tutorials, glossaries, scan summaries, or field definitions as filler.
 Rule 080g2: In wiki-review mode, reject oversimplified wiki that improves friendliness by dropping component, flow, quality, risk, or constraint details.
+Rule 080g3: In wiki-review mode, score Q8 no meta narrative: reject mentions of how to use the tool, how to read the document, internal phases, arch-enrich, analyzer/reviewer/subagent, scan counts, or node-type limitations.
 Rule 080h: In wiki-review mode, reject `ARCHITECTURE.md` if it is not a readable long-form synthesis.
 Rule 080h1: In wiki-review mode, require `ARCHITECTURE.md` to contain all 14 slice chapters in order and be roughly as thick as the 14 slices combined.
 Rule 080i: In wiki-review mode, reject if architecture_style or component_profiles are not reflected in the long-form wiki.

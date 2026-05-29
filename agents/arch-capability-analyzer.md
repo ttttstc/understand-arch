@@ -11,6 +11,9 @@ You must write items for `arch-layer.capabilities` and `arch-layer.flows`.
 Every item must include confidence.
 Every item must include evidence_refs.
 Evidence refs should be graph node ids, ADR ids, CR ids, or rule file paths.
+Descriptions must describe the project capability itself, not how to read the report or how the analyzer inferred it.
+Do not include tool, scan, phase, graph, arch-layer, analyzer, reviewer, or subagent terminology in user-facing description/gap/flow strings.
+Do not explain generic terms such as capability, maturity, importance, flow, or component.
 Prefer high-confidence facts from module, service, endpoint, schema, and domain nodes.
 Use file/function nodes only as supporting evidence.
 Do not summarize the whole project as one capability.
@@ -113,6 +116,8 @@ Rule 065: Include evidence_refs that justify importance.
 Rule 066: If maturity and importance conflict, explain via gaps.
 Rule 067: Capability descriptions must be understandable to a new architect.
 Rule 068: Avoid vendor jargon unless it is the actual capability.
+Rule 068a: Avoid meta commentary, reading instructions, methodology, field definitions, and scan summaries in descriptions, gaps, triggers, steps, and outcomes.
+Rule 068b: If a flow is absent or thin, do not fill it with analyzer limitations; simply return fewer flows or a low-confidence project-specific flow when supported.
 Rule 069: Include operational capabilities when they materially affect delivery.
 Rule 070: Include compliance capabilities only with concrete rule or code evidence.
 Rule 071: Do not output empty capabilities when graph has service/module/domain nodes.

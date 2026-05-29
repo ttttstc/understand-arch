@@ -1,17 +1,11 @@
 # 02 组件职责与模块
 
-> 生成时间:2026-05-29T08:29:46.939Z  ·  基于 commit:a90f505bfff99e4985db4de6f6a409cbada60dd3  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T09:00:02.642Z  ·  基于 commit:ae504e0162639edd5f826687ea893f6a7f991e64  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
-## 先按职责理解组件
+## 组件职责
 
-读组件时，不要从文件名开始背。先按职责分组：谁负责应用编排，谁负责用户界面，谁负责领域处理，谁负责外部集成。这样后续看到具体文件时，才知道它在架构里承担什么角色。
+- **Orders Module**：The orders module is the only visible domain component. It owns order creation behavior, and changes here affect the sample's core capability even though the implementation is intentionally small. 职责类型：领域；复杂度：低；变更风险：中。责任边界：Create an order identifier for a user-facing order flow.。协作对象：app.ts。
 
-当前组件角色分布是：domain:1。下面先给职责叙事，再给代码层事实，方便从架构语言落到实际模块。
+## 模块结构
 
-## 组件职责叙事
-
-- **Orders Module** (domain, complexity:low, change_risk:medium)：The orders module is the only visible domain component. It owns order creation behavior, and changes here affect the sample's core capability even though the implementation is intentionally small. 责任边界：Create an order identifier for a user-facing order flow.。协作对象：sample::file:src/app.ts。
-
-## 代码层组件事实
-
-- **orders** (module)：Order creation module.
+- **orders**（模块）：Order creation module.

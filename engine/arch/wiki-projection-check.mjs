@@ -12,6 +12,24 @@ const findings = [];
 const timestampPattern = />\s*生成时间:.+基于 commit:.+事实源:/;
 const inlineEvidencePattern = /\[evidence:\s*[^\]]+\]/i;
 const evidenceHeadingPattern = /^##\s+证据来源\s*$/m;
+const metaNarrativePatterns = [
+  /如何阅读/,
+  /阅读路径/,
+  /建议阅读顺序/,
+  /一分钟心智模型/,
+  /术语速查/,
+  /本次扫描/,
+  /扫描覆盖/,
+  /识别到\s*\d+\s*个\s*(module|service|能力项|风险项)/i,
+  /可重跑\s+arch-enrich/i,
+  /arch-layer\s+叙事字段/i,
+  /Phase\s*\d+/i,
+  /domain\/flow\/step\s*节点/i,
+  /endpoint\/schema\s*节点/i,
+  /resource\/pipeline\/config\s*节点/i,
+  /字段含义/,
+  /status\s*[:：].*表示/i,
+];
 
 const sliceFiles = [
   "01-overview.md",
@@ -89,6 +107,11 @@ function checkFile(file) {
   }
   if (evidenceHeadingPattern.test(text)) {
     findings.push({ severity: "high", code: "F3", message: `${file} contains ## 证据来源; wiki must not render evidence tables` });
+  }
+  for (const pattern of metaNarrativePatterns) {
+    if (pattern.test(text)) {
+      findings.push({ severity: "high", code: "Q8", message: `${file} contains meta narrative matching ${pattern}` });
+    }
   }
 }
 

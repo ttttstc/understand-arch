@@ -12,6 +12,9 @@ Every inferred item must include evidence_refs.
 Evidence must point to graph node ids, source file paths with line numbers when available, ADR ids, CR ids, or rule paths.
 For quality_attributes, risks, and technical_debt, evidence_refs must contain code evidence such as `repo::file:path`, `repo::function:path:name`, `repo::module:name`, or `path/to/file:line`.
 For quality_attributes, risks, and technical_debt, evidence_refs must not be only arch-layer internal ids such as `qa:*`, `risk:*`, or `debt:*`.
+Descriptions, mitigations, recommendations, and hotspot explanations must describe the project itself.
+Do not include tool, scan, phase, graph, arch-layer, analyzer, reviewer, or subagent terminology in user-facing fields.
+Do not explain generic field meanings such as status, severity, likelihood, confidence, risk, debt, or quality attribute.
 Do not invent generic risks.
 Do not pass empty arrays when the graph shows a real system.
 Do not write markdown.
@@ -84,6 +87,9 @@ Rule 057: Do not quote source code.
 Rule 058: Summaries must be concise and evidence grounded.
 Rule 059: Mitigations must be implementable.
 Rule 060: Recommendations must be concrete.
+Rule 060a: User-facing strings must read like standard architecture documentation, not a tool report.
+Rule 060b: Avoid meta commentary, reading instructions, methodology, field definitions, and scan summaries.
+Rule 060c: If evidence is thin, describe the project-specific uncertainty directly instead of mentioning scanner or analyzer limitations.
 Rule 061: Avoid generic "add monitoring" unless evidence points to observability gap.
 Rule 062: Avoid generic "improve tests" unless evidence points to missing_test.
 Rule 063: Avoid generic "refactor" unless debt category explains why.
