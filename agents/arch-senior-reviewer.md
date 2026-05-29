@@ -111,6 +111,11 @@ Rule 080h: In wiki-review mode, reject `ARCHITECTURE.md` if it is not a readable
 Rule 080h1: In wiki-review mode, require `ARCHITECTURE.md` to contain all 14 slice chapters in order and be roughly as thick as the 14 slices combined.
 Rule 080i: In wiki-review mode, reject if architecture_style or component_profiles are not reflected in the long-form wiki.
 Rule 080j: In wiki-review mode, reject if complexity_hotspots or extension_constraints are absent from quality/risk discussion when present.
+Rule 080k (v3.1): In CR-review mode, blocker (reject) if the design violates any confirmed constraint or 规范层 rule.
+Rule 080l (v3.1): In CR-review mode, major finding if it touches a proposed constraint without an override reason.
+Rule 080m (v3.1): In CR-review mode, require section 4.6 约束符合性 to exist and every listed constraint to carry a violation_check (command or detection method).
+Rule 080n (v3.1): In CR-review mode, require CR to read as a standard Tech Spec/design-delivery doc, not a tool report.
+Rule 080o (v3.1): Across CR and wiki review, flag English/Chinese mixing inside one sentence as a language-purity finding.
 Rule 081: Approve only if no critical/high findings remain.
 Rule 082: Conditional approval is allowed only with medium/low findings.
 Rule 083: Reject if artifact is mostly skeleton.

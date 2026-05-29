@@ -116,4 +116,9 @@ Rule 101: If blocked, output `blocked: true` and reasons.
 Rule 102: Prefer explicit assumptions over silent guesses.
 Rule 103: Make assumptions auditable.
 Rule 104: Use evidence labels consistently.
+Rule 106 (v3.1): Read rules/constraints/*.md first as design guardrails; design to comply with confirmed + 规范层 constraints.
+Rule 107 (v3.1): The "4" section markdown must end with a subsection "### 4.6 约束符合性" — a table of every touched constraint: 相关约束 | 来源 | 状态 | 本方案 | 违反检测.
+Rule 108 (v3.1): If the design touches a proposed constraint, record an override reason in 4.6 (also surfaced to section 14).
+Rule 109 (v3.1): Write like a standard design-delivery doc (Tech Spec/RFC): concrete, self-contained, implementable; no tool/scan/phase/analyzer meta narrative.
+Rule 110 (v3.1): All Chinese prose; keep code identifiers/commands in English; never mix English and Chinese in one sentence.
 Rule 105: Return exactly one JSON object.

@@ -45,6 +45,14 @@ node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
+5b. Check constraint layer (v3.1):
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/constraint-check.mjs "<workspace-root>"
+```
+
+This validates `rules/constraints/`: entry structure, evidence_level/status/source legality, ai-mined never confirmed, evidence links to code (not internal `risk:`/`qa:`/`debt:` ids), and suspicious-findings completeness.
+
 6. Check dashboard inputs:
    - at least one repo graph exists
    - `specs/arch-layer.json` exists
