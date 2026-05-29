@@ -1,6 +1,6 @@
 # sample 架构全景
 
-> 生成时间:2026-05-29T07:52:01.589Z  ·  基于 commit:508a0c26f5f805556bac513a5caeb51bf851491a  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T08:24:56.174Z  ·  基于 commit:dfce0cc851a716f2b8b41d9efe076a7dcb4f1efe  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
 ## 目录
 
@@ -39,16 +39,6 @@
 
 - **Orders Module** (domain, complexity:low, change_risk:medium)：The orders module is the only visible domain component. It owns order creation behavior, and changes here affect the sample's core capability even though the implementation is intentionally small. 责任边界：Create an order identifier for a user-facing order flow.。协作对象：sample::file:src/app.ts。
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 项目范围与事实源 | specs/repos.json<br>specs/arch-layer.json |
-| 架构风格判断 | sample::file:src/app.ts<br>sample::module:orders |
-| 核心组件: Orders Module | sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-| 导览步骤: Understand the sample entry point | sample::file:src/app.ts |
-| 导览步骤: Inspect the order creation capability | sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-
 # 02 组件职责与模块
 
 ## 组件职责叙事
@@ -58,13 +48,6 @@
 ## 代码层组件证据
 
 - **orders** (module)：Order creation module.
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 组件职责: Orders Module | sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-| 代码层组件: orders | sample::module:orders |
 
 # 03 接口与集成
 
@@ -80,12 +63,6 @@
 
 未识别到 endpoint/schema 节点。
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 技术栈: TypeScript | sample::file:src/app.ts<br>sample::module:orders |
-
 # 04 数据模型与边界
 
 ## 数据边界
@@ -95,12 +72,6 @@
 ## 数据节点证据
 
 未识别到 table/schema 节点。
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 边界: Sample Repository Boundary | sample::file:src/app.ts<br>sample::module:orders |
 
 # 05 能力地图
 
@@ -112,13 +83,6 @@
 
 - **Create Order**：触发条件是 Application entry point invokes order creation.，结果是 A user-specific order identifier is produced.。链路：1. The application entry point imports the orders module. (sample::file:src/app.ts, sample::module:orders) 2. The orders module contains createOrder, which creates an order identifier. (sample::module:orders, sample::function:src/orders.ts:createOrder)
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 能力: Order Creation | sample::module:orders<br>sample::function:src/orders.ts:createOrder<br>sample::file:src/app.ts |
-| 能力链路: Create Order | sample::file:src/app.ts<br>sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-
 # 06 质量属性
 
 ## 质量属性
@@ -128,13 +92,6 @@
 ## 扩展约束
 
 - **No persistence boundary is visible**：Introduce a clear data model before treating order creation as production architecture.
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 质量属性: maintainability | sample::file:src/app.ts<br>sample::module:orders |
-| 扩展约束: No persistence boundary is visible | sample::function:src/orders.ts:createOrder |
 
 # 07 风险与技术债
 
@@ -154,15 +111,6 @@
 
 - **No persistence boundary is visible** (data-model, impact:medium)：Introduce a clear data model before treating order creation as production architecture.
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 风险: Order creation has no visible validation | sample::function:src/orders.ts:createOrder |
-| 技术债: No sample tests are present | sample::module:orders |
-| 复杂度热点: Orders module is the core sample flow | sample::module:orders |
-| 扩展约束: No persistence boundary is visible | sample::function:src/orders.ts:createOrder |
-
 # 08 运行与部署
 
 ## 运行与部署边界
@@ -172,12 +120,6 @@
 ## 部署节点证据
 
 未识别到 resource/pipeline/config 节点。
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 运行边界: Sample Repository Boundary | sample::file:src/app.ts<br>sample::module:orders |
 
 # 09 流程与场景
 
@@ -189,23 +131,11 @@
 
 未识别到 domain/flow/step 节点。
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 端到端链路: Create Order | sample::file:src/app.ts<br>sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-
 # 10 架构决策
 
 ## 架构决策索引
 
 未识别到 ADR；如果项目还没有决策记录，这是合法空缺。
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 本章没有可投影的结构化判断 | specs/arch-layer.json |
 
 # 11 变更记录
 
@@ -213,35 +143,17 @@
 
 未识别到 CR；如果尚未进入方案设计流程，这是合法空缺。
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 本章没有可投影的结构化判断 | specs/arch-layer.json |
-
 # 12 规则与约束
 
 ## 规则投影
 
 未识别到 rules 目录；团队约束不参与本次投影。
 
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 规则目录不存在 | specs/arch-layer.json |
-
 # 13 待确认事项
 
 ## Known Unknowns
 
 未识别到开放 known_unknowns。
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 待确认事项来自 arch-layer known_unknowns | specs/arch-layer.json#known_unknowns |
 
 # 14 图示
 
@@ -252,10 +164,3 @@ flowchart LR
   component_orders["Orders Module"]
   component_orders --> component_orders
 ```
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 图示组件: Orders Module | sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-| 图示链路: Create Order | sample::file:src/app.ts<br>sample::module:orders<br>sample::function:src/orders.ts:createOrder |

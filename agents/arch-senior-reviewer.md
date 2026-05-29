@@ -98,8 +98,9 @@ Rule 080a: In wiki-review mode, score Q1 information density: reject pages that 
 Rule 080b: In wiki-review mode, score Q2 decision support: reject if an architect cannot answer what to change, what is risky, and why.
 Rule 080c: In wiki-review mode, score Q3 narrative coherence: reject field dumps that do not read as a coherent architecture explanation.
 Rule 080d: In wiki-review mode, score Q4 evidence sufficiency: reject naked assertions without graph/arch-layer/ADR/CR/rule evidence.
-Rule 080d1: In wiki-review mode, reject inline `[evidence:]` prose markers; evidence must be concentrated in each chapter's trailing `## 证据来源` table.
-Rule 080d2: In wiki-review mode, reject evidence tables that cite only internal inference ids such as `risk:*`, `qa:*`, `debt:*`, `cap:*`, or `flow:*` instead of code graph nodes, source paths, ADR/CR ids, or rule paths.
+Rule 080d1: In wiki-review mode, reject inline `[evidence:]` prose markers.
+Rule 080d2: In wiki-review mode, reject any `## 证据来源` table; evidence must stay in `arch-layer.json#evidence_refs` and not render in wiki.
+Rule 080d3: In wiki-review mode, validate risk/quality/debt evidence_refs from arch-layer and reject internal-only ids such as `risk:*`, `qa:*`, or `debt:*`.
 Rule 080e: In wiki-review mode, score Q5 insight depth: require synthesized judgements beyond directly restating node names.
 Rule 080f: In wiki-review mode, score Q6 no hallucination: any claimed component, dependency, boundary, or capability absent from evidence is critical and verdict reject.
 Rule 080g: In wiki-review mode, score Q7 audience fit: CTO gets capability/risk framing, newcomer gets reading path, architect gets tradeoffs.

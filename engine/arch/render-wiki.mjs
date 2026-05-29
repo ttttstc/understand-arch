@@ -44,30 +44,13 @@ function resolveExisting(pathValue, repo) {
 }
 
 function resolveCommit(layer) {
-  const commits = layer.freshness?.repos?.map((r) => r.git_commit).filter(Boolean);
+  const commits = layer.freshness?.repos?.map((repo) => repo.git_commit).filter(Boolean);
   if (commits?.length) return commits.join(",");
   try {
     return execSync("git rev-parse HEAD", { cwd: process.cwd(), encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
     return "unknown";
   }
-}
-
-function refsFor(item) {
-  const raw = [
-    ...(Array.isArray(item?.evidence_refs) ? item.evidence_refs : []),
-    ...(Array.isArray(item?.node_ids) ? item.node_ids : []),
-    ...(Array.isArray(item?.nodeIds) ? item.nodeIds : []),
-    ...(Array.isArray(item?.supporting_node_ids) ? item.supporting_node_ids : []),
-    ...(Array.isArray(item?.inside_node_ids) ? item.inside_node_ids : []),
-  ].filter(Boolean);
-  const unique = [...new Set(raw.map(String))];
-  const codeRefs = unique.filter((ref) => !isInternalInferenceRef(ref));
-  return codeRefs.length ? codeRefs : unique;
-}
-
-function isInternalInferenceRef(ref) {
-  return /^(cap|risk|debt|qa|flow|component|tech|ext|boundary|hotspot):/.test(String(ref));
 }
 
 function h(title) {
@@ -86,40 +69,6 @@ function list(items, render, empty) {
 function nodesOf(types) {
   const wanted = new Set(types);
   return graphs.flatMap(({ graph }) => graph.nodes || []).filter((node) => wanted.has(node.type));
-}
-
-function chapterEvidence(rows) {
-  const normalized = rows
-    .filter(Boolean)
-    .map((row) => ({
-      claim: row.claim,
-      refs: Array.isArray(row.refs) ? row.refs.filter(Boolean) : [],
-    }))
-    .filter((row) => row.claim);
-  if (!normalized.length) {
-    normalized.push({ claim: "本章没有可投影的结构化判断", refs: ["specs/arch-layer.json"] });
-  }
-  return section("证据来源", [
-    "| 判断 | 代码位置 |",
-    "| --- | --- |",
-    ...normalized.map((row) => `| ${escapeTable(row.claim)} | ${escapeTable(row.refs.length ? row.refs.join("<br>") : "未闭合 evidence_refs，请重跑对应 analyzer")} |`),
-  ].join("\n"));
-}
-
-function escapeTable(value) {
-  return String(value ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
-}
-
-function graphEvidenceRows(types, label, limit = 20) {
-  return nodesOf(types).slice(0, limit).map((node) => ({
-    claim: `${label}: ${node.name || node.id}`,
-    refs: [node.id],
-  }));
-}
-
-function rowsFrom(items, labelOf) {
-  if (!Array.isArray(items)) return [];
-  return items.map((item) => ({ claim: labelOf(item), refs: refsFor(item) }));
 }
 
 function styleText() {
@@ -244,87 +193,61 @@ const chapters = [
       section("项目范围", `项目 **${layer.project?.name || basename(archDir)}** 覆盖 ${(layer.project?.repos || []).length} 个仓库。架构白皮书以 arch-layer 叙事字段为主，代码 graph 为事实来源。`) +
       section("设计阅读顺序", list(layer.tour, (step) => `- ${step.order}. **${step.title}**：${step.description}`, "未识别到架构导览步骤；可重跑 arch-enrich Phase 11。")) +
       section("核心组件概览", componentBullets()),
-    evidence: () => [
-      { claim: "项目范围与事实源", refs: ["specs/repos.json", "specs/arch-layer.json"] },
-      ...(layer.architecture_style ? rowsFrom([layer.architecture_style], () => "架构风格判断") : []),
-      ...rowsFrom(layer.component_profiles, (component) => `核心组件: ${component.name}`),
-      ...rowsFrom(layer.tour, (step) => `导览步骤: ${step.title}`),
-    ],
   },
   {
     file: "02-components.md",
     title: "02 组件职责与模块",
     content: () => section("组件职责叙事", componentBullets()) + section("代码层组件证据", graphNodesText(["module", "service", "resource"], "未识别到 module/service/resource 节点。")),
-    evidence: () => [...rowsFrom(layer.component_profiles, (component) => `组件职责: ${component.name}`), ...graphEvidenceRows(["module", "service", "resource"], "代码层组件")],
   },
   {
     file: "03-interfaces.md",
     title: "03 接口与集成",
     content: () => section("技术栈判断", techBullets()) + section("接口与集成判断", depsText()) + section("接口节点证据", graphNodesText(["endpoint", "schema"], "未识别到 endpoint/schema 节点。")),
-    evidence: () => [...rowsFrom(layer.tech_stack, (tech) => `技术栈: ${tech.name}`), ...rowsFrom(layer.external_dependencies, (dependency) => `外部依赖: ${dependency.name}`), ...graphEvidenceRows(["endpoint", "schema"], "接口节点")],
   },
   {
     file: "04-data-models.md",
     title: "04 数据模型与边界",
     content: () => section("数据边界", boundariesText()) + section("数据节点证据", graphNodesText(["table", "schema"], "未识别到 table/schema 节点。")),
-    evidence: () => [...rowsFrom(layer.boundaries, (boundary) => `边界: ${boundary.name}`), ...graphEvidenceRows(["table", "schema"], "数据节点")],
   },
   {
     file: "05-capabilities.md",
     title: "05 能力地图",
     content: () => section("能力地图", capabilitiesText()) + section("能力链路", flowBullets()),
-    evidence: () => [...rowsFrom(layer.capabilities, (capability) => `能力: ${capability.name}`), ...rowsFrom(layer.flows, (flow) => `能力链路: ${flow.name}`)],
   },
   {
     file: "06-quality.md",
     title: "06 质量属性",
     content: () => section("质量属性", qualityText()) + section("扩展约束", list(layer.extension_constraints, (constraint) => `- **${constraint.title}**：${constraint.recommendation}`, "未识别到扩展约束。")),
-    evidence: () => [...rowsFrom(layer.quality_attributes, (quality) => `质量属性: ${quality.type}`), ...rowsFrom(layer.extension_constraints, (constraint) => `扩展约束: ${constraint.title}`)],
   },
   {
     file: "07-risks-and-debt.md",
     title: "07 风险与技术债",
     content: () => riskText(),
-    evidence: () => [
-      ...rowsFrom(layer.risks, (risk) => `风险: ${risk.title}`),
-      ...rowsFrom(layer.technical_debt, (debt) => `技术债: ${debt.title}`),
-      ...rowsFrom(layer.complexity_hotspots, (hotspot) => `复杂度热点: ${hotspot.title}`),
-      ...rowsFrom(layer.extension_constraints, (constraint) => `扩展约束: ${constraint.title}`),
-    ],
   },
   {
     file: "08-deployments.md",
     title: "08 运行与部署",
     content: () => section("运行与部署边界", boundariesText()) + section("部署节点证据", graphNodesText(["resource", "pipeline", "config"], "未识别到 resource/pipeline/config 节点。")),
-    evidence: () => [...rowsFrom(layer.boundaries, (boundary) => `运行边界: ${boundary.name}`), ...graphEvidenceRows(["resource", "pipeline", "config"], "部署节点")],
   },
   {
     file: "09-flows-and-scenarios.md",
     title: "09 流程与场景",
     content: () => section("端到端链路", flowBullets()) + section("Domain Flow 节点", graphNodesText(["domain", "flow", "step"], "未识别到 domain/flow/step 节点。")),
-    evidence: () => [...rowsFrom(layer.flows, (flow) => `端到端链路: ${flow.name}`), ...graphEvidenceRows(["domain", "flow", "step"], "Domain Flow 节点")],
   },
   {
     file: "10-decisions.md",
     title: "10 架构决策",
     content: () => section("架构决策索引", list(layer.architecture_decisions, (decision) => `- **${decision.title}** (${decision.status})：${decision.path}`, "未识别到 ADR；如果项目还没有决策记录，这是合法空缺。")),
-    evidence: () => rowsFrom(layer.architecture_decisions, (decision) => `架构决策: ${decision.title}`),
   },
   {
     file: "11-changes.md",
     title: "11 变更记录",
     content: () => section("变更请求索引", list(layer.change_requests, (change) => `- **${change.title}** (${change.status})：${change.path}`, "未识别到 CR；如果尚未进入方案设计流程，这是合法空缺。")),
-    evidence: () => rowsFrom(layer.change_requests, (change) => `变更请求: ${change.title}`),
   },
   {
     file: "12-rules.md",
     title: "12 规则与约束",
     content: () => section("规则投影", renderRules()),
-    evidence: () => {
-      const rulesDir = join(archDir, "rules");
-      if (!existsSync(rulesDir)) return [{ claim: "规则目录不存在", refs: ["specs/arch-layer.json"] }];
-      return readdirSync(rulesDir).filter((file) => file.endsWith(".md")).map((file) => ({ claim: `规则文件: ${file}`, refs: [`rules/${file}`] }));
-    },
   },
   {
     file: "13-pending-changes.md",
@@ -333,19 +256,17 @@ const chapters = [
       ? `- ${unknown}`
       : `- **${unknown.question}** (${unknown.status})：${unknown.reason} owner:${unknown.owner}`,
     "未识别到开放 known_unknowns。")),
-    evidence: () => [{ claim: "待确认事项来自 arch-layer known_unknowns", refs: ["specs/arch-layer.json#known_unknowns"] }],
   },
   {
     file: "14-diagrams.md",
     title: "14 图示",
     content: () => section("上下文图", renderMermaid()),
-    evidence: () => [...rowsFrom(layer.component_profiles, (component) => `图示组件: ${component.name}`), ...rowsFrom(layer.flows, (flow) => `图示链路: ${flow.name}`)],
   },
 ];
 
 const renderedChapters = chapters.map((chapter) => ({
   ...chapter,
-  bodyMarkdown: `${chapter.content().trim()}\n\n${chapterEvidence(chapter.evidence()).trim()}\n`,
+  bodyMarkdown: `${chapter.content().trim()}\n`,
 }));
 
 for (const chapter of renderedChapters) {
@@ -365,7 +286,7 @@ writeDoc(join(wikiDir, "ARCHITECTURE.md"), architecture);
 writeDoc(join(wikiDir, "README.md"), h("Wiki README") + [
   "- [ARCHITECTURE.md](ARCHITECTURE.md) 是主产物长文，按 01-14 顺序完整拼接全部切片章节。",
   "- 01-14 是同源章节的单页切片，供 dashboard、局部刷新和精读使用。",
-  "- 正文不内联 evidence；每章末尾的 `## 证据来源` 表格集中列出判断和代码位置。",
+  "- 审计回链保留在结构化 JSON 中，阅读文档只呈现架构叙事。",
 ].join("\n"));
 
 function slug(title) {

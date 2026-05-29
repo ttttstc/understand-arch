@@ -32,9 +32,9 @@ gates:
   - id: three-state-honesty
     severity: fail
     check: present facts are projected, absent facts are honestly declared absent, and uncertain facts are represented as known_unknowns
-  - id: evidence-visible
-    severity: warn
-    check: every chapter ends with a ## 证据来源 table;正文不内联 [evidence:]; evidence rows cite graph node ids, file paths, ADR/CR ids, or rule paths, not risk/qa/debt internal ids
+  - id: evidence-hidden
+    severity: fail
+    check: wiki正文和章节末尾都不出现 evidence; evidence_refs 只保留在 arch-layer.json, risk/qa/debt evidence_refs 必须回链代码且不能是内部 id
   - id: senior-q1-q7
     severity: fail
     check: full wiki review applies Q1 information density, Q2 decision support, Q3 coherence, Q4 evidence, Q5 insight depth, Q6 no hallucination, and Q7 audience fit

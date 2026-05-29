@@ -1,6 +1,6 @@
 # 09 流程与场景
 
-> 生成时间:2026-05-29T07:52:01.589Z  ·  基于 commit:508a0c26f5f805556bac513a5caeb51bf851491a  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T08:24:56.174Z  ·  基于 commit:dfce0cc851a716f2b8b41d9efe076a7dcb4f1efe  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
 ## 端到端链路
 
@@ -9,9 +9,3 @@
 ## Domain Flow 节点
 
 未识别到 domain/flow/step 节点。
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 端到端链路: Create Order | sample::file:src/app.ts<br>sample::module:orders<br>sample::function:src/orders.ts:createOrder |

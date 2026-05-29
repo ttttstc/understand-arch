@@ -1,6 +1,6 @@
 # 02 组件职责与模块
 
-> 生成时间:2026-05-29T07:52:01.589Z  ·  基于 commit:508a0c26f5f805556bac513a5caeb51bf851491a  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T08:24:56.174Z  ·  基于 commit:dfce0cc851a716f2b8b41d9efe076a7dcb4f1efe  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
 ## 组件职责叙事
 
@@ -9,10 +9,3 @@
 ## 代码层组件证据
 
 - **orders** (module)：Order creation module.
-
-## 证据来源
-
-| 判断 | 代码位置 |
-| --- | --- |
-| 组件职责: Orders Module | sample::module:orders<br>sample::function:src/orders.ts:createOrder |
-| 代码层组件: orders | sample::module:orders |

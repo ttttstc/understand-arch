@@ -11,7 +11,7 @@ const layer = JSON.parse(readFileSync(layerPath, "utf-8"));
 const findings = [];
 const timestampPattern = />\s*生成时间:.+基于 commit:.+事实源:/;
 const inlineEvidencePattern = /\[evidence:\s*[^\]]+\]/i;
-const internalEvidencePattern = /\b(?:risk|qa|debt|cap|flow|component|tech|ext|boundary|hotspot):[a-zA-Z0-9_.:-]+/;
+const evidenceHeadingPattern = /^##\s+证据来源\s*$/m;
 
 const sliceFiles = [
   "01-overview.md",
@@ -72,15 +72,6 @@ function requireProjection(items, file, labelKey) {
   }
 }
 
-function hasEvidenceTable(text) {
-  return /##\s+证据来源\s*\n+\|\s*判断\s*\|\s*代码位置\s*\|/m.test(text);
-}
-
-function evidenceTableText(text) {
-  const match = text.match(/##\s+证据来源\s*\n+([\s\S]*?)(?=\n#|\n##\s+[^证]|$)/m);
-  return match ? match[1] : "";
-}
-
 function checkFile(file) {
   const text = readWiki(file);
   if (!text) {
@@ -94,14 +85,10 @@ function checkFile(file) {
     if (pattern.test(text)) findings.push({ severity: "high", code: "F5", message: `${file} contains placeholder text matching ${pattern}` });
   }
   if (inlineEvidencePattern.test(text)) {
-    findings.push({ severity: "high", code: "F3", message: `${file} contains inline [evidence:] text; use end-of-chapter table instead` });
+    findings.push({ severity: "high", code: "F3", message: `${file} contains inline [evidence:] text; wiki must not render evidence` });
   }
-  if (!hasEvidenceTable(text)) {
-    findings.push({ severity: "high", code: "F3", message: `${file} missing ## 证据来源 table` });
-  }
-  const table = evidenceTableText(text);
-  if (internalEvidencePattern.test(table)) {
-    findings.push({ severity: "high", code: "F3", message: `${file} evidence table contains arch-layer internal ids instead of code/ADR/CR/rule refs` });
+  if (evidenceHeadingPattern.test(text)) {
+    findings.push({ severity: "high", code: "F3", message: `${file} contains ## 证据来源; wiki must not render evidence tables` });
   }
 }
 
@@ -149,6 +136,20 @@ requireProjection(layer.complexity_hotspots, "07-risks-and-debt.md", "title");
 requireProjection(layer.extension_constraints, "06-quality.md", "title");
 requireProjection(layer.architecture_decisions, "10-decisions.md", "title");
 requireProjection(layer.change_requests, "11-changes.md", "title");
+
+for (const item of [...(layer.quality_attributes || []), ...(layer.risks || []), ...(layer.technical_debt || [])]) {
+  const refs = Array.isArray(item.evidence_refs) ? item.evidence_refs.map(String) : [];
+  if (refs.length === 0) {
+    findings.push({ severity: "high", code: "F3", message: `${item.id || item.title || item.type} missing arch-layer evidence_refs` });
+    continue;
+  }
+  if (refs.some((ref) => /^(risk|qa|debt):/.test(ref))) {
+    findings.push({ severity: "high", code: "F3", message: `${item.id || item.title || item.type} evidence_refs contains internal ids` });
+  }
+  if (!refs.some((ref) => /^[^:]+::(file|function|class|module|service|endpoint|schema|table|resource|document):/.test(ref) || /\.(?:[cm]?[jt]sx?|tsx?|vue|svelte|css|scss|html|json|ya?ml|toml|md|py|go|rs|java|kt|cs|cpp|c|h)(?::\d+)?$/i.test(ref))) {
+    findings.push({ severity: "high", code: "F3", message: `${item.id || item.title || item.type} evidence_refs must include code graph node id or source file path` });
+  }
+}
 
 console.log(JSON.stringify({
   ok: findings.length === 0,

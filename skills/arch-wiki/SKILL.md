@@ -65,14 +65,14 @@ Default audience is `newcomer`.
 5. If data is missing, write an honest known unknown and ensure it is represented in `arch-layer.known_unknowns`.
 6. Never write TODO, TBD, placeholder, lorem ipsum, default Mermaid, `待补充`, or `占位`.
 7. Do not ask an LLM to invent wiki content. If the wiki is thin, rerun `arch-enrich` Phase 7/8/9 so arch-layer gets thicker, then render again.
-8. Do not put inline `[evidence:]` markers in prose. Every chapter/page ends with `## 证据来源` and a `判断 | 代码位置` table.
-9. Evidence rows must cite graph node ids, source paths, ADR/CR ids, or rule paths. `risk:*`, `qa:*`, `debt:*`, `cap:*`, and similar arch-layer internal ids are labels, not evidence.
+8. Do not put evidence in wiki output at all. No inline `[evidence:]` markers and no `## 证据来源` tables.
+9. Evidence remains only in `specs/arch-layer.json#evidence_refs` for audit, wiki-reviewer, senior-reviewer Q6, and eval checks.
 
 ## Page Mapping
 
 - ARCHITECTURE: full readable whitepaper assembled by concatenating the same 14 chapter bodies used by the slice pages, preceded by a table of contents.
 - 01 overview: project summary, repo list, architecture style, reading order, tour summary.
-- 02 components: component_profiles plus module/service/resource evidence.
+- 02 components: component_profiles plus module/service/resource facts.
 - 03 interfaces: external_dependencies plus endpoints, schemas, imports, service calls, events, queues.
 - 04 data models: boundaries plus tables, schemas, data resources, ownership hints.
 - 05 capabilities: every `arch-layer.capabilities[]` item.
@@ -131,7 +131,7 @@ If either reviewer returns `needs_revision`, `conditional` with high findings, o
 - `ARCHITECTURE.md`, all 14 pages, and README exist.
 - `ARCHITECTURE.md` is roughly the same byte size as the 14 slices combined because it contains the full chapter content.
 - Every page has timestamp/source line.
-- Prose has no inline `[evidence:]`; every chapter has a trailing `## 证据来源` table.
+- Wiki prose and chapter endings contain no rendered evidence; `arch-layer.json#evidence_refs` remains valid for audit checks.
 - Projection check returns ok.
 - `wiki-reviewer` verdict is approve or conditional.
 - `arch-senior-reviewer` is approve or conditional for full review audiences.
