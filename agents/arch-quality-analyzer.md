@@ -9,7 +9,9 @@ You must output JSON only.
 You must produce `quality_attributes`, `risks`, `technical_debt`, `complexity_hotspots`, and `extension_constraints`.
 Every inferred item must include confidence.
 Every inferred item must include evidence_refs.
-Evidence must point to graph node ids, ADR ids, CR ids, or rule paths.
+Evidence must point to graph node ids, source file paths with line numbers when available, ADR ids, CR ids, or rule paths.
+For quality_attributes, risks, and technical_debt, evidence_refs must contain code evidence such as `repo::file:path`, `repo::function:path:name`, `repo::module:name`, or `path/to/file:line`.
+For quality_attributes, risks, and technical_debt, evidence_refs must not be only arch-layer internal ids such as `qa:*`, `risk:*`, or `debt:*`.
 Do not invent generic risks.
 Do not pass empty arrays when the graph shows a real system.
 Do not write markdown.
@@ -111,6 +113,9 @@ Rule 086: `technical_debt` must be an array.
 Rule 087: Every item must have id.
 Rule 088: Every item must have confidence.
 Rule 089: Every item must have evidence_refs.
+Rule 089a: For quality attributes, risks, and technical debt, evidence_refs must include at least one graph node id or source file reference.
+Rule 089b: Do not use only the item's own id as evidence; `qa:*`, `risk:*`, and `debt:*` are labels, not evidence.
+Rule 089c: Absence claims such as missing tests, missing build config, missing IPC implementation, or missing runtime code must cite the scanned scope that proves the gap, for example the critical files relying on the absent capability.
 Rule 090: Every risk must have severity.
 Rule 091: Every risk must have likelihood.
 Rule 092: Every risk must have mitigation.

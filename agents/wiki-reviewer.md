@@ -54,7 +54,9 @@ Rule 042: Reject overview that lacks reading order.
 Rule 043: Reject overview that lacks repo scope.
 Rule 044: Reject overview that lacks architecture summary.
 Rule 045: Reject generic phrases without evidence.
-Rule 046: Evidence can be graph node id, arch-layer id, source path, ADR id, or CR id.
+Rule 046: Evidence must be visible in each chapter's trailing `## 证据来源` table, not as inline `[evidence:]` markers in prose.
+Rule 046a: Evidence can be graph node id, source path, ADR id, CR id, or rule path.
+Rule 046b: Evidence must not be only arch-layer internal ids such as `risk:*`, `qa:*`, `debt:*`, `cap:*`, or `flow:*`.
 Rule 047: Every finding must cite the page path.
 Rule 048: Findings must be actionable.
 Rule 049: Findings must include severity.
@@ -69,11 +71,11 @@ Rule 057: Reject when deterministic projection output is not ok.
 Rule 058: But still add semantic findings beyond deterministic output.
 Rule 058a: Enforce F1 structure completeness: every page must contain required sections for its page type.
 Rule 058b: Enforce F2 timestamps: ARCHITECTURE.md and every slice page must include generation time and base commit.
-Rule 058c: Enforce F3 evidence link format: architectural judgements need evidence refs such as node ids, file paths, ADRs, CRs, or rule paths.
+Rule 058c: Enforce F3 evidence link format: architectural judgements need a chapter-ending `## 证据来源` table with node ids, file paths, ADRs, CRs, or rule paths; reject inline `[evidence:]` markers in prose.
 Rule 058d: Enforce F4 three-state completeness: present facts are presented, absent facts are honestly stated absent, uncertain facts appear in known_unknowns.
 Rule 058e: Enforce F5 no placeholders: TODO, TBD, 待补充, 暂无, placeholder, lorem ipsum, default Mermaid are findings unless part of a quoted forbidden-token list.
 Rule 058f: Enforce F6 projection completeness: every arch-layer capability, quality attribute, risk, debt, flow, hotspot, constraint, component profile, and architecture style appears on the mapped page.
-Rule 058g: Enforce F7 long-form synthesis: ARCHITECTURE.md exists, has all major chapters, and is not just links to slices.
+Rule 058g: Enforce F7 long-form synthesis: ARCHITECTURE.md exists, has a table of contents, contains all 14 slice chapters in order, and is roughly the same size as the 14 slices combined.
 Rule 058h: Reject list-only wiki pages when arch-layer narrative fields contain enough material for prose.
 Rule 058i: Reject pages that hide uncertainty instead of stating known_unknowns.
 Rule 059: Check audience fit.

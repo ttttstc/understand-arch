@@ -66,7 +66,7 @@ const wikiText = [
   "09-flows-and-scenarios.md",
 ].map((file) => readText(join(wikiDir, file))).join("\n");
 const placeholderCount = countMatches(wikiText, /\bTODO\b|\bTBD\b|待补充|占位|placeholder|lorem ipsum|默认 Mermaid/gi);
-const analysisSentences = countMatches(wikiText, /因为|因此|取舍|风险|约束|边界|支撑|影响|evidence:/g);
+const analysisSentences = countMatches(wikiText, /因为|因此|取舍|风险|约束|边界|支撑|影响|证据来源/g);
 const listLines = countMatches(wikiText, /^\s*-/gm);
 const informationDensity = round(analysisSentences / Math.max(listLines, 1));
 const consistency = stableCore(layer) ? 1 : 0.5;
@@ -134,7 +134,7 @@ function isClosedRef(ref) {
   if (typeof ref !== "string" || ref.length === 0) return false;
   if (nodeIds.has(ref)) return true;
   if (/^(rules|decisions|change-requests|specs)\//.test(ref)) return true;
-  if (/^(cap|risk|debt|qa|flow|component|tech|ext|boundary|hotspot):/.test(ref)) return true;
+  if (/^(cap|risk|debt|qa|flow|component|tech|ext|boundary|hotspot):/.test(ref)) return false;
   if (/^[a-zA-Z0-9_.-]+::/.test(ref)) return nodeIds.has(ref);
   return existsSync(resolve(archDir, ref)) || existsSync(resolve(process.cwd(), ref));
 }

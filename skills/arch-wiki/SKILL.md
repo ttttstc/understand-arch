@@ -6,7 +6,7 @@ argument-hint: ["[audience=cto|newcomer|pm|architect] [arch-project-dir]"]
 
 # /arch-wiki
 
-Render and review the human-readable architecture wiki. The main product is `ARCHITECTURE.md`; the 14 pages are slice views. The wiki is a deterministic projection of graph plus `arch-layer.json`; it is not an independent source of truth and must not run LLM inference during rendering.
+Render and review the human-readable architecture wiki. The main product is `ARCHITECTURE.md`; the 14 pages are slice views. `ARCHITECTURE.md` must be the full 01-14 chapter concatenation with a table of contents, not a separate summary. The wiki is a deterministic projection of graph plus `arch-layer.json`; it is not an independent source of truth and must not run LLM inference during rendering.
 
 ## Required Pages
 
@@ -65,10 +65,12 @@ Default audience is `newcomer`.
 5. If data is missing, write an honest known unknown and ensure it is represented in `arch-layer.known_unknowns`.
 6. Never write TODO, TBD, placeholder, lorem ipsum, default Mermaid, `待补充`, or `占位`.
 7. Do not ask an LLM to invent wiki content. If the wiki is thin, rerun `arch-enrich` Phase 7/8/9 so arch-layer gets thicker, then render again.
+8. Do not put inline `[evidence:]` markers in prose. Every chapter/page ends with `## 证据来源` and a `判断 | 代码位置` table.
+9. Evidence rows must cite graph node ids, source paths, ADR/CR ids, or rule paths. `risk:*`, `qa:*`, `debt:*`, `cap:*`, and similar arch-layer internal ids are labels, not evidence.
 
 ## Page Mapping
 
-- ARCHITECTURE: long-form readable whitepaper from architecture_style, component_profiles, tech_stack, capabilities, flows, risks, constraints, ADRs, CRs, and known_unknowns.
+- ARCHITECTURE: full readable whitepaper assembled by concatenating the same 14 chapter bodies used by the slice pages, preceded by a table of contents.
 - 01 overview: project summary, repo list, architecture style, reading order, tour summary.
 - 02 components: component_profiles plus module/service/resource evidence.
 - 03 interfaces: external_dependencies plus endpoints, schemas, imports, service calls, events, queues.
@@ -127,7 +129,9 @@ If either reviewer returns `needs_revision`, `conditional` with high findings, o
 ## Success Criteria
 
 - `ARCHITECTURE.md`, all 14 pages, and README exist.
+- `ARCHITECTURE.md` is roughly the same byte size as the 14 slices combined because it contains the full chapter content.
 - Every page has timestamp/source line.
+- Prose has no inline `[evidence:]`; every chapter has a trailing `## 证据来源` table.
 - Projection check returns ok.
 - `wiki-reviewer` verdict is approve or conditional.
 - `arch-senior-reviewer` is approve or conditional for full review audiences.

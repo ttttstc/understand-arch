@@ -103,9 +103,11 @@ function validateShape(layer) {
   }
   for (const risk of layer.risks) {
     requireInference(risk, `risk ${risk.id || risk.title || "<unknown>"}`);
+    requireCodeEvidence(risk, `risk ${risk.id || risk.title || "<unknown>"}`);
   }
   for (const qa of layer.quality_attributes) {
     requireInference(qa, `quality attribute ${qa.id || qa.type || "<unknown>"}`);
+    requireCodeEvidence(qa, `quality attribute ${qa.id || qa.type || "<unknown>"}`);
   }
   for (const key of [
     "component_profiles",
@@ -115,9 +117,12 @@ function validateShape(layer) {
     "extension_constraints",
     "external_dependencies",
     "boundaries",
-    "technical_debt",
   ]) {
     for (const item of layer[key]) requireInference(item, `${key} ${item.id || item.name || item.title || "<unknown>"}`);
+  }
+  for (const debt of layer.technical_debt) {
+    requireInference(debt, `technical debt ${debt.id || debt.title || "<unknown>"}`);
+    requireCodeEvidence(debt, `technical debt ${debt.id || debt.title || "<unknown>"}`);
   }
   return layer;
 }
@@ -126,6 +131,22 @@ function requireInference(item, label) {
   if (!item.confidence || !Array.isArray(item.evidence_refs) || item.evidence_refs.length === 0) {
     throw new Error(`${label} missing confidence/evidence_refs`);
   }
+}
+
+function requireCodeEvidence(item, label) {
+  const refs = Array.isArray(item.evidence_refs) ? item.evidence_refs.map(String) : [];
+  if (refs.some((ref) => /^(risk|qa|debt):/.test(ref))) {
+    throw new Error(`${label} evidence_refs must not use arch-layer internal ids`);
+  }
+  if (!refs.some(isCodeEvidenceRef)) {
+    throw new Error(`${label} evidence_refs must include code graph node id or source file path`);
+  }
+}
+
+function isCodeEvidenceRef(ref) {
+  if (/^[^:]+::(file|function|class|module|service|endpoint|schema|table|resource|document):/.test(ref)) return true;
+  if (/\.(?:[cm]?[jt]sx?|tsx?|vue|svelte|css|scss|html|json|ya?ml|toml|md|py|go|rs|java|kt|cs|cpp|c|h)(?::\d+)?$/i.test(ref)) return true;
+  return false;
 }
 
 function writeLayer(layer) {

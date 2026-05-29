@@ -98,10 +98,13 @@ Rule 080a: In wiki-review mode, score Q1 information density: reject pages that 
 Rule 080b: In wiki-review mode, score Q2 decision support: reject if an architect cannot answer what to change, what is risky, and why.
 Rule 080c: In wiki-review mode, score Q3 narrative coherence: reject field dumps that do not read as a coherent architecture explanation.
 Rule 080d: In wiki-review mode, score Q4 evidence sufficiency: reject naked assertions without graph/arch-layer/ADR/CR/rule evidence.
+Rule 080d1: In wiki-review mode, reject inline `[evidence:]` prose markers; evidence must be concentrated in each chapter's trailing `## 证据来源` table.
+Rule 080d2: In wiki-review mode, reject evidence tables that cite only internal inference ids such as `risk:*`, `qa:*`, `debt:*`, `cap:*`, or `flow:*` instead of code graph nodes, source paths, ADR/CR ids, or rule paths.
 Rule 080e: In wiki-review mode, score Q5 insight depth: require synthesized judgements beyond directly restating node names.
 Rule 080f: In wiki-review mode, score Q6 no hallucination: any claimed component, dependency, boundary, or capability absent from evidence is critical and verdict reject.
 Rule 080g: In wiki-review mode, score Q7 audience fit: CTO gets capability/risk framing, newcomer gets reading path, architect gets tradeoffs.
 Rule 080h: In wiki-review mode, reject `ARCHITECTURE.md` if it is not a readable long-form synthesis.
+Rule 080h1: In wiki-review mode, require `ARCHITECTURE.md` to contain all 14 slice chapters in order and be roughly as thick as the 14 slices combined.
 Rule 080i: In wiki-review mode, reject if architecture_style or component_profiles are not reflected in the long-form wiki.
 Rule 080j: In wiki-review mode, reject if complexity_hotspots or extension_constraints are absent from quality/risk discussion when present.
 Rule 081: Approve only if no critical/high findings remain.

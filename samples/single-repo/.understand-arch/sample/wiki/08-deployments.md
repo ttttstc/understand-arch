@@ -1,11 +1,17 @@
-# Deployments
+# 08 运行与部署
 
-> 生成时间:2026-05-28T15:22:09.394Z  ·  基于 commit:6ea05653a7f15c99c9d3f55cf696d8c9a61b770e  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T07:52:01.589Z  ·  基于 commit:508a0c26f5f805556bac513a5caeb51bf851491a  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
 
 ## 运行与部署边界
 
-- **Sample Repository Boundary** (repo)：All identified code facts live inside the single sample repository. 内部节点：sample::file:src/app.ts, sample::module:orders；外部：No external repos identified。 [evidence: sample::file:src/app.ts, sample::module:orders]
+- **Sample Repository Boundary** (repo)：All identified code facts live inside the single sample repository. 内部节点：sample::file:src/app.ts, sample::module:orders；外部：No external repos identified。
 
 ## 部署节点证据
 
-未识别到 resource/pipeline/config 节点。 [evidence: known_unknown]
+未识别到 resource/pipeline/config 节点。
+
+## 证据来源
+
+| 判断 | 代码位置 |
+| --- | --- |
+| 运行边界: Sample Repository Boundary | sample::file:src/app.ts<br>sample::module:orders |
