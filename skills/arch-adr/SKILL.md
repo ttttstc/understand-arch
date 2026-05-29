@@ -1,34 +1,70 @@
 ---
 name: arch-adr
-description: |
-  内部 ADR 写入器。仅当方案包含长期架构决策时创建 append-only ADR,并追加 cross-repo architecture_decisions 索引。
+description: Append-only ADR management and arch-layer architecture_decisions indexing.
+argument-hint: ["<decision-title>"]
 ---
 
 # arch-adr
 
-## 定位
+Create and index architecture decision records. ADRs are append-only once accepted.
 
-`arch-adr` 只处理 durable decision。局部实现取舍留在 CR.md,不升级为 ADR。
-
-## 输出
-
-- `decisions/ADR-NNN-{slug}.md`
-- `specs/cross-repo.json#architecture_decisions[]` 追加索引
-
-## Engine 调用
-
-创建 ADR 必须使用:
+## Location
 
 ```text
-node engine/bin/adr-editor.js create --workspace .understand-arch/{project} --title "..." --status proposed --affected-node-ids repo::node
+.understand-arch/<project>/decisions/ADR-YYYY-NNN-<slug>.md
 ```
 
-该工具会创建 append-only ADR markdown,并同步追加 `specs/cross-repo.json#architecture_decisions[]`。
+## ADR Template
 
-## Append-only
+```markdown
+# ADR-YYYY-NNN: <title>
 
-ADR 文件一旦提交后不得修改。废弃、替代、supersede 关系写入 cross-repo graph 索引。
+## Status
 
-## 写权限
+proposed
 
-允许写 `decisions/ADR-*.md` 与 `cross-repo.json#architecture_decisions[]`;禁止写 wiki、change-requests、specs/repos/**。
+## Context
+
+## Decision
+
+## Consequences
+
+## Alternatives Considered
+
+## Evidence
+
+## Supersedes / Superseded By
+```
+
+## Procedure
+
+1. Resolve `ARCH_PROJECT_ROOT`.
+2. Read graph, arch-layer, rules, and related CRs.
+3. Create a new ADR file for a new decision.
+4. If changing an accepted ADR, append a supersession note and create a new ADR.
+5. Dispatch `arch-senior-reviewer` in design-review mode if the ADR has major risk or cross-repo consequences.
+6. Update `specs/arch-layer.json` with an `architecture_decisions[]` entry using `arch-layer-writer.mjs merge`.
+
+## Patch Shape
+
+```json
+{
+  "architecture_decisions": [
+    {
+      "id": "ADR-YYYY-NNN",
+      "title": "...",
+      "path": "decisions/ADR-YYYY-NNN-title.md",
+      "status": "proposed|accepted|deprecated|superseded",
+      "node_ids": ["repo::node-id"]
+    }
+  ]
+}
+```
+
+## Rules
+
+- Do not edit accepted ADR body text.
+- Do not delete ADR files.
+- Do not index an ADR without a path.
+- Link ADRs to graph node ids when evidence exists.
+- If evidence is missing, record a known unknown.

@@ -1,13 +1,21 @@
 {
-  "name": "understand-arch",
-  "version": "2.0.0-rc1",
-  "private": true,
-  "description": "Claude Code architecture knowledge plugin for senior architects.",
+  "name": "@understand-arch/plugin",
+  "version": "3.0.0-rc1",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "verify": "pnpm --filter @understand-arch/scanner-engine build && node engine/bin/validate-v2-structure.js && node engine/bin/smoke-v2-tools.js"
+    "build": "tsc",
+    "test": "pnpm --filter @understand-arch/core test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard test",
+    "verify": "pnpm test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard build"
+  },
+  "dependencies": {
+    "@understand-arch/core": "workspace:*",
+    "graphology": "~0.26.0",
+    "graphology-communities-louvain": "^2.0.2"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0",
+    "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.1.0"
   }

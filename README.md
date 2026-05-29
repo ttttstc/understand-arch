@@ -1,6 +1,6 @@
 # understand-arch
 
-> A Claude Code plugin for senior architects. Maintain an evidence-backed architecture knowledge base for any project — single-repo or multi-repo.
+> A Claude Code plugin for senior architects. Maintain a trustworthy, evidence-backed architecture knowledge base for any project — single-repo or multi-repo.
 
 [中文](./README.zh.md)
 
@@ -10,11 +10,12 @@
 
 `understand-arch` turns your codebase into a living architecture knowledge base you can trust:
 
-- **Knowledge graph** — every component, interface, data model, deployment and business capability is a node with evidence, kept in sync with your code
-- **Wiki** — 14 human-readable pages that always trace back to the graph (no fabrication)
-- **Design documents** — one-file `CR.md` per change request (14 RFC-style sections), generated from PRD + current graph
+- **Knowledge graph** — every component, interface, data model, deployment and business capability is a node, kept in sync with your code (every inference is backed by code evidence under the hood)
+- **Architecture document** — a single readable `ARCHITECTURE.md` whitepaper (plus 14 chapter slices) that reads like a standard architecture tech doc, not a tool report
+- **Design documents** — one-file `CR.md` per change request (14 RFC-style sections), generated from a PRD + the current architecture
 - **Decisions** — append-only ADR ledger
-- **Rules** — your team's architecture conventions, naturally enforced in design reviews
+- **Rules** — your team's architecture conventions, naturally enforced during design review
+- **Dashboard** — an interactive view of the code graph and architecture layer
 
 All artifacts live inside one directory in your project root: `.understand-arch/`. Nothing else is touched.
 
@@ -23,27 +24,37 @@ All artifacts live inside one directory in your project root: `.understand-arch/
 **Onboard a project (single or multi-repo)**
 > "Help me understand this codebase" → `/arch-onboard`
 
-Scans every registered repo, builds a per-repo `knowledge-graph.json` plus a cross-repo graph. Detects components, interfaces, data models, deployments and business capabilities with evidence. Produces 14 wiki pages so any team member can ramp up.
+Scans every registered repo, builds a per-repo knowledge graph plus a cross-repo view. Infers architecture style, component responsibilities, tech-stack rationale, business capabilities, quality attributes, risks and technical debt. Produces a full `ARCHITECTURE.md` whitepaper so any team member can ramp up.
+
+**Read the architecture as one document**
+> open `.understand-arch/{project}/wiki/ARCHITECTURE.md`
+
+A top-to-bottom architecture technical document: project overview, components, interfaces, data models, capabilities, quality, risks & debt, deployment, flows, decisions, changes, rules. Written in plain language, no tool jargon, no reading tutorials — just the project's architecture.
 
 **Design a change against the current architecture**
 > "Here's the PRD, design it" → `/arch-design`
 
-Reads PRD + current graph → finds the affected nodes (cross-repo aware) → drafts a single `CR.md` with 14 sections (background, impact, solution, alternatives, NFR, risks, change list, rollout plan, rollback, testing, traceability, …). Reviewed by a senior-architect agent before it's marked ready.
+Reads a PRD + the current architecture → finds the affected nodes (cross-repo aware, split into a tight core set and an adjacent review set) → drafts a single `CR.md` with 14 sections (background, impact, solution, alternatives, NFR, risks, change list, rollout, rollback, testing, traceability, …). A senior-architect agent reviews it before it's marked ready.
 
 **Check whether the baseline still matches reality**
 > "Is the architecture baseline still trustworthy?" → `/arch-audit`
 
-Compares stored fingerprints with the current commit. Flags drift between graph and reality, broken traceability, and degraded acceptance gates. Suggests refresh if needed.
+Compares stored fingerprints with the current state. Flags drift between the model and reality, broken traceability, and degraded gates. Suggests a refresh if needed.
 
-**Re-render or refresh the wiki**
+**Re-render or refresh the document**
 > "Update the wiki" / "Give me a CTO-level overview" → `/arch-wiki`
 
-Re-renders the 14 pages from the latest graph. Supports audience modes: `cto`, `newcomer`, `pm`, `architect`. Senior-architect agent reviews wiki quality (full review for first-time/cto/architect, lite review for routine refresh).
+Re-renders `ARCHITECTURE.md` and the 14 slices from the latest graph + architecture layer. Audience modes: `cto`, `newcomer`, `pm`, `architect`. A senior-architect agent reviews quality (full review for first run / cto / architect; lite review for routine refresh).
 
-**Draw 4+1 / C4 architecture diagrams**
+**Visualize the architecture**
+> "Show me the dashboard" → `/arch-dashboard`
+
+Launches an interactive dashboard: code graph, capability map, risk view, multi-repo topology, and a step-through architecture tour.
+
+**Draw 4+1 / C4 diagrams**
 > `/arch-diagram`
 
-v2.0 ships a placeholder; image generation is planned for v2.1. The wiki already includes Mermaid sources you can render today.
+v3.0 ships Mermaid sources inside the wiki; rendered-image generation is planned for a later release.
 
 ## Installation
 
@@ -55,19 +66,20 @@ In Claude Code, run:
 /reload-plugins
 ```
 
-That's it. After `/reload-plugins`, type `/arch-` at any prompt to verify the five commands appear:
+The plugin manifest stays minimal, and Claude Code discovers slash commands directly from `skills/*/SKILL.md`. After `/reload-plugins`, type `/arch-` at any prompt to verify the six commands appear:
 
 - `/arch-onboard`
 - `/arch-design`
 - `/arch-audit`
 - `/arch-wiki`
 - `/arch-diagram`
+- `/arch-dashboard`
 
 ### Don't see the commands?
 
-1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up new skills.
+1. **Did you run `/reload-plugins`?** Without it Claude Code won't pick up newly installed plugin skills.
 2. **Is the plugin installed?** Run `/plugin list` and check for `understand-arch`.
-3. **Command format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
+3. **Slash name format**: `/arch-onboard` (dash), not `/arch:onboard` (colon syntax isn't supported).
 4. **Force reload**: restart Claude Code, then `/reload-plugins` again.
 
 ### Optional: enable git-commit auto-refresh
@@ -87,10 +99,11 @@ This flips `hooks_enabled: true` in your project's state file. Disable any time 
 ```
 
 First run will:
-1. Scan your repository (multi-repo? it will discover sibling repos and ask before registering)
+1. Scan your repository (multi-repo? it discovers sibling repos and asks before registering)
 2. Build the knowledge graph
-3. Render the 14-page wiki
-4. Tell you what it couldn't determine (known unknowns), so you can decide what to refine
+3. Infer the architecture layer (style, components, capabilities, quality, risks, debt)
+4. Render `ARCHITECTURE.md` + 14 slices
+5. Tell you what it couldn't determine (known unknowns), so you can decide what to refine
 
 Subsequent commands work against the same workspace. Natural language also routes:
 
@@ -106,15 +119,20 @@ your-project/
 ├── src/
 ├── package.json
 ├── …
-└── .understand-arch/           ← the only directory we add
+└── .understand-arch/                 ← the only directory we add
     └── {project}/
-        ├── specs/              ← knowledge graph (committable)
-        ├── wiki/               ← 14 readable pages (committable)
-        ├── rules/              ← your team conventions (you edit)
-        ├── decisions/          ← ADR ledger (committable, append-only)
-        ├── change-requests/    ← CR.md files (committable)
-        ├── state.yaml          ← workflow state (committable)
-        └── intermediate/       ← scanner scratch (gitignored)
+        ├── specs/
+        │   ├── repos.json            ← registered repos
+        │   ├── repos/{id}/knowledge-graph.json   ← per-repo code graph
+        │   └── arch-layer.json       ← architecture layer (style/capabilities/risks/…)
+        ├── wiki/
+        │   ├── ARCHITECTURE.md       ← the full readable whitepaper
+        │   └── 01..14-*.md           ← chapter slices
+        ├── rules/                    ← your team conventions (you edit)
+        ├── decisions/                ← ADR ledger (append-only)
+        ├── change-requests/          ← CR.md files
+        ├── state.yaml                ← workflow state
+        └── intermediate/             ← scanner scratch (gitignored)
 ```
 
 The auto-generated `.gitignore` keeps `intermediate/` and metrics out of git. Everything else is meant to be versioned alongside your code.

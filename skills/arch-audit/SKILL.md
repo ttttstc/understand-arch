@@ -1,78 +1,107 @@
 ---
 name: arch-audit
-description: |
-  审视 v2.0 graph 与 wiki 是否仍可信。默认做 freshness 与完整性检查;用户选择后才运行重型 drift audit。
-argument-hint: ["[--drift|--refresh]"]
+description: Audit an understand-arch baseline for freshness, drift, projection completeness, and review readiness.
+argument-hint: ["[arch-project-dir] [--full]"]
 ---
 
 # /arch-audit
 
-## 定位
+Use this when the user asks whether the architecture baseline is trustworthy. The audit checks code graph freshness, architecture-layer completeness, wiki projection, eval-report trust signals, dashboard readiness, rules/ADR consistency, and CR review quality.
 
-`arch-audit` 回答“当前架构基线还能不能支撑判断”。默认不重扫全仓,只检查 fingerprint、schema、traceability、wiki 与 graph 一致性。
+## Inputs
 
-## 模式
+- `.understand-arch/<project>/specs/repos.json`
+- per-repo `knowledge-graph.json`
+- `specs/arch-layer.json`
+- `specs/freshness.json`
+- wiki pages
+- `eval-report.json`
+- rules, ADRs, CRs
 
-- 默认:运行 `audit-workspace.js`,检查 repos.yaml、每仓 fingerprint、repo graph、state overrides。
-- wiki 完整性:运行 `wiki-review.js --mode lite`;需要发布或架构评审时运行 `--mode full`。
-- `--drift`:调度 `arch-analyze --mode=drift-audit`,对比代码事实与 graph。
-- `--repair-suggestion`:只给修复建议,不改事实层。
+## Deterministic Checks
 
-## Subagent Dispatch 模板
+1. Resolve `ARCH_PROJECT_ROOT`.
+2. Run multi-repo fingerprint check:
 
-### fingerprint-check
-
-Dispatch a subagent using the `arch-analyze` skill.
-
-```text
-Mode: fingerprint-check
-Workspace: .understand-arch/{project}
-Read specs/repos.yaml and specs/repos/*/.fingerprint.json.
-Do not rewrite knowledge-graph.json.
-Return freshness status per repo.
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/fingerprint-multi-repo.mjs "<workspace-root>"
 ```
 
-### drift detail
+3. Run architecture-layer validation:
 
-Dispatch a subagent using the `arch-graph-reviewer` agent definition only when the user selects "查看漂移详情".
-
-```text
-Mode: phase-7-final or drift detail
-Inputs: current graph, fingerprint diff, changed files, state overrides.
-Return degraded/stale findings and retry_hints.
-Do not write graph/wiki/CR/ADR.
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/arch-layer-writer.mjs validate "<workspace-root>"
 ```
 
-### override
+4. Run wiki projection check:
 
-```text
-If user chooses override, call state-editor.js override.
-Reason must be at least 20 characters.
-Set state.status=degraded.
-Show override history in the audit report.
+```bash
+node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-## Engine 调用
+5. Regenerate first-layer eval:
 
-```text
-node engine/bin/audit-workspace.js --workspace .understand-arch/{project} --allow-non-fresh
-node engine/bin/wiki-review.js --workspace .understand-arch/{project} --mode lite --allow-needs-revision
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-`audit-workspace.js` 输出 `fresh`、`stale`、`unknown` 或 `degraded`;默认遇到非 fresh 退出非零,交互式 agent 可加 `--allow-non-fresh` 后向用户展示三选项。
+6. Check dashboard inputs:
+   - at least one repo graph exists
+   - `specs/arch-layer.json` exists
+   - dashboard can be pointed at `ARCH_PROJECT_ROOT`
 
-## 用户交互
+7. Scan CRs:
+   - all CR.md files have 14 headings
+   - section 14 exists
+   - placeholders are absent
 
-发现 stale 或 degraded 时给 3 个中文选项:
+## LLM Review
 
-1. 刷新 graph。
-2. 查看漂移详情。
-3. 记录 override 后继续。
+Dispatch `arch-senior-reviewer` in audit mode:
 
-## References
+```text
+Mode: audit.
+Project: <ARCH_PROJECT_ROOT>
+Deterministic checks: <paste summary JSON>.
+Review whether the baseline can be trusted.
+Focus on freshness, drift, graph/module coverage, arch-layer evidence, wiki projection, eval hallucination rate, and CR review quality.
+Return JSON only with verdict, findings, retry_hints, and summary.
+```
 
-- `references/drift-detection.md`:freshness states, fingerprint diff rules and audit decision table.
+## Output
 
-## 写权限
+Write:
 
-只允许写 `state.yaml`、`.metrics.jsonl`、临时 `audit-{date}.md`;禁止写 graph、wiki、decisions、change-requests。
+```text
+.understand-arch/<project>/audit/latest.md
+.understand-arch/<project>/audit/latest.json
+```
+
+The markdown report must include:
+
+- executive verdict
+- freshness status
+- graph coverage status
+- architecture-layer status
+- wiki projection status
+- eval trust label, evidence closure rate, hallucination rate, coverage, consistency, and information density
+- dashboard readiness
+- CR/ADR/rules status
+- findings ordered by severity
+- recommended rerun commands
+
+## Verdict Rules
+
+- `pass`: no critical/high findings.
+- `conditional`: only medium/low findings.
+- `fail`: any critical/high finding.
+
+## Failure Rules
+
+- Missing baseline: ask for `/arch-onboard`.
+- Missing graph: fail.
+- Empty capabilities/quality/risk: fail.
+- Empty narrative fields: fail.
+- Wiki placeholders: fail.
+- Eval hallucination_rate greater than 0: fail.
+- Stale fingerprint with source changes: fail.

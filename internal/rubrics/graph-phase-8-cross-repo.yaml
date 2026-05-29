@@ -1,9 +1,0 @@
-phase: 8
-name: graph-phase-8-cross-repo
-checks:
-  - id: cross-edge-only
-    pass: "cross_edges 的 source 与 target repo_id 不同"
-  - id: repos-mirror
-    pass: "cross-repo.json#repos 与 repos.yaml 同步"
-  - id: cross-edge-evidence
-    pass: "确定性推断的 cross_edges 带 evidence_refs,不得无证据猜测"

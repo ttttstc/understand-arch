@@ -1,37 +1,25 @@
-gate: onboard
-version: "2.0"
-applies_to: arch-onboard
-structural:
-  - id: workspace-root
-    must_exist:
-      - ".understand-arch/.gitignore"
-      - ".understand-arch/{project}/state.yaml"
-      - ".understand-arch/{project}/specs/repos.yaml"
-      - ".understand-arch/{project}/specs/cross-repo.json"
-  - id: per-repo-graph
-    rule: "repos.yaml 每个 repo 都必须有 specs/repos/{repo_id}/knowledge-graph.json 与 .fingerprint.json"
-  - id: wiki-pages
-    rule: "wiki/README.md + 14 页全部存在"
-semantic:
-  - id: node-id-prefix
-    rule: "所有 node.id 都匹配 {repo_id}::{local-id}"
-  - id: cross-edge-split
-    rule: "跨仓 edge 只能写入 cross-repo.json#cross_edges"
-  - id: cross-edge-evidence
-    rule: "每条 cross_edges[] 都必须 cross_repo=true,且带 evidence_refs 或来自确定性仓内 edge 分流"
-  - id: traceable-wiki
-    rule: "wiki 关键断言可回链 graph node id、ADR/CR 路径或 rules path"
-reviewer:
-  agent: arch-graph-reviewer
-  modes:
-    - phase-1
-    - phase-3
-    - phase-4
-    - phase-5
-    - phase-6
-    - phase-7
-    - phase-8
-verdict:
-  pass: "全部 structural 通过且 reviewer 无 blocker"
-  needs_revision: "存在 major findings 或 traceability 低于 95%"
-  fail: "schema 不通过、graph 缺失或写出 scope"
+name: onboard
+version: 3.0
+required_outputs:
+  - specs/repos.json
+  - specs/arch-layer.json
+  - eval-report.json
+  - wiki/ARCHITECTURE.md
+  - wiki/01-overview.md
+  - wiki/14-diagrams.md
+gates:
+  - id: graph-has-architecture-nodes
+    severity: fail
+    check: every registered repo graph contains at least one module or service node
+  - id: arch-layer-non-empty
+    severity: fail
+    check: architecture_style, component_profiles, capabilities, quality_attributes, and risks must each contain at least one evidence-backed item
+  - id: eval-trustworthy
+    severity: fail
+    check: eval-report exists with hallucination_rate = 0 and trust_label not low
+  - id: wiki-no-placeholders
+    severity: fail
+    check: wiki-projection-check must find no placeholder tokens
+  - id: senior-review-substantive
+    severity: fail
+    check: arch-senior-reviewer must return findings or explicit evidence-backed approval

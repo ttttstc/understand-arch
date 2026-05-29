@@ -1,105 +1,149 @@
 ---
 name: arch-wiki
-description: |
-  从 v2.0 graph、ADR、CR 与 rules 生成 `.understand-arch/{project}/wiki/` 14 页人类视图。
-  支持 newcomer、cto、pm、architect 受众化,但不创造新事实。
-argument-hint: ["[--audience=cto|newcomer|pm|architect] [--refresh]"]
+description: Render ARCHITECTURE.md plus the v3.0 14-page architecture wiki and review projection completeness.
+argument-hint: ["[audience=cto|newcomer|pm|architect] [arch-project-dir]"]
 ---
 
 # /arch-wiki
 
-## 定位
+Render and review the human-readable architecture wiki. The main product is `ARCHITECTURE.md`; the 14 pages are slice views. `ARCHITECTURE.md` must be the full 01-14 chapter concatenation with a table of contents, not a separate summary. The wiki is a deterministic projection of graph plus `arch-layer.json`; it is not an independent source of truth and must not run LLM inference during rendering.
 
-`arch-wiki` 是人类视图渲染器。graph 是唯一事实源;wiki 中任何断言必须能回链 graph node id、ADR/CR 路径或 rules path。
+## Required Pages
 
-## 输出
+Write exactly `ARCHITECTURE.md`, these pages, and README:
 
-- `wiki/README.md`
-- `wiki/01-overview.md`
-- `wiki/02-components.md`
-- `wiki/03-interfaces.md`
-- `wiki/04-data-models.md`
-- `wiki/05-capabilities.md`
-- `wiki/06-quality.md`
-- `wiki/07-risks-and-debt.md`
-- `wiki/08-deployments.md`
-- `wiki/09-flows-and-scenarios.md`
-- `wiki/10-decisions.md`
-- `wiki/11-changes.md`
-- `wiki/12-rules.md`
-- `wiki/13-pending-changes.md`
-- `wiki/14-diagrams.md`
+0. `ARCHITECTURE.md`
+1. `01-overview.md`
+2. `02-components.md`
+3. `03-interfaces.md`
+4. `04-data-models.md`
+5. `05-capabilities.md`
+6. `06-quality.md`
+7. `07-risks-and-debt.md`
+8. `08-deployments.md`
+9. `09-flows-and-scenarios.md`
+10. `10-decisions.md`
+11. `11-changes.md`
+12. `12-rules.md`
+13. `13-pending-changes.md`
+14. `14-diagrams.md`
+15. `README.md`
 
-## 规则
+## Inputs
 
-- 首次生成与 `--audience=cto|architect` 必须运行 `wiki-review.js --mode full`。
-- 日常刷新必须运行 `wiki-review.js --mode lite`。
-- 不设置单页字数上限,以讲清楚为准。
-- `14-diagrams.md` 在 v2.0 只放 4+1 视图占位与 Mermaid 文本,图片生成留给 v2.1。
+- `specs/repos.json`
+- `specs/repos/<repo_id>/knowledge-graph.json`
+- `specs/arch-layer.json`
+- `rules/*.md`
+- `decisions/*.md`
+- `change-requests/**/CR.md`
 
-## Subagent Dispatch 模板
+## Audience Modes
 
-### wiki renderer
+- `newcomer`: explain components, interfaces, and common flows in accessible language (no reading-path tutorial — the document itself reads top to bottom).
+- `cto`: emphasize capabilities, risks, NFRs, maturity, and roadmap gaps.
+- `pm`: emphasize user-facing capabilities, changes, unknowns, and constraints.
+- `architect`: include all details, tradeoffs, risks, debt, ADRs, and cross-repo topology.
 
-Dispatch a subagent using the `arch-senior-reviewer` agent definition only for review; content production is orchestrated by this skill using graph as source.
+Default audience is `newcomer`.
 
-Append the following additional context to the wiki rendering prompt:
+## Rendering Procedure
 
-```text
-Workspace: .understand-arch/{project}
-Audience: cto|newcomer|pm|architect|default
-Repo graphs: specs/repos/*/knowledge-graph.json
-Cross repo graph: specs/cross-repo.json
-Rules: rules/*.md
-ADR index: decisions/*.md
-CR index: change-requests/*/CR.md
-Traceability requirement: every prose assertion must link to graph node id, rules path, ADR path, or CR path.
+1. Resolve `ARCH_PROJECT_ROOT` from argument or environment.
+2. Read all inputs.
+3. Build a short source inventory:
+   - repo count
+   - module/service node count
+   - capability count
+   - quality attribute count
+   - risk/debt count
+   - ADR/CR count
+4. Run deterministic rendering:
+   ```bash
+   ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/render-wiki.mjs "<ARCH_PROJECT_ROOT>"
+   ```
+5. If data is missing, write an honest known unknown and ensure it is represented in `arch-layer.known_unknowns`.
+6. Never write TODO, TBD, placeholder, lorem ipsum, default Mermaid, `待补充`, or `占位`.
+7. Do not ask an LLM to invent wiki content. If the wiki is thin, rerun `arch-enrich` Phase 7/8/9 so arch-layer gets thicker, then render again.
+8. Do not put evidence in wiki output at all. No inline `[evidence:]` markers and no `## 证据来源` tables.
+9. Evidence remains only in `specs/arch-layer.json#evidence_refs` for audit, wiki-reviewer, senior-reviewer Q6, and eval checks.
+10. Write like a standard architecture technical document: describe the project, its architecture, tradeoffs, components, capabilities, quality attributes, risks, and flows.
+11. Do not include meta narrative: no reading paths, mental-model tutorials, glossaries, scan summaries, internal phases, field definitions, tool limitations, or analyzer/reviewer/subagent terminology.
+12. Do not turn pages into raw field dumps. Keep project-specific conclusions and technical detail, but remove methodology filler.
+
+## Page Mapping
+
+- ARCHITECTURE: full readable whitepaper assembled by concatenating the same 14 chapter bodies used by the slice pages, preceded by a table of contents.
+- 01 overview: project summary, repo list, architecture style and key tradeoffs (no reading order, no tour summary — see §10.1 style rules).
+- 02 components: component_profiles plus module/service/resource facts.
+- 03 interfaces: external_dependencies plus endpoints, schemas, imports, service calls, events, queues.
+- 04 data models: boundaries plus tables, schemas, data resources, ownership hints.
+- 05 capabilities: every `arch-layer.capabilities[]` item.
+- 06 quality: every `arch-layer.quality_attributes[]` and `extension_constraints[]` item.
+- 07 risks and debt: every risk, technical debt, and complexity_hotspot item.
+- 08 deployments: resources, pipelines, configs, runtime boundaries.
+- 09 flows and scenarios: every `arch-layer.flows[]` item plus domain/flow/step nodes.
+- 10 decisions: ADR index and architecture decision refs.
+- 11 changes: CR index and active change requests.
+- 12 rules: team rules and their architectural implications.
+- 13 pending changes: known unknowns, open risks, unresolved CRs.
+- 14 diagrams: Mermaid diagrams grounded in node ids and cross edges.
+
+## Review Procedure
+
+Run deterministic projection check:
+
+```bash
+node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-Pass these parameters:
+Dispatch `wiki-reviewer` for F1-F7:
 
 ```text
-Render README.md and pages 01-14.
-Do not create facts that are absent from graph/cross-repo/rules/ADR/CR.
-Keep 03-interfaces.md ending with a section titled 已知局限.
-Keep 14-diagrams.md as Mermaid placeholder for v2.0.
-Write only wiki/**.
+Mode: wiki-review.
+Project directory: <ARCH_PROJECT_ROOT>
+Audience: <audience>
+Deterministic projection output: <paste JSON>.
+Read ARCHITECTURE.md, every wiki page, graph, and arch-layer.
+Return JSON only with verdict, findings, retry_hints, and summary.
+Reject placeholders, missing projections, missing timestamps, missing long-form synthesis, and generic pages.
 ```
 
-### wiki review
-
-Dispatch a subagent using the `arch-senior-reviewer` agent definition.
+For first onboard and for `cto` or `architect`, also dispatch `arch-senior-reviewer` for Q1-Q7:
 
 ```text
-Mode: wiki-full for first run or audience=cto|architect.
-Mode: wiki-lite for daily refresh.
-Input: wiki pages, graph node ids, rules paths, ADR/CR paths.
-Return JSON verdict, findings, overall_score and retry_hints.
+Mode: wiki-review.
+Review the wiki as a senior architect.
+Check whether maturity, risk, and decision tradeoffs are explained with enough evidence.
+Apply Q1 information density, Q2 decision support, Q3 narrative coherence, Q4 evidence, Q5 insight depth, Q6 no hallucination, Q7 audience fit.
+Return JSON only.
 ```
 
-## Engine 调用
+If either reviewer returns `needs_revision`, `conditional` with high findings, or `reject`, perform refiner=b once:
 
-确定性渲染入口:
+1. Feed findings back into the deterministic render by first fixing the source arch-layer gap:
+   - Missing narrative, components, tech stack, dependencies, or boundaries -> rerun `arch-enrich` Phase 7.
+   - Missing capabilities or flows -> rerun `arch-enrich` Phase 8.
+   - Missing quality, hotspots, or constraints -> rerun `arch-enrich` Phase 9.
+2. Re-run `render-wiki.mjs`.
+3. Re-run projection check and reviewers.
+4. If it still fails, report findings and do not claim the wiki is complete.
 
-```text
-node engine/bin/render-wiki.js --workspace .understand-arch/{project}
-```
+## Success Criteria
 
-该入口只读取 graph、rules、ADR、CR 索引并写 `wiki/**`。它不创造新事实;LLM 受众化润色必须保留 graph node id、rules path、ADR/CR path。
+- `ARCHITECTURE.md`, all 14 pages, and README exist.
+- `ARCHITECTURE.md` is roughly the same byte size as the 14 slices combined because it contains the full chapter content.
+- Every page has timestamp/source line.
+- Wiki prose and chapter endings contain no rendered evidence; `arch-layer.json#evidence_refs` remains valid for audit checks.
+- The wiki reads as a project architecture document, not a tool output report; Q8 no-meta-narrative holds.
+- Projection check returns ok.
+- `wiki-reviewer` verdict is approve or conditional.
+- `arch-senior-reviewer` is approve or conditional for full review audiences.
+- No placeholder tokens remain.
 
-确定性审核入口:
+## Failure Rules
 
-```text
-node engine/bin/wiki-review.js --workspace .understand-arch/{project} --mode lite
-node engine/bin/wiki-review.js --workspace .understand-arch/{project} --mode full
-```
-
-`wiki-review.js` 检查 README+14 页、graph node id 回链、`03-interfaces.md` 已知局限;full 模式额外检查 rules 摘要与 `14-diagrams.md` Mermaid 占位。
-
-## References
-
-- `references/audience-guide.md`:cto/newcomer/pm/architect 受众化渲染重点与 LLM prompt 模板。
-
-## 写权限
-
-允许写 `wiki/**`、`wiki/.cache.json`、`state.yaml` 与 `.metrics.jsonl`;禁止写 specs、decisions、change-requests、rules。
+- Missing `arch-layer.json`: stop and ask caller to run `arch-enrich`.
+- Missing repo graph: stop and ask caller to run `/arch-analyze`.
+- Projection failure: rerender only affected pages once.
+- Review reject after retry: report findings and do not claim wiki is complete.

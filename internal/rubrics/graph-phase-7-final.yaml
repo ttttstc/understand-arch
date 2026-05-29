@@ -1,6 +1,0 @@
-phase: 7
-name: graph-phase-7-final
-checks:
-  - id: referential-integrity
-    pass: "edges、risks、traceability 引用的 node id 均存在"
-

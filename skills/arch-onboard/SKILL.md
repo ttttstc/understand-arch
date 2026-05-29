@@ -1,95 +1,177 @@
 ---
 name: arch-onboard
-description: |
-  建立或刷新 understand-arch v2.0 workspace。扫描单仓或多仓,生成 `.understand-arch/{project}/specs/repos.yaml`,
-  分仓 graph、跨仓 graph 与 14 页 wiki。适用于首次接手业务系统、重建架构基线、刷新多仓架构视图。
-argument-hint: ["[--refresh|--enable-hooks|--repo <id>:<path>]"]
+description: Onboard a single-repo or multi-repo system with the v3.0 pipeline, producing per-repo code graphs, arch-layer.json, wiki, and dashboard inputs.
+argument-hint: ["[project-name] [--repo <path>]... [--enable-hooks]"]
 ---
 
 # /arch-onboard
 
-## 定位
+Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a multi-repo system with one repo. This skill coordinates other skills; it must not compress LLM phases into a script.
 
-`arch-onboard` 是用户入口 skill,负责把当前业务系统初始化为 v2.0 工作区。它只协调事实层与视图层生成,不写业务代码、不写 IaC、不写 DDL、不写 CI。
+## Contract
 
-## 输入
+- Dispatch `/arch-analyze` for every repo. That skill owns Phase 0-6 and inherits the UA scanner orchestration.
+- Keep each repo graph independent at `specs/repos/<repo_id>/knowledge-graph.json`.
+- Use `engine/arch/cross-repo-linker.mjs` only for deterministic cross-repo edges.
+- Dispatch `arch-enrich` for Phase 7-13.
+- Dispatch `arch-wiki` for `ARCHITECTURE.md` plus the 14-page human projection.
+- Fail if any of `arch-layer.architecture_style`, `arch-layer.component_profiles`, `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
+- Write `eval-report.json` and include its trust label in the final report.
+- Hooks are disabled unless the user passes `--enable-hooks`.
 
-- 当前目录作为业务系统根目录。
-- 可选 `--project <name>` 指定 `.understand-arch/{project}/` 名称。
-- 可选 `--refresh` 强制重扫。
-- 可选 `--repos <id=path,...>` 跳过交互式多仓发现。
+## Resolve Project
 
-## 工作流
+1. Parse `$ARGUMENTS`.
+2. If the first non-flag argument is a name, use it as `ARCH_PROJECT_ID`.
+3. If no name is provided, use the current directory basename.
+4. Create:
 
-1. 工作区准备:在用户项目根目录仅创建 `.understand-arch/` 一个入口目录,并确保 `.understand-arch/.gitignore` 包含 `*/intermediate/` 与 `*/.metrics.jsonl`。
-2. 多仓注册:扫描当前目录及一层子目录的 `.git/`,引导用户确认仓库清单,写 `specs/repos.yaml`。
-3. 规则初始化:从 `templates/rules/` 复制 6 份中文规则模板到 `rules/`,已存在则不覆盖。
-4. 调度 `arch-analyze`:按 repos.yaml 对每仓运行 Phase 0-8,写 `specs/repos/{repo_id}/knowledge-graph.json`、`.fingerprint.json` 与 `specs/cross-repo.json`。
-5. 调度 `arch-wiki`:基于 graph 与 rules 生成 `wiki/README.md` + 14 页。
-6. 调度 `arch-review`:按 onboard acceptance 做结构、语义与 traceability 检查。
-7. 写 `state.yaml` 和 `.metrics.jsonl`,所有用户可见提示使用中文。
-
-## Subagent Dispatch 模板
-
-### arch-analyze
-
-Dispatch a subagent using the `arch-analyze` skill.
-
-Append the following additional context:
-
-```text
-Project: {projectName}
-Workspace: .understand-arch/{project}
-Repos registry: specs/repos.yaml
-Mode: full or targeted-refresh
-Rules directory: rules/
+```bash
+ARCH_PROJECT_ROOT="$PWD/.understand-arch/$ARCH_PROJECT_ID"
+mkdir -p "$ARCH_PROJECT_ROOT/specs/repos" "$ARCH_PROJECT_ROOT/wiki" "$ARCH_PROJECT_ROOT/rules" "$ARCH_PROJECT_ROOT/decisions" "$ARCH_PROJECT_ROOT/change-requests"
 ```
 
-Pass these parameters:
+5. Write `state.yaml`:
 
-```text
-Run v2.0 Phase 0 Pre-flight, Phase 1 SCAN, Phase 1.5 BATCH, Phase 2 ANALYZE,
-Phase 3 ASSEMBLE, Phase 4 STRUCTURE, Phase 5 DOMAIN, Phase 6 QUALITY,
-Phase 7 REVIEW, and Phase 8 FINALIZE.
-Write specs/repos/{repo_id}/knowledge-graph.json, .fingerprint.json and specs/cross-repo.json.
-Do not write wiki/ directly from arch-analyze.
+```yaml
+version: 3.0.0-rc1
+project: <ARCH_PROJECT_ID>
+hooks_enabled: false
+history: []
 ```
 
-### arch-wiki
+If `--enable-hooks` is present, set `hooks_enabled: true`.
 
-Dispatch a subagent using the `arch-wiki` skill.
+## Resolve Repos
 
-```text
-Read graph + rules + ADR + CR.
-Render wiki/README.md and wiki/01-overview.md through wiki/14-diagrams.md.
-Use audience=architect for initial onboard unless user requested another audience.
-Run wiki-review.js --mode full after first generation.
+Support both forms:
+
+- No `--repo`: current directory is the only repo.
+- One or more `--repo <path>`: each path is a registered repo.
+
+For each repo:
+
+- `repo_id`: sanitized directory basename unless the user supplied an alias in future syntax.
+- `name`: directory basename.
+- `path`: absolute path.
+- `graph_path`: `specs/repos/<repo_id>/knowledge-graph.json`.
+
+Write `specs/repos.json`:
+
+```json
+{
+  "version": "3.0",
+  "repos": [
+    {
+      "repo_id": "repo",
+      "name": "repo",
+      "path": "/absolute/path",
+      "graph_path": "specs/repos/repo/knowledge-graph.json"
+    }
+  ]
+}
 ```
 
-### arch-review
+## Phase A - Code Fact Graphs
 
-Dispatch a subagent using the `arch-graph-reviewer` agent definition.
+For every repo entry, dispatch `/arch-analyze` with environment:
 
-```text
-Mode: phase-8-cross-repo
-Review repos.yaml, every repo graph, every fingerprint, cross-repo.json and wiki traceability.
-Return JSON findings and retry_hints.
+```bash
+ARCH_PROJECT_ID="<project-id>"
+ARCH_REPO_ID="<repo-id>"
+ARCH_PROJECT_ROOT="<workspace>/.understand-arch/<project-id>"
 ```
 
-## 验收
+Prompt:
 
-必须通过 `internal/acceptance/onboard.yaml`:
+```text
+Run /arch-analyze for repo <repo_id> at <path>.
+Preserve the inherited UA Phase 0-6 pipeline.
+Write the graph to <ARCH_PROJECT_ROOT>/specs/repos/<repo_id>/knowledge-graph.json.
+Prefix node ids with <repo_id>:: when writing the final graph.
+Do not run architecture-layer inference in this phase.
+```
 
-- `repos.yaml` 存在且至少 1 个 repo。
-- 每个 repo 都有 `specs/repos/{repo_id}/knowledge-graph.json` 与 `.fingerprint.json`。
-- `specs/cross-repo.json` 存在。
-- wiki 14 页全部生成,且结论可回链 graph node id 或 rules path。
-- 没有写出 `.understand-arch/` 以外的架构资产。
+After each dispatch, confirm:
 
-## References
+- graph file exists
+- graph has nodes
+- graph has at least one module or service when the repo has architecture boundaries
 
-- `references/onboarding-flow.md`:多仓发现、rules 初始化、首次扫描和中文交互模板。
+## Phase B - Cross-Repo Deterministic Linking
 
-## 写权限
+Run:
 
-见 `internal/tool-contracts/write-scope.yaml#skills.arch-onboard`。本 skill 直接写 `state.yaml`、`specs/repos.yaml`、`.metrics.jsonl`,通过调度间接写 graph 与 wiki。禁止写 `decisions/**`、`change-requests/**`、`rules/**` 的用户已有内容。
+```bash
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/cross-repo-linker.mjs "$PWD"
+```
+
+This writes `intermediate/cross-edges.json`. Do not merge the per-repo graphs.
+
+## Phase C - Architecture Layer
+
+Dispatch `arch-enrich`:
+
+```text
+Run arch-enrich for <ARCH_PROJECT_ROOT>.
+Use specs/repos.json and every per-repo graph.
+Consume intermediate/cross-edges.json.
+Produce specs/arch-layer.json.
+Reject empty narrative fields, capabilities, quality_attributes, or risks.
+```
+
+## Phase D - Wiki
+
+Dispatch `/arch-wiki`:
+
+```text
+Render ARCHITECTURE.md plus the 14-page wiki for <ARCH_PROJECT_ROOT>.
+Audience: newcomer unless the user requested another audience.
+Run wiki-reviewer and arch-senior-reviewer for full review on first onboard.
+```
+
+## Phase E - Eval And Dashboard Readiness
+
+Run:
+
+```bash
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "$ARCH_PROJECT_ROOT"
+```
+
+Fail if `eval-report.metrics.hallucination_rate` is greater than 0.
+
+Validate that dashboard inputs exist:
+
+- `specs/repos.json`
+- at least one `specs/repos/<repo_id>/knowledge-graph.json`
+- `specs/arch-layer.json`
+- `eval-report.json`
+- `wiki/ARCHITECTURE.md`
+- `wiki/README.md`
+
+Tell the user they can run `/arch-dashboard <ARCH_PROJECT_ROOT>`.
+
+## Final Report
+
+Report:
+
+- project id
+- repos scanned
+- graph node/edge counts per repo
+- architecture layer counts
+- narrative field counts
+- wiki page count
+- eval trust label and hallucination rate
+- hook status
+- paths to outputs
+- any validation findings
+
+## Failure Rules
+
+- Missing graph: fail onboard.
+- Empty architecture layer: fail onboard.
+- Empty narrative layer: fail onboard.
+- Eval hallucination_rate greater than 0: fail onboard.
+- Wiki placeholder found: fail onboard.
+- Senior reviewer reject: fail onboard.
+- Unknown repo path: fail before dispatching.

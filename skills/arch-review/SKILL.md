@@ -1,33 +1,106 @@
 ---
 name: arch-review
-description: |
-  内部评审入口。调度 arch-graph-reviewer 或 arch-senior-reviewer,检查 graph、wiki、CR 的结构与语义质量。
+description: Internal CR.md and architecture artifact review, dispatching arch-senior-reviewer.
+argument-hint: ["<CR.md|arch-layer.json|wiki-dir>"]
 ---
 
 # arch-review
 
-## 模式
+Run deterministic checks first, then dispatch `arch-senior-reviewer`. This skill is the common review gate for CR, wiki, architecture layer, and audit artifacts.
 
-- `graph-phase-{1|3|4|5|6|7|8}`:使用对应 `internal/rubrics/graph-*.yaml`。
-- `design`:使用 `senior-design-review.yaml`,只向 CR.md 第 14 段追加评审。
-- `wiki-full`:完整审查 14 页 wiki。
-- `wiki-lite`:轻量审查变更页。
-- `audit`:输出临时审计报告。
+## Supported Modes
 
-## Refiner Loop
+- `design-review`: CR.md review.
+- `wiki-review`: wiki directory review.
+- `arch-layer`: architecture layer JSON review.
+- `audit`: freshness and drift review.
 
-失败后最多 retry 2 次。第三次给用户中文 4 选项:继续 retry、人工修、override、abort。override 必须写 `state.yaml.overrides[]`,reason 不少于 20 字符。
+Infer mode from the target path when the caller does not provide one.
 
-## 写权限
+## Deterministic Checks For CR.md
 
-允许追加 `CR.md` 第 14 段 Review 或写 `audit-{date}.md`;禁止写 specs、wiki、decisions、engine。
+1. Verify the CR exists.
+2. Verify all 14 headings exist in order.
+3. Verify no duplicate headings.
+4. Verify section 8 contains both core impacted set and adjacent review set.
+5. Verify section 14 is append-only if it already has review history.
+6. Scan for placeholder tokens:
+   - TODO
+   - TBD
+   - placeholder
+   - lorem ipsum
+   - 待补充
+   - 占位
+7. Verify frontmatter has `cr_id`, `title`, and `status`.
 
-## CR Review 写入
+## Deterministic Checks For Wiki
 
-向 CR.md 写评审结论时只能使用:
+Run:
 
-```text
-node engine/bin/cr-md-editor.js append-review --file change-requests/CR-*/CR.md --content-file review.md
+```bash
+node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-不得直接改写 CR.md 其它段落。
+Fail on missing projections or placeholders.
+
+## Deterministic Checks For Arch Layer
+
+Run:
+
+```bash
+node <PLUGIN_ROOT>/engine/arch/arch-layer-writer.mjs validate "<workspace-root>"
+```
+
+Also check:
+
+- architecture_style present with confidence/evidence_refs
+- component_profiles non-empty
+- capabilities non-empty
+- flows projected when present
+- quality_attributes non-empty
+- risks non-empty
+- complexity_hotspots and extension_constraints have confidence/evidence_refs when present
+- evidence_refs present
+- confidence present
+- node ids resolve to repo graphs
+
+## Senior Reviewer Dispatch
+
+```text
+Mode: <mode>.
+Artifact: <path>.
+Deterministic check output: <summary JSON>.
+Read the artifact and relevant graph/arch-layer/wiki context.
+Lead with findings.
+Reject shape-only artifacts.
+Reject placeholder text.
+Return JSON only:
+{
+  "verdict": "approve|conditional|reject",
+  "findings": [
+    {
+      "id": "...",
+      "severity": "critical|high|medium|low",
+      "title": "...",
+      "evidence": "...",
+      "recommendation": "..."
+    }
+  ],
+  "retry_hints": [],
+  "summary": "..."
+}
+```
+
+## Writing Results
+
+- For CR.md, append review output to `## 14. Review` using `cr-md-editor.mjs`.
+- For wiki, write `wiki/review.json`.
+- For arch-layer, write `intermediate/arch-layer-review.json`.
+- For audit, write `audit/review.json`.
+
+## Failure Rules
+
+- If deterministic checks fail, still dispatch senior reviewer with the failures as evidence unless the artifact cannot be read.
+- Do not modify sections outside the review destination.
+- Do not approve if any critical/high findings remain.
+- Do not remove previous review history.

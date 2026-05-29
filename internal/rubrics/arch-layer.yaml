@@ -1,0 +1,19 @@
+name: arch-layer
+version: 3.0
+dimensions:
+  - id: evidence
+    weight: 0.25
+    criteria: every LLM-inferred capability, quality attribute, risk, and debt item has confidence and evidence_refs
+  - id: coverage
+    weight: 0.25
+    criteria: major modules/services are represented by at least one capability or quality/risk assessment
+  - id: precision
+    weight: 0.20
+    criteria: labels are specific to the inspected repository, not generic architecture vocabulary
+  - id: traceability
+    weight: 0.20
+    criteria: node ids, ADRs, CRs, and wiki pages can be followed bidirectionally
+  - id: freshness
+    weight: 0.10
+    criteria: freshness metadata matches current repo fingerprints
+passing_score: 0.80

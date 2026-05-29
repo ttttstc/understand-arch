@@ -1,8 +1,0 @@
-phase: 4
-name: graph-phase-4-structure
-checks:
-  - id: layers-present
-    pass: "layers 非空且组件归层合理"
-  - id: no-cross-repo-in-repo-graph
-    pass: "repo graph 不含跨仓 edge"
-

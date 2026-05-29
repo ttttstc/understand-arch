@@ -1,5 +1,5 @@
 {
   "name": "understand-arch",
-  "version": "2.0.0-rc1",
-  "description": "Senior-architect workflow plugin for Claude Code. Maintain a trustworthy, evidence-backed architecture knowledge base (graph + wiki + CR + ADR + rules) for single-repo or multi-repo projects."
+  "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
+  "version": "3.0.0-rc1"
 }

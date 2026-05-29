@@ -1,9 +1,0 @@
-name: senior-wiki-review-lite
-dimensions:
-  changed-pages:
-    checks:
-      - "变更页无新增无证据事实"
-  links:
-    checks:
-      - "本次变更链接可解析"
-

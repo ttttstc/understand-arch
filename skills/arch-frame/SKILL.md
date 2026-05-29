@@ -1,26 +1,90 @@
 ---
 name: arch-frame
-description: |
-  arch-design 的内部前置门。澄清 PRD、约束范围、初始化 CR.md frontmatter 与第 1 段背景。
+description: Internal PRD hard gate for architecture design. Blocks under-specified requests before CR generation.
+argument-hint: ["<prd-or-request>"]
 ---
 
 # arch-frame
 
-## 定位
+`arch-frame` prevents under-specified PRDs from becoming confident-looking CR.md files. It is an internal skill used by `/arch-design`.
 
-`arch-frame` 负责让需求足够清楚再进入方案设计。它只创建或更新 CR.md 的 frontmatter 与“背景与目标”段,不做影响面分析。
+## Goal
 
-## Hard Gate
+Turn the request into a small, explicit frame:
 
-缺少以下信息时必须先中文追问或生成 `PM问题清单.md`:
+- problem statement
+- goals
+- non-goals
+- affected users/systems
+- constraints
+- assumptions
+- open questions
+- blocking unknown count
 
-- 业务目标与成功标准。
-- in scope / non-goals。
-- 受影响用户或系统。
-- 时间、合规、兼容、回滚约束。
-- 已知不能动的边界。
+## Inputs
 
-## 写权限
+- User PRD/request.
+- Existing graph and arch-layer when available.
+- Rules, ADRs, and active CRs.
 
-允许写 `change-requests/CR-*/PM问题清单.md` 与 `change-requests/CR-*/CR.md` 的初始化部分;禁止写 specs、wiki、decisions。
+## Process
 
+1. Read the request.
+2. Identify the actual user or system problem.
+3. Separate goals from implementation guesses.
+4. Identify non-goals.
+5. Identify affected users and systems.
+6. Read rules and ADRs for hard constraints.
+7. Read active CRs for conflicts.
+8. Produce open questions.
+9. Count only questions that block architecture design as blocking unknowns.
+
+## Blocking Unknowns
+
+Examples that count:
+
+- Unknown external API contract.
+- Unknown data sensitivity or compliance class.
+- Unknown owner for a cross-repo boundary.
+- Unknown write path or source of truth.
+- Unknown rollout or rollback constraint.
+- Unknown NFR target when the change is NFR-sensitive.
+
+Examples that do not count:
+
+- Minor naming preferences.
+- UI copy details.
+- Implementation micro-style.
+- Unknowns that can be safely documented as assumptions.
+
+## Output
+
+Return JSON only:
+
+```json
+{
+  "problem_statement": "",
+  "goals": [],
+  "non_goals": [],
+  "affected_users": [],
+  "affected_systems": [],
+  "constraints": [],
+  "assumptions": [],
+  "open_questions": [],
+  "blocking_unknown_count": 0,
+  "recommendation": "continue|ask_user"
+}
+```
+
+## Gate
+
+If `blocking_unknown_count >= 3`, return `recommendation: ask_user`. `/arch-design` must stop and ask the user for answers.
+
+If fewer than 3 blocking unknowns remain, return `recommendation: continue` and make assumptions explicit.
+
+## Prohibitions
+
+- Do not draft a CR.
+- Do not design the solution.
+- Do not hide blocking unknowns by calling them assumptions.
+- Do not ask more than necessary.

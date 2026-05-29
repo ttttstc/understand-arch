@@ -1,0 +1,12 @@
+name: dashboard
+version: 3.0
+gates:
+  - id: code-graph-loads
+    severity: fail
+    check: dashboard serves specs/repos/{repo}/knowledge-graph.json without requiring legacy .understand-anything output
+  - id: arch-layer-loads
+    severity: fail
+    check: dashboard serves specs/arch-layer.json and displays capability, quality, risk, and debt counts
+  - id: no-legacy-command-copy
+    severity: warn
+    check: user-facing dashboard messages mention /arch-analyze or /arch-enrich, not /understand
