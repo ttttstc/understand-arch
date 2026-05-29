@@ -431,9 +431,9 @@ CR.md § 8 改动清单分组呈现,研发先看 core。
 **导览步骤示例**(架构师视角,而非代码学习):
 > 步骤 3「核心能力:实时协同编辑」→ 高亮支撑节点(graph: editor module / sync service)→ 关联能力卡(arch-layer.capability,maturity=growing)→ 提示关联风险(arch-layer.risk: 并发冲突,severity=high)→ 关联决策(ADR-005)
 
-**渲染双投影**:
+**渲染投影**:
 - dashboard:交互式(点步进 + graph 高亮 + 能力/风险卡片)
-- wiki:`01-overview` 的"设计阅读顺序"段 + `13-pending-changes` 之外,可在 onboarding 视角生成 tour 的静态文本版
+- wiki:**不投影 tour**(wiki 是标准架构文档,不含导览/阅读路径,见 §10.1 风格规约)。tour 只活在 dashboard。
 
 **验收**:tour 每个 step 的 nodeIds 必须引用存在的 graph/arch-layer 节点(graph-reviewer tour 检查,UA 已有,继承扩展)。
 
@@ -448,6 +448,27 @@ CR.md § 8 改动清单分组呈现,研发先看 core。
 01-overview / 02-components / 03-interfaces / 04-data-models / 05-capabilities / 06-quality / 07-risks-and-debt / 08-deployments / 09-flows-and-scenarios / 10-decisions / 11-changes / 12-rules / 13-pending-changes / 14-diagrams。
 
 **内容要求(从"清单"到"叙事")**:每页/每章是「分析 + 判断」,不是节点罗列。叙事内容来自 arch-layer 的叙事字段(architecture_style / component_profiles / tech_stack / flows / complexity_hotspots / extension_constraints),`render-wiki` 只投影。
+
+**文档风格规约(用户定:像一篇标准架构技术文档)**:
+
+wiki **只讲项目本身的架构**,写成一篇标准架构技术文档。**禁止任何元叙述** —— 不讲"如何使用本工具 / 如何阅读本文档 / 扫描器识别了什么 / 内部 phase / 字段含义"。读者要的是了解这个项目,不是学怎么用工具或怎么当架构师。
+
+**必须删除(元叙述,与项目无关)**:
+| 禁止类型 | 反例 |
+|---|---|
+| 方法论导读 | 每章开头"先按职责理解组件""从用户价值开始""先把风险读成改动路线图" |
+| 工具术语科普 | "术语速查:能力是…组件是…边界是…" |
+| 扫描元数据解读 | "本次扫描覆盖 1 个仓库,识别到 6 个 module…这个数字帮助判断阅读深度" |
+| 字段含义说教 | "status 的含义:strong 表示…adequate 表示…" |
+| 工具局限辩解 | "如果 endpoint 为空,不代表没有接口,而是本次代码事实层…" |
+| 内部实现/术语泄漏 | "可重跑 arch-enrich Phase 11""未识别到 domain/flow/step 节点""arch-layer 叙事字段" |
+| 阅读路径/导览 | "建议阅读顺序:先读 05→再读 02…"(全文都删,含开头) |
+
+**必须保留并强化(项目本身)**:项目定位、架构判断(直接给结论 + 理由)、**架构权衡洞察**(如"模块化单体让早期迭代成本低,但 IPC 边界未落地会把文件 I/O 压在未实现契约上" —— 这是架构师要的)、组件职责、技术栈 + 选型理由、能力地图、质量/风险/技术债、流程链路、图示。
+
+**空缺声明用人话**:"未识别到 domain/flow/step 节点" → "本项目没有独立的后端服务接口";能省则省,不暴露内部节点类型术语。
+
+**判断标准**:把文档给一个不知道 understand-arch 存在的架构师看,他应该觉得这是"一篇介绍 Typola 架构的技术文档",而不是"一个工具的输出报告"。
 
 **证据呈现规则(用户定:wiki 完全不显示 evidence)**:
 - **wiki 正文和章节末尾都不出现 evidence**(`[evidence: ...]` 内联、`## 证据来源` 表格,**全部去掉** —— 严重干扰阅读)
@@ -535,6 +556,7 @@ wiki 质量不用"够不够厚"衡量,用"**够不够诚实地完整**"衡量。
 | Q5 | 洞察深度 ★ | 有超出代码直接可见的综合判断吗? | ≥ N 条洞察级判断 |
 | Q6 | 无幻觉 ★红线 | 断言的组件/依赖/能力代码里真存在? | **0 幻觉,违则直接 fail** |
 | Q7 | 受众适配 | audience mode 详略匹配? | cto 看能力/风险,newcomer 看上手路径 |
+| Q8 | 无元叙述 ★(§10.1 风格规约) | 有没有讲"怎么用工具/怎么读文档/扫描了什么/内部 phase/字段含义/阅读路径"? | 0 元叙述;像一篇介绍项目的标准架构技术文档,不是工具输出报告 |
 
 #### 11.4.3 判级 + 触发 + refiner(决策 = b)
 
