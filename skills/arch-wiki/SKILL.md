@@ -40,7 +40,7 @@ Write exactly `ARCHITECTURE.md`, these pages, and README:
 
 ## Audience Modes
 
-- `newcomer`: explain reading order, components, interfaces, and common flows.
+- `newcomer`: explain components, interfaces, and common flows in accessible language (no reading-path tutorial — the document itself reads top to bottom).
 - `cto`: emphasize capabilities, risks, NFRs, maturity, and roadmap gaps.
 - `pm`: emphasize user-facing capabilities, changes, unknowns, and constraints.
 - `architect`: include all details, tradeoffs, risks, debt, ADRs, and cross-repo topology.
@@ -74,7 +74,7 @@ Default audience is `newcomer`.
 ## Page Mapping
 
 - ARCHITECTURE: full readable whitepaper assembled by concatenating the same 14 chapter bodies used by the slice pages, preceded by a table of contents.
-- 01 overview: project summary, repo list, architecture style, reading order, tour summary.
+- 01 overview: project summary, repo list, architecture style and key tradeoffs (no reading order, no tour summary — see §10.1 style rules).
 - 02 components: component_profiles plus module/service/resource facts.
 - 03 interfaces: external_dependencies plus endpoints, schemas, imports, service calls, events, queues.
 - 04 data models: boundaries plus tables, schemas, data resources, ownership hints.

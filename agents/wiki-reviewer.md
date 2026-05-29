@@ -50,7 +50,7 @@ Rule 038: Reject deployments page that ignores resources/pipelines/configs.
 Rule 039: Reject flows page that ignores domain/flow/step nodes when present.
 Rule 040: Reject rules page that ignores existing rules files.
 Rule 041: Reject pending page that hides known_unknowns.
-Rule 042: Reject overview that lacks reading order.
+Rule 042: Reject overview that lacks architecture style and key tradeoffs. (Do NOT require a reading-order/导览 section — meta narrative is forbidden per §10.1.)
 Rule 043: Reject overview that lacks repo scope.
 Rule 044: Reject overview that lacks architecture summary.
 Rule 045: Reject generic phrases without evidence.
