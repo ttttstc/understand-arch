@@ -81,6 +81,8 @@ Rule 058h: Reject list-only wiki pages when arch-layer narrative fields contain 
 Rule 058i: Reject pages that hide uncertainty instead of stating known_unknowns.
 Rule 059: Check audience fit.
 Rule 060: Newcomer audience needs reading order and vocabulary.
+Rule 060a: Newcomer audience also needs a mental model before dense component, interface, quality, and risk details.
+Rule 060b: Reject wiki pages that expose raw architecture fields before explaining how to read them.
 Rule 061: CTO audience needs capability maturity and risk framing.
 Rule 062: PM audience needs user-facing capability and pending changes.
 Rule 063: Architect audience needs tradeoffs, ADRs, interfaces, and debt.
@@ -105,6 +107,7 @@ Rule 081: Check if the wiki overstates unknown areas.
 Rule 082: Check if the wiki underplays critical risk.
 Rule 083: Check if repeated boilerplate appears across pages.
 Rule 084: Check if pages are specific to this project.
+Rule 084a: Check that introductory prose teaches the project's architecture gradually without deleting technical details.
 Rule 085: Check if module names match graph names.
 Rule 086: Check if service names match graph names.
 Rule 087: Check if interface names match endpoint/schema names.

@@ -1,6 +1,12 @@
 # 09 流程与场景
 
-> 生成时间:2026-05-29T08:24:56.174Z  ·  基于 commit:dfce0cc851a716f2b8b41d9efe076a7dcb4f1efe  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T08:29:46.939Z  ·  基于 commit:a90f505bfff99e4985db4de6f6a409cbada60dd3  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+
+## 先读用户故事，再追代码路径
+
+流程章节把能力串成运行时故事。它适合用来回答：用户触发什么、系统经过哪些组件、最后得到什么结果。
+
+当你要改一个功能时，先找对应流程，再沿着步骤回到组件和风险章节，比直接搜索文件更稳。
 
 ## 端到端链路
 

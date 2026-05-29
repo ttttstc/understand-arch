@@ -1,6 +1,12 @@
 # 07 风险与技术债
 
-> 生成时间:2026-05-29T08:24:56.174Z  ·  基于 commit:dfce0cc851a716f2b8b41d9efe076a7dcb4f1efe  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+> 生成时间:2026-05-29T08:29:46.939Z  ·  基于 commit:a90f505bfff99e4985db4de6f6a409cbada60dd3  ·  事实源:specs/repos/*/knowledge-graph.json + specs/arch-layer.json
+
+## 先把风险读成改动路线图
+
+风险与技术债不是问题清单，而是改动路线图。风险告诉你什么会阻断目标，技术债告诉你什么会放大修改成本，复杂度热点告诉你哪里最需要测试和设计评审保护。
+
+新人读这一章时，建议先看 critical/high 风险，再回到 02、05、09 找对应组件和流程。这样能把“为什么危险”和“改哪里”连起来。
 
 ## 风险
 
