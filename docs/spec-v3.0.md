@@ -449,17 +449,11 @@ CR.md § 8 改动清单分组呈现,研发先看 core。
 
 **内容要求(从"清单"到"叙事")**:每页/每章是「分析 + 判断」,不是节点罗列。叙事内容来自 arch-layer 的叙事字段(architecture_style / component_profiles / tech_stack / flows / complexity_hotspots / extension_constraints),`render-wiki` 只投影。
 
-**证据呈现规则(用户定:方案 B 末尾表格)**:
-- **正文不内联 evidence**(`[evidence: ...]` 禁止铺在每句话后面 —— 干扰阅读)
-- 每章/每页**末尾固定一个 `## 证据来源` 表格**,集中列本章关键判断 → 对应代码位置:
-
-  | 判断 | 证据 |
-  |---|---|
-  | 当前架构为单体前端 | `typola::file:src/App.tsx` |
-  | Electron 主进程缺失(critical 风险) | `typola::file:src/main.tsx:1` |
-
-- evidence 的**结构化数据始终存在 `arch-layer.json` 的 `evidence_refs` 字段**(机器读、校验用),正文是否显示只是渲染选择
-- 证据表的 evidence **必须回链代码**(graph node id / `file:line`),不能是 arch-layer 内部 id(如 `risk:xxx` / `qa:xxx` 不合格)
+**证据呈现规则(用户定:wiki 完全不显示 evidence)**:
+- **wiki 正文和章节末尾都不出现 evidence**(`[evidence: ...]` 内联、`## 证据来源` 表格,**全部去掉** —— 严重干扰阅读)
+- evidence 的**结构化数据只存在 `arch-layer.json` 的 `evidence_refs` 字段**,**仅供审计/校验内部使用**(wiki-reviewer 反幻觉、senior-reviewer Q6、eval 证据闭合率),不渲染给用户
+- 架构师想核对某判断的代码出处 → 走 dashboard(点节点高亮代码)或直接查 arch-layer.json,不靠 wiki 正文
+- **强约束不变**:arch-layer 的 evidence_refs 必须回链代码(graph node id / `file:line`),不能是内部 id(`risk:`/`qa:`/`debt:`)—— 这是校验红线,只是不展示
 
 **时间戳(用户要求)**:`ARCHITECTURE.md` 和每个切片头部必须有:
 ```
@@ -522,7 +516,7 @@ wiki 质量不用"够不够厚"衡量,用"**够不够诚实地完整**"衡量。
 |---|---|---|
 | F1 | 结构完整 | 每页含其规定必备章节 |
 | F2 | 时间戳 | 每页 + ARCHITECTURE.md 头部有 生成时间 + 基于 commit |
-| F3 | 证据回链(末尾表格) | 每章末尾有 `## 证据来源` 表格,evidence 回链代码(node-id/file:line/ADR/CR/rules path),**正文不内联 evidence**;arch-layer 内部 id(risk:/qa:/debt:)不合格 |
+| F3 | 证据回链(仅 arch-layer,wiki 不显示) | **wiki 完全不出现 evidence**(正文 + 末尾表格都不要);校验改查 `arch-layer.json#evidence_refs`,要求回链代码(node-id/file:line/ADR/CR/rules),内部 id(risk:/qa:/debt:)不合格 |
 | F4 | 要素完整性(三态) | 取代字数下限:真实存在→呈现、不存在→声明、不确定→known_unknown;遗漏/捏造/占位糊弄 = finding |
 | F5 | 无占位词 | 待补充/TODO/暂无/默认 Mermaid = finding(除合法空缺) |
 | F6 | 投影完整性 | arch-layer 有的(N 个 capability/risk…),对应页全覆盖 |
