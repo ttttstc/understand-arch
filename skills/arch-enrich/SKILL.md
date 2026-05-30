@@ -101,6 +101,38 @@ Do not invent security or compliance claims without evidence; use known_unknowns
 
 Save the returned JSON to `intermediate/quality.json`.
 
+## Phase 9.5 - CONSTRAINT-MINE(规格约束层,v3.1)
+
+Dispatch `arch-constraint-miner` with this template:
+
+```text
+Mode: v3.1 Phase 9.5 CONSTRAINT-MINE.
+Project directory: <ARCH_PROJECT_ROOT>
+Read specs/repos.json, every graph, narrative output, capabilities, flows, quality, rules, and ADRs.
+Produce JSON only with three outputs:
+{
+  "constraints": [],          // 隐性约束考古(proposed, source ai-mined, evidence_level 非 confirmed)
+  "suspicious_findings": [],  // 反常点侦查(7 类,带可疑度×影响面)
+  "coding_conventions": []    // 风格约定统计(带 consistency.match_rate)
+}
+All user-facing text in Chinese. Constraints and conventions are proposed only.
+Suspicious findings must be thorough — they are a standalone risk map and the source for /arch-interview.
+```
+
+Write the outputs deterministically (no LLM in Node):
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/constraint-writer.mjs "<workspace-root>"
+```
+
+This writes (creating `rules/constraints/` if absent, never overwriting human-confirmed entries):
+
+- `rules/constraints/{system-charter,domain-invariants,dependency-rules,api-contracts,risk-register,test-coverage-gaps}.md` (proposed constraints, merged by category)
+- `rules/constraints/suspicious-findings.md` (full ranked list)
+- `rules/constraints/coding-conventions.md` (with consistency)
+
+Merge rule: new proposed entries are appended; existing `confirmed`/`adjusted`/`rejected` entries are preserved untouched (human decisions win).
+
 ## Phase 10 - CROSS-REPO LINK
 
 Run deterministic linking:

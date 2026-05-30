@@ -262,7 +262,27 @@ function renderRules() {
   const rulesDir = join(archDir, "rules");
   if (!existsSync(rulesDir)) return "本项目没有提供架构规则文档。\n";
   const files = readdirSync(rulesDir).filter((file) => file.endsWith(".md"));
-  return list(files, (file) => `- **${file}**：该规则会影响架构设计和评审。`, "本项目没有提供架构规则文档。");
+  const normative = list(files, (file) => `- **${file}**:团队规范,影响架构设计与评审。`, "本项目没有提供团队规范文档。");
+  return normative + "\n\n" + renderConfirmedConstraints();
+}
+
+// 只展示约束层中已确认(confirmed)的约束;proposed 不进 wiki(未确认,避免误导)。
+function renderConfirmedConstraints() {
+  const conDir = join(archDir, "rules", "constraints");
+  if (!existsSync(conDir)) return "### 已确认架构约束\n\n暂无已确认约束。可运行 /arch-interview 或人工确认后补充。\n";
+  const files = readdirSync(conDir).filter((f) => f.endsWith(".md") && f !== "suspicious-findings.md");
+  const confirmed = [];
+  for (const f of files) {
+    const text = readFileSync(join(conDir, f), "utf8");
+    for (const block of text.split(/\n(?=### )/)) {
+      if (!/状态[:：]\s*confirmed/.test(block)) continue;
+      const title = (block.match(/###\s+(.+)/) || [])[1] || "约束";
+      const con = (block.match(/约束[:：]\s*(.+)/) || [])[1] || "";
+      confirmed.push(`- **${title.trim()}**:${con.trim()}`);
+    }
+  }
+  const body = confirmed.length ? confirmed.join("\n") + "\n" : "暂无已确认约束。\n";
+  return `### 已确认架构约束\n\n这些是经人工确认、设计变更必须遵守的硬约束:\n\n${body}`;
 }
 
 function renderMermaid() {

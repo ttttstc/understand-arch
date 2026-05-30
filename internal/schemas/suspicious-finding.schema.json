@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.local/schemas/suspicious-finding.schema.json",
+  "title": "understand-arch v3.1 suspicious finding",
+  "description": "onboard 阶段 arch-constraint-miner 侦查出的反常点(suspicious-findings)。埋雷预警 + 访谈来源。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "anomaly_type",
+    "location",
+    "suspicion_reason",
+    "suspicion_score",
+    "impact",
+    "status"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^SF-[0-9]{3,}$", "description": "反常点编号,如 SF-001" },
+    "title": { "type": "string", "minLength": 1 },
+    "anomaly_type": {
+      "enum": [
+        "odd-implementation",
+        "custom-logic",
+        "illogical",
+        "invalid-reference",
+        "swallowed-exception",
+        "stable-antipattern",
+        "conflicted"
+      ],
+      "description": "奇怪实现/定制逻辑/逻辑不通/无效引用/吞异常/反模式但稳定/有冲突"
+    },
+    "location": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "位置:file:line 或 node id"
+    },
+    "suspicion_reason": { "type": "string", "minLength": 1, "description": "AI 为什么怀疑这里(中文,详细)" },
+    "guess": { "type": "string", "description": "AI 的推测(可能的原因)" },
+    "suspicion_score": { "type": "integer", "minimum": 1, "maximum": 10, "description": "可疑度 1-10" },
+    "impact": { "enum": ["low", "medium", "high", "critical"], "description": "影响面" },
+    "status": {
+      "enum": ["pending-interview", "answered", "converted-to-constraint", "dismissed"],
+      "description": "待访谈/已解答/已转约束/已排除"
+    },
+    "resolved_constraint_id": { "type": "string", "description": "若已转约束,关联的 CON-xxx" },
+    "answered_by": { "type": "string", "description": "若已解答,受访人 + 日期" }
+  }
+}
