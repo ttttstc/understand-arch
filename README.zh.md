@@ -14,7 +14,9 @@
 - **架构文档** — 一份可通读的 `ARCHITECTURE.md` 白皮书(+ 14 个章节切片),读起来像一篇标准架构技术文档,不是工具报告
 - **方案设计** — 每个变更产出一份 `CR.md`(14 段 RFC 风格),基于 PRD + 当前架构生成
 - **决策留底** — Append-only ADR 台账
-- **团队约束** — 你的命名规范、合规红线、依赖白名单等,在方案评审时自然落地
+- **团队规范 + 项目约束** — 两层规则:
+  - **规范层**:你的命名规范、合规红线、依赖白名单(你自己写,权威)
+  - **约束层**:AI 从代码里考古挖出的领域不变量、依赖规则、契约、风险点,叠加资深成员脑子里的隐式知识(`/arch-interview` 访谈沉淀),每条都有 5 级证据等级(confirmed / observed / inferred / uncertain / conflicted),AI 挖出的只能是 proposed,**人确认后才进 wiki 与方案评审**
 - **可视化看板** — 交互式查看代码图谱与架构层
 
 所有产物都在项目根目录下的一个目录里:`.understand-arch/`。其他位置不会被污染。
@@ -54,7 +56,12 @@
 **画 4+1 / C4 架构图**
 > `/arch-diagram`
 
-v3.0 在 wiki 中提供 Mermaid 源码;渲染成图片的能力留给后续版本。
+在 wiki 中提供 Mermaid 源码;渲染成图片的能力留给后续版本。
+
+**挖资深成员脑子里的隐式知识**
+> "聊聊这个项目里我没看明白的地方" → `/arch-interview`
+
+很多关键约束写不进代码注释,只在老员工脑子里:为什么这个模块只能单线程跑、为什么这个字段不能改名、这条依赖链当年是为了绕过哪个坑。`/arch-interview` 会先把 onboard 阶段 AI 考古挖出的"可疑实现点"(怪味道、定制逻辑、无效引用、被吞异常等)摆出来,**一次一题**地按场景(领域 / 依赖 / 历史 / 定制 / 风险 / 运维 / 测试)向你提问,每题附 AI 推荐答案,你确认 / 修正 / 跳过即可。访谈结束沉淀为 proposed 约束,经你确认后并入约束层。
 
 ## 安装
 
@@ -66,7 +73,7 @@ v3.0 在 wiki 中提供 Mermaid 源码;渲染成图片的能力留给后续版�
 /reload-plugins
 ```
 
-插件 manifest 保持极简,Claude Code 直接从 `skills/*/SKILL.md` 自动发现 slash command。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 6 个命令:
+插件 manifest 保持极简,Claude Code 直接从 `skills/*/SKILL.md` 自动发现 slash command。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 7 个命令:
 
 - `/arch-onboard`
 - `/arch-design`
@@ -74,6 +81,7 @@ v3.0 在 wiki 中提供 Mermaid 源码;渲染成图片的能力留给后续版�
 - `/arch-wiki`
 - `/arch-diagram`
 - `/arch-dashboard`
+- `/arch-interview`
 
 ### 看不到命令?
 
@@ -128,7 +136,8 @@ your-project/
         ├── wiki/
         │   ├── ARCHITECTURE.md       ← 完整可读白皮书
         │   └── 01..14-*.md           ← 章节切片
-        ├── rules/                    ← 你的团队约束(你编辑)
+        ├── rules/                    ← 团队规范(根目录,你编辑)
+        │   └── constraints/          ← 项目约束(AI 考古 + 访谈,人确认后生效)
         ├── decisions/                ← ADR 台账(append-only)
         ├── change-requests/          ← CR.md 文件
         ├── state.yaml                ← 工作流状态
