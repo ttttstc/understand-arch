@@ -14,7 +14,9 @@
 - **Architecture document** — a single readable `ARCHITECTURE.md` whitepaper (plus 14 chapter slices) that reads like a standard architecture tech doc, not a tool report
 - **Design documents** — one-file `CR.md` per change request (14 RFC-style sections), generated from a PRD + the current architecture
 - **Decisions** — append-only ADR ledger
-- **Rules** — your team's architecture conventions, naturally enforced during design review
+- **Rules — two layers**:
+  - **Norms** — your team conventions, compliance lines, dependency allow-lists (you author, authoritative)
+  - **Project constraints** — domain invariants, dependency rules, contracts and risk points mined by AI from the code, plus implicit knowledge grilled out of senior engineers via `/arch-interview`. Each entry carries a 5-level evidence rating (confirmed / observed / inferred / uncertain / conflicted); AI-mined entries can only land as `proposed` and **only flow into the wiki and design review once a human confirms them**
 - **Dashboard** — an interactive view of the code graph and architecture layer
 
 All artifacts live inside one directory in your project root: `.understand-arch/`. Nothing else is touched.
@@ -54,7 +56,12 @@ Launches an interactive dashboard: code graph, capability map, risk view, multi-
 **Draw 4+1 / C4 diagrams**
 > `/arch-diagram`
 
-v3.0 ships Mermaid sources inside the wiki; rendered-image generation is planned for a later release.
+Mermaid sources ship inside the wiki; rendered-image generation is planned for a later release.
+
+**Grill the implicit knowledge out of senior engineers**
+> "Let's talk through the parts I can't read off the code" → `/arch-interview`
+
+Many critical constraints never make it into code comments — they only live in senior engineers' heads: why this module must run single-threaded, why that field name is frozen, which historical landmine that dependency chain exists to avoid. `/arch-interview` first surfaces the suspicious implementations the onboard-phase AI scouted out (odd implementations, custom logic, invalid references, swallowed exceptions, …), then walks you through them **one question at a time** by scenario (domain / dependency / history / customization / risk / ops / testing), with a recommended answer attached to each. Confirm, correct, or skip. Answers are sedimented as `proposed` constraints and merged into the constraint layer after you confirm them.
 
 ## Installation
 
@@ -66,7 +73,7 @@ In Claude Code, run:
 /reload-plugins
 ```
 
-The plugin manifest stays minimal, and Claude Code discovers slash commands directly from `skills/*/SKILL.md`. After `/reload-plugins`, type `/arch-` at any prompt to verify the six commands appear:
+The plugin manifest stays minimal, and Claude Code discovers slash commands directly from `skills/*/SKILL.md`. After `/reload-plugins`, type `/arch-` at any prompt to verify the seven commands appear:
 
 - `/arch-onboard`
 - `/arch-design`
@@ -74,6 +81,7 @@ The plugin manifest stays minimal, and Claude Code discovers slash commands dire
 - `/arch-wiki`
 - `/arch-diagram`
 - `/arch-dashboard`
+- `/arch-interview`
 
 ### Don't see the commands?
 
@@ -128,7 +136,8 @@ your-project/
         ├── wiki/
         │   ├── ARCHITECTURE.md       ← the full readable whitepaper
         │   └── 01..14-*.md           ← chapter slices
-        ├── rules/                    ← your team conventions (you edit)
+        ├── rules/                    ← norm layer (you edit)
+        │   └── constraints/          ← project constraints (AI-mined + interview, human-confirmed)
         ├── decisions/                ← ADR ledger (append-only)
         ├── change-requests/          ← CR.md files
         ├── state.yaml                ← workflow state
