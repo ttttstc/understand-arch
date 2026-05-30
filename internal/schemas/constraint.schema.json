@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.local/schemas/constraint.schema.json",
+  "title": "understand-arch v3.1 constraint entry",
+  "description": "约束层条目结构(rules/constraints/ 下的约束)。机器考古(ai-mined)、人脑访谈(interview)、人工(human)三源统一结构。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "constraint",
+    "basis",
+    "evidence_level",
+    "violation_check",
+    "status",
+    "source"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^CON-[0-9]{3,}$",
+      "description": "约束编号,如 CON-001"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "category": {
+      "enum": [
+        "system-charter",
+        "domain-invariant",
+        "dependency-rule",
+        "api-contract",
+        "risk-register",
+        "test-coverage-gap",
+        "coding-convention",
+        "unknown"
+      ],
+      "description": "约束类别,对应 rules/constraints/ 下的文件归属"
+    },
+    "constraint": {
+      "type": "string",
+      "minLength": 1,
+      "description": "不能做什么 / 必须保持什么(中文)"
+    },
+    "basis": {
+      "type": "string",
+      "minLength": 1,
+      "description": "依据:来自代码的事实(node id / file:line)或老员工口述"
+    },
+    "evidence_level": {
+      "enum": ["confirmed", "observed", "inferred", "uncertain", "conflicted"],
+      "description": "证据等级:已确认/已观察/已推断/待定/有冲突"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "回链代码的证据(node id / file:line),interview 来源可含受访人标识"
+    },
+    "violation_check": {
+      "type": "string",
+      "description": "可执行的违反检测命令(如 depcruise / archunit / pnpm test contract:xxx);无可执行命令时填检测方式描述或空字符串"
+    },
+    "status": {
+      "enum": ["proposed", "confirmed", "rejected", "adjusted"],
+      "description": "proposed=AI/访谈初稿;confirmed=人确认升级硬约束;rejected=误判保留;adjusted=人改后确认"
+    },
+    "source": {
+      "enum": ["ai-mined", "interview", "human"],
+      "description": "ai-mined=机器考古;interview=访谈;human=人工"
+    },
+    "consistency": {
+      "type": "object",
+      "description": "仅 coding-convention 用:风格约定的一致度",
+      "additionalProperties": false,
+      "properties": {
+        "match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "exceptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "note": {
+      "type": "string",
+      "description": "备注:受访人+日期(interview)/ 关联反常点 / 关联 ADR"
+    },
+    "related_finding_id": {
+      "type": "string",
+      "description": "关联的 suspicious-finding 编号(若由侦查/访谈衍生)"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "source": { "const": "ai-mined" } } },
+      "then": {
+        "properties": {
+          "evidence_level": { "enum": ["observed", "inferred", "uncertain", "conflicted"] }
+        },
+        "description": "机器考古不得自标 confirmed,只有人能确认"
+      }
+    }
+  ]
+}

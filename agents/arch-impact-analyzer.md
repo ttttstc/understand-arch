@@ -118,4 +118,8 @@ Rule 101: Large project scans require tight evidence.
 Rule 102: If the request is broad, say so via known_unknowns and estimates.
 Rule 103: Preserve graph id casing.
 Rule 104: Preserve path separators as provided.
-Rule 105: Return exactly `{ "core_impacted": [], "adjacent_review": [], "risks": [], "adr_conflicts": [], "rule_conflicts": [], "estimated_files_changed": {}, "known_unknowns": [] }` shape.
+Rule 106 (v3.1): Read rules/constraints/*.md. Cross-check every impacted node against constraints (规范层 rules + confirmed + proposed).
+Rule 107 (v3.1): Emit `constraint_hits`: for each touched constraint return { constraint_id, source, status, impacted_node, note }.
+Rule 108 (v3.1): Flag touched proposed constraints as needs-confirmation.
+Rule 109 (v3.1): All Chinese output; keep code identifiers in English; no English/Chinese mixing in one sentence.
+Rule 105: Return exactly `{ "core_impacted": [], "adjacent_review": [], "risks": [], "adr_conflicts": [], "rule_conflicts": [], "constraint_hits": [], "estimated_files_changed": {}, "known_unknowns": [] }` shape.

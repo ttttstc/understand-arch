@@ -78,7 +78,8 @@ v3.1 用户入口:6 → **7**(新增 `/arch-interview`)。
     ├── api-contracts.md          接口语义承诺
     ├── risk-register.md          高风险区 + 高风险变更规则
     ├── test-coverage-gaps.md     测试覆盖缺口
-    ├── suspicious-findings.md    ★ AI 侦查的反常点清单(埋雷预警 + 访谈来源)
+    ├── suspicious-findings.md    ★ AI 侦查的反常点清单(onboard 产,埋雷预警 + 访谈来源)
+    ├── coding-conventions.md     ★ AI 统计的编码风格约定(带一致度,确认后升规范层)
     └── interview/                访谈记录留底
         └── interview-{date}-{受访人}.md
 ```
@@ -128,19 +129,45 @@ adjusted(人改过措辞/范围后确认)
 
 ---
 
-## 4. arch-constraint-miner subagent(机器考古)
+## 4. arch-constraint-miner subagent(机器考古 + 反常侦查 + 风格统计)
 
 v3.1 新增 subagent(架构师层,arch-* 前缀)。subagent 总数 13 → **14**。
 
-- **时机**:onboard 的 arch-enrich 阶段(Phase 7-13 之后加一个约束考古 phase)
-- **职责**:从 graph + 代码反推隐性约束,写 `rules/constraints/` 的 proposed 条目
-- **考古什么**:
-  - 依赖方向(实际从不互调的模块对 → dependency-rules)
-  - 数据不变量(某字段/状态实际从未被某种方式修改 → domain-invariants)
-  - API 语义承诺(实际的幂等/错误处理模式 → api-contracts)
-  - 系统边界(实际的内外部边界 → system-charter 候选)
-- **强约束**:每条带 evidence_level + 依据(file:line)+ violation_check + 状态 proposed + source: ai-mined
-- **诚实**:考古是"可疑候选",证据等级如实标(多为 observed/inferred),不得标 confirmed(只有人能确认)
+**时机**:onboard 的 arch-enrich 阶段(在 capability/quality/narrative 之后加一个约束考古 phase)。**所有侦查/考古/统计都在 onboard 时一次做完,产出落盘;`/arch-interview` 只读取这些产物,不再临时分析**(原 Phase A 归位到这里)。
+
+该 subagent **一次产三份产物**(三者本质同源:都是"从图谱里找出值得注意的点",一个 subagent 内聚产出):
+
+### 4.1 产出一:隐性约束(`rules/constraints/*.md`,proposed)
+
+从 graph + 代码反推隐性约束:
+- 依赖方向(实际从不互调的模块对 → dependency-rules)
+- 数据不变量(某字段/状态实际从未被某种方式修改 → domain-invariants)
+- API 语义承诺(实际的幂等/错误处理模式 → api-contracts)
+- 系统边界(实际的内外部边界 → system-charter 候选)
+
+每条带 evidence_level + 依据(file:line)+ violation_check + 状态 proposed + source: ai-mined。
+诚实:考古是"可疑候选",证据等级如实标(多为 observed/inferred),不得标 confirmed(只有人能确认)。
+
+### 4.2 产出二:反常点清单(`rules/constraints/suspicious-findings.md`)★
+
+原 `/arch-interview` Phase A 的侦查,归位到 onboard。扫 7 类反常点(奇怪实现/定制逻辑/逻辑不通/无效引用/吞异常/反模式但稳定/有冲突),每点打分(可疑度 × 影响面)排序。详细要求见 §5.4。
+
+**意义**:onboard 一次产出完整"地雷地图",**不依赖有没有人来访谈** —— 哪怕永远没人访谈,这份清单本身就是给架构师/新人的高价值风险预警。
+
+### 4.3 产出三:编码风格约定(`rules/constraints/coding-conventions.md`,proposed)★
+
+从代码**统计**事实上的团队约定(与坏味道相反:坏味道是少数派偏离,约定是多数派一致):
+- 命名约定(组件/文件/函数 实际命名模式)
+- 错误处理约定(统一 errorHandler / Result 包装 / 异常 vs 错误码)
+- 目录/分层约定、状态管理/数据获取约定、测试约定、依赖选型约定
+
+每条带:约定描述 + **一致度**(如"95% 命中,3 处例外")+ 例外列表 + evidence_level + 状态 proposed。
+**一致度是关键指标**:95% = 强约定;60% = 只是倾向,不该强制。
+**确认后升级路径**:人确认 → 升级进**规范层**(naming.md / banned-patterns.md 等,设计2=a),成为 design 的硬约束;让规范层也能"AI 初稿 + 人确认",不再等人从零写。
+
+这让"规范层"和"约束层"都获得 AI 初稿能力:
+- 规范层(naming 等)← coding-conventions 确认后升级
+- 约束层 ← 隐性约束考古 + 访谈
 
 ---
 
@@ -158,35 +185,32 @@ v3.1 新增 subagent(架构师层,arch-* 前缀)。subagent 总数 13 → **14**
 - **触发关系(设计1=c)**:有 graph 就基于反常点精准问;没 graph 走通用场景问卷兜底
 - **节奏(设计2=b+c)**:按场景域切,一次一个域可单独约时间;每域问到信息收敛即收;支持中断续跑(state 记进度)
 
-### 5.3 三阶段流程
+### 5.3 两阶段流程(侦查已前置到 onboard)
+
+> **重要:原 Phase A 侦查已归位到 onboard 的 arch-constraint-miner**(§4.2)。`/arch-interview` **不再临时分析**,而是直接读取 onboard 已产出的 `suspicious-findings.md` + 约束层 proposed 条目。老员工到场时不用等 AI 做功课。
 
 ```
-Phase A 侦查(AI 自动,无人参与)── 像严谨新员工先做功课
-  读 graph + arch-layer + 考古 constraints
-  扫"反常点"(设计3=c):
-    | 反常类型 | 信号 |
-    | 奇怪实现 | 同步本可异步 / 深嵌套 / 绕路调用 |
-    | 定制逻辑 | 针对特定值/客户/环境的 if / magic number |
-    | 逻辑不通 | 恒真恒假条件 / 写了不用的返回 / 矛盾校验 |
-    | 无效/可疑引用 | 孤立节点 / import 不用 / 高频依赖却无测试 |
-    | 吞掉异常 | catch 空处理 / 错误静默 |
-    | 反模式但稳定 | 上帝模块 / 循环依赖 / 跨层调用却一直没改 |
-    | 有冲突 | 代码/测试/文档/考古结果互相矛盾 |
-  每点打分(可疑度 × 影响面),排序
-  → 写 rules/constraints/suspicious-findings.md(★ 详细留痕,见 5.4)
+读取(无人参与,秒级)
+  读 rules/constraints/suspicious-findings.md(onboard 已产的反常点 + 评分)
+  读 rules/constraints/ 的 proposed 约束(考古候选)
+  无 onboard 基线时(设计1=c):降级走通用场景问卷兜底
+  按场景域(--scenario)筛选相关反常点,按分排序
 
 Phase B 访谈(grill 式,一次一问,带推荐答案)
   按场景域组织(领域/数据、依赖/边界、历史包袱、特殊适配、风险/事故、运维/部署、测试盲区)
   从高分反常点开始
-  每问:给 AI 推荐答案(基于代码猜测 + 考古结果 + 行业常见模式)→ 老员工 确认/纠正/补充
+  每问:给 AI 推荐答案(基于 suspicious-findings 的怀疑理由 + 考古结果 + 行业常见模式)→ 老员工 确认/纠正/补充
   发现与已有 proposed/别人说法冲突 → 当场标 conflicted
   一个域问到信息收敛即收,支持中断续跑
 
 Phase C 产出
   → rules/constraints/ 的 proposed 约束(source: interview,记受访人+日期+关联反常点)
   → rules/constraints/interview/interview-{date}-{受访人}.md(原始问答留底)
+  → 回标 suspicious-findings.md 中被解答的反常点为"已解答"+ 链接到产出约束
   人确认 → confirmed 升级为项目特殊规则
 ```
+
+**侦查的 7 类反常点定义见 §4.2 引用的 suspicious-findings(在 onboard 阶段产出)。**
 
 ### 5.4 suspicious-findings.md(设计1=b,要详细)
 
@@ -200,8 +224,8 @@ AI 侦查的反常点**独立留痕,作为埋雷预警 + 访谈来源**:
 ### 5.5 与 arch-audit 分工(设计2=独立)
 
 - audit = "基线 vs 现实是否漂移"(时间维度)
-- interview Phase A = "代码本身有哪些反常实现需要人解释"(静态可疑度)
-- 两者都读 graph 但问题不同,interview Phase A 侦查逻辑独立,不依赖 audit
+- 反常侦查(onboard 的 constraint-miner)= "代码本身有哪些反常实现需要人解释"(静态可疑度)
+- 两者都读 graph 但问题不同,侦查逻辑在 onboard 独立产出,不依赖 audit;interview 只消费侦查产物
 
 ### 5.6 interview 约束 vs 考古约束
 
@@ -321,7 +345,7 @@ v3.0 arch-layer 的约束相关要素(dependency 规则 / 数据不变量等,若
 |---|---|---|
 | 用户入口 | 6 | **7**(+/arch-interview) |
 | 内部 skill | 5 | 5(不变) |
-| Subagent | 13 | **14**(+arch-constraint-miner;arch-interview 主体是 user skill,Phase A 侦查可内嵌或复用) |
+| Subagent | 13 | **14**(+arch-constraint-miner,onboard 阶段产 约束+反常点+风格约定 三份;arch-interview 是 user skill,只读取这些产物,无独立分析 subagent) |
 | rules 结构 | 单层(人工) | **双层**(规范层 + 约束层) |
 | 证据表达 | confidence 3 级 | **evidence_level 5 级中文** |
 
@@ -332,8 +356,9 @@ v3.0 arch-layer 的约束相关要素(dependency 规则 / 数据不变量等,若
 ```
 v3.1-Impl-1  证据等级 5 级中文(arch-layer.schema + 各 subagent + reviewer 迁移 confidence→evidence_level)
 v3.1-Impl-2  rules/ 双层:constraints/ 目录 + 约束条目 schema + 状态机
-v3.1-Impl-3  arch-constraint-miner subagent(考古)+ 接入 arch-enrich
-v3.1-Impl-4  /arch-interview 一级命令:Phase A 侦查 + suspicious-findings + Phase B grill 访谈 + Phase C 产出
+v3.1-Impl-3  arch-constraint-miner subagent(三产出:约束考古 + 反常侦查 suspicious-findings + 风格统计 coding-conventions)+ 接入 arch-enrich(onboard)
+v3.1-Impl-4  /arch-interview 一级命令:读取 onboard 产的 suspicious-findings/约束 → Phase B grill 访谈 → Phase C 产出 + 回标
+v3.1-Impl-4b coding-conventions 确认后升级规范层的流程(naming/banned-patterns 等)
 v3.1-Impl-5  design 消费规则:impact 比对 + solution 护栏 + CR.md §4.6 + senior blocker + proposed 软阻塞
 v3.1-Impl-6  CR.md 风格规约落地(solution-designer prompt)+ wiki 展示 confirmed 约束
 v3.1-Impl-7  全局语言规约落地(各 subagent prompt + reviewer 语言纯净度维度)

@@ -64,6 +64,7 @@
   },
   "$defs": {
     "confidence": { "enum": ["low", "medium", "high"] },
+    "evidenceLevel": { "enum": ["confirmed", "observed", "inferred", "uncertain", "conflicted"] },
     "evidenceRefs": {
       "type": "array",
       "minItems": 1,
