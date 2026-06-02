@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, delimiter, dirname, join, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -81,7 +82,7 @@ function resolveOptions(raw) {
     fail(`未知 profile: ${profile}. 支持: ${Object.keys(PROFILES).join(", ")}`);
   }
   const profileDefaults = profile ? PROFILES[profile] : {};
-  const format = raw.format || "mermaid";
+  const format = raw.format || "svg";
   if (!FORMATS.includes(format)) {
     fail(`未知 format: ${format}. 支持: ${FORMATS.join(", ")}`);
   }
@@ -174,11 +175,20 @@ function normalizeForCli(path) {
   return path.replace(/\\/g, "/");
 }
 
+function validationEnv() {
+  if (!process.env.ARCH_DIAGRAM_PYTHON) return process.env;
+  const shimDir = mkdtempSync(join(tmpdir(), "understand-arch-python3-"));
+  const shimPath = join(shimDir, "python3");
+  writeFileSync(shimPath, `#!/bin/sh\nexec "${normalizeForCli(process.env.ARCH_DIAGRAM_PYTHON)}" "$@"\n`, "utf-8");
+  chmodSync(shimPath, 0o755);
+  return { ...process.env, PATH: `${shimDir}${delimiter}${process.env.PATH || ""}` };
+}
+
 function runValidate(svgPath) {
   const bash = commandConfig("ARCH_DIAGRAM_BASH", "bash");
   const script = join(vendorRoot(), "scripts", "validate-svg.sh");
   if (!existsSync(script)) fail(`找不到 SVG 校验脚本: ${script}`);
-  execFileSync(bash.bin, [...bash.prefixArgs, normalizeForCli(script), normalizeForCli(svgPath)], { stdio: "pipe" });
+  execFileSync(bash.bin, [...bash.prefixArgs, normalizeForCli(script), normalizeForCli(svgPath)], { env: validationEnv(), stdio: "pipe" });
 }
 
 function renderSvg(options, spec, svgPath) {

@@ -60,10 +60,10 @@ Generates architecture diagrams in four formats:
 
 | format | Output | Use case |
 |---|---|---|
-| `mermaid` | `wiki/14-diagrams.md` | Default path, unchanged from v3.1 |
-| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | Review docs and design decks |
+| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | Default path for review docs and design decks |
 | `png` | `wiki/assets/diagrams/{type}-{style}.png` | Confluence, Feishu, DingTalk, slides |
 | `plantuml` | `wiki/assets/diagrams/{type}.puml` | IDE-side PlantUML rendering |
+| `mermaid` | `wiki/14-diagrams.md` | Compatibility and fallback path |
 
 Recommended profiles:
 
@@ -82,6 +82,7 @@ Examples:
 /arch-diagram sequence --format=svg --style=6
 /arch-diagram architecture --format=png --profile=web
 /arch-diagram state-machine --format=plantuml
+/arch-diagram c4 --format=mermaid
 ```
 
 **Grill the implicit knowledge out of senior engineers**

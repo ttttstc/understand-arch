@@ -60,10 +60,10 @@
 
 | format | 输出位置 | 适用场景 |
 |---|---|---|
-| `mermaid` | `wiki/14-diagrams.md` | 默认路径,与 v3.1 行为一致 |
-| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | 架构评审文档和设计稿 |
+| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | 默认路径,用于架构评审文档和设计稿 |
 | `png` | `wiki/assets/diagrams/{type}-{style}.png` | Confluence、飞书、钉钉和演示文稿 |
 | `plantuml` | `wiki/assets/diagrams/{type}.puml` | 在 IDE 里继续渲染 PlantUML |
+| `mermaid` | `wiki/14-diagrams.md` | 兼容和降级路径 |
 
 推荐 profile:
 
@@ -82,6 +82,7 @@
 /arch-diagram sequence --format=svg --style=6
 /arch-diagram architecture --format=png --profile=web
 /arch-diagram state-machine --format=plantuml
+/arch-diagram c4 --format=mermaid
 ```
 
 **挖资深成员脑子里的隐式知识**

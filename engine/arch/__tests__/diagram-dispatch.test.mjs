@@ -55,7 +55,7 @@ describe("diagram-dispatch", () => {
     expect(result).toMatchObject({ format: "mermaid", handled: false });
   });
 
-  it("svg 路径调用 Python 并追加 wiki 引用", () => {
+  it("默认路径走 svg 并追加 wiki 引用", () => {
     const tools = fakeTools();
     process.env.ARCH_DIAGRAM_PYTHON = process.execPath;
     process.env.ARCH_DIAGRAM_PYTHON_ARGS = JSON.stringify([tools.python]);
@@ -67,7 +67,6 @@ describe("diagram-dispatch", () => {
     writeFileSync(specPath, JSON.stringify({ title: "系统图", nodes: [], arrows: [] }), "utf-8");
 
     const result = dispatchDiagram({
-      format: "svg",
       type: "architecture",
       style: "6",
       "arch-dir": archDir,

@@ -6,7 +6,7 @@ argument-hint: ["[type] [arch-project-dir] [--format=mermaid|svg|png|plantuml] [
 
 # /arch-diagram
 
-`/arch-diagram` 是架构图调度器。默认格式是 `mermaid`，必须走 v3.1 原路径；`svg` 和 `png` 复用 `vendor/fireworks-tech-graph/PROMPT.md` 的编排能力；`plantuml` 只输出 `.puml` 源码。
+`/arch-diagram` 是架构图调度器。默认格式是 `svg`，优先走 `vendor/fireworks-tech-graph/PROMPT.md` 的新增出图能力；`mermaid` 保留为兼容路径和默认出图失败后的降级路径；`plantuml` 只输出 `.puml` 源码。
 
 ## 全局规则
 
@@ -15,22 +15,52 @@ argument-hint: ["[type] [arch-project-dir] [--format=mermaid|svg|png|plantuml] [
 3. 不在 Node 或 Python 工具里做语义推断。
 4. SVG/PNG 的语义到 JSON 翻译由当前 Claude 会话按 `vendor/fireworks-tech-graph/PROMPT.md` 完成。
 5. `engine/arch/diagram-dispatch.mjs` 只做确定性参数校验、依赖检查、渲染、校验、转 PNG、追加 wiki 引用。
-6. Python 或 cairosvg 缺失时直接报错，不降级为 Mermaid。
-7. 不新增 subagent。
+6. 用户显式指定 `--format=svg` 或 `--format=png` 时,Python 或 cairosvg 缺失必须直接报错。
+7. 用户未指定 `--format` 时,先尝试默认 SVG；如果依赖缺失、fireworks JSON 无法形成或调度器失败,降级走 Mermaid v3.1 路径,并向用户说明降级原因。
+8. 不新增 subagent。
 
 ## 参数
 
 - `type`: 默认 `c4`。支持 v3.1 语义类型和 fireworks 原生类型。
 - `arch-project-dir`: 默认读取 `ARCH_PROJECT_ROOT`，否则使用当前目录。
-- `--format`: `mermaid`、`svg`、`png`、`plantuml`，默认 `mermaid`。
+- `--format`: `svg`、`png`、`plantuml`、`mermaid`，默认 `svg`；`mermaid` 是兼容和降级路径。
 - `--style`: `1..7`，默认由 profile 决定；无 profile 时为 `1`。
 - `--profile`: `web`、`middleware`、`pipeline`、`agent`、`multi-repo`。
 
 ## 三路调度
 
+### 默认路径: format=svg
+
+1. 解析 `type`、`style`、`profile` 和项目目录。
+2. 读取 `specs/repos.json`、各仓 `knowledge-graph.json`、`specs/arch-layer.json`，必要时读取用户补充说明。
+3. 打开并遵循 `vendor/fireworks-tech-graph/PROMPT.md`。
+4. 将项目事实、架构判断、目标图类型和用户意图整理为自然语言上下文。
+5. 按 `PROMPT.md` 生成 fireworks JSON。只生成 JSON，不生成 SVG 文本。
+6. 将 JSON 写入临时文件，例如 `.understand-arch/tmp/diagram-spec.json`。
+7. 调用:
+
+```bash
+node engine/arch/diagram-dispatch.mjs --type=<type> --style=<style> --profile=<profile> --arch-dir=<arch-project-dir> --spec-json=<json-path>
+```
+
+8. 调度器会输出到 `wiki/assets/diagrams/{type}-{style}.svg`，并在 `wiki/14-diagrams.md` 追加嵌图引用。
+9. 如果用户没有显式传入 `--format`,且默认 SVG 路径失败,走 Mermaid 降级路径；如果用户显式传入 `--format=svg`,停止并返回错误。
+
+### format=png
+
+1. 复用默认 SVG 路径的上下文整理和 fireworks JSON 生成流程。
+2. 调用:
+
+```bash
+node engine/arch/diagram-dispatch.mjs --format=png --type=<type> --style=<style> --profile=<profile> --arch-dir=<arch-project-dir> --spec-json=<json-path>
+```
+
+3. 调度器会先生成同源 SVG,再用 cairosvg 转出 PNG。
+4. `--format=png` 是显式请求,失败时不降级。
+
 ### format=mermaid
 
-这是默认路径，以下流程为 v3.1 原路径。
+这是兼容路径和默认 SVG 失败后的降级路径，以下流程为 v3.1 原路径。
 
 Generate diagrams as markdown/Mermaid projections of existing graph and architecture-layer data. v3.0 does not create a separate diagram engine; diagrams are written into wiki page `14-diagrams.md` and may be copied into CR.md or ADRs.
 
@@ -85,23 +115,6 @@ Do not omit critical risks for risk diagrams.
 - Missing graph: stop.
 - Missing arch-layer for risk/capability diagrams: stop.
 - Mermaid with placeholder labels: reject and regenerate once.
-
-### format=svg 或 format=png
-
-1. 解析 `type`、`style`、`profile` 和项目目录。
-2. 读取 `specs/repos.json`、各仓 `knowledge-graph.json`、`specs/arch-layer.json`，必要时读取用户补充说明。
-3. 打开并遵循 `vendor/fireworks-tech-graph/PROMPT.md`。
-4. 将项目事实、架构判断、目标图类型和用户意图整理为自然语言上下文。
-5. 按 `PROMPT.md` 生成 fireworks JSON。只生成 JSON，不生成 SVG 文本。
-6. 将 JSON 写入临时文件，例如 `.understand-arch/tmp/diagram-spec.json`。
-7. 调用:
-
-```bash
-node engine/arch/diagram-dispatch.mjs --format=<svg|png> --type=<type> --style=<style> --profile=<profile> --arch-dir=<arch-project-dir> --spec-json=<json-path>
-```
-
-8. 调度器会输出到 `wiki/assets/diagrams/{type}-{style}.svg` 或 `wiki/assets/diagrams/{type}-{style}.png`，并在 `wiki/14-diagrams.md` 追加嵌图引用。
-9. 如果调度器返回依赖、JSON 或 SVG 校验错误，停止并把错误原文返回给用户。
 
 ### format=plantuml
 
@@ -158,16 +171,18 @@ node engine/arch/diagram-dispatch.mjs --format=<svg|png> --type=<type> --style=<
 
 | format | 输出 |
 |---|---|
-| `mermaid` | `wiki/14-diagrams.md` |
 | `svg` | `wiki/assets/diagrams/{type}-{style}.svg` |
 | `png` | `wiki/assets/diagrams/{type}-{style}.png` |
 | `plantuml` | `wiki/assets/diagrams/{type}.puml` |
+| `mermaid` | `wiki/14-diagrams.md` |
 
 ## 质量门槛
 
-1. Mermaid 路径不得调用 Python。
-2. SVG/PNG 路径必须复用 `vendor/fireworks-tech-graph/PROMPT.md`。
-3. fireworks JSON 必须是项目事实的投影，不得捏造组件、依赖或调用链。
-4. 产出的 SVG 必须通过 `validate-svg.sh`。
-5. PNG 必须由 cairosvg 从同源 SVG 转出。
-6. `wiki/14-diagrams.md` 中的图片引用必须指向实际存在的文件。
+1. 默认路径必须优先产 SVG。
+2. Mermaid 路径不得调用 Python。
+3. SVG/PNG 路径必须复用 `vendor/fireworks-tech-graph/PROMPT.md`。
+4. fireworks JSON 必须是项目事实的投影，不得捏造组件、依赖或调用链。
+5. 产出的 SVG 必须通过 `validate-svg.sh`。
+6. PNG 必须由 cairosvg 从同源 SVG 转出。
+7. `wiki/14-diagrams.md` 中的图片引用必须指向实际存在的文件。
+8. 默认 SVG 失败后降级 Mermaid 时,必须在回复里说明降级原因。

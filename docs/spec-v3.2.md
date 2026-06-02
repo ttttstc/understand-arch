@@ -15,7 +15,7 @@ v3.0/v3.1 让架构知识库可信、可演进、有约束护栏。但**图层�
 v3.2 不动 schema、不动 graph、不动 arch-layer,只升级 `/arch-diagram` 的「出图通道」:
 
 1. **完整搬迁 fireworks-tech-graph**(LLM-side SKILL.md + Python-side 模板渲染 + 7 风格知识库 + 10 模板 + 7 fixtures)到 `vendor/fireworks-tech-graph/`
-2. **三路输出**:`--format=mermaid|svg|png|plantuml`,默认 mermaid 保留 v3.1 行为不破坏
+2. **三路输出**:`--format=svg|png|plantuml|mermaid`,默认 SVG 走 fireworks 新出图能力,Mermaid 作为兼容与降级路径
 3. **14 图类型 ↔ 6 语义类型映射**:context/container/component/flow/risk/c4 自动选模板,额外暴露 sequence / state-machine / class / ER / use-case / timeline / comparison / mind-map
 4. **5 套项目类型 → 推荐组合**:Web 应用 / 中间件 / 数据流水线 / Agent 系统 / 多仓微服务
 
@@ -57,7 +57,7 @@ v3.2 用户入口数量不变(仍 7 个),`/arch-diagram` 能力增强。
 | 1 | 5 套推荐组合按项目类型 | 用户明示 |
 | 2 | 保留 Mermaid + 新增 SVG/PNG/PlantUML 多路并存 | 用户明示「能力,PlantUML 也在范围内」 |
 | 3 | 不加 NOTICE,仅保留 LICENSE 文件 | 用户明示 |
-| 4 | 缺 Python/cairosvg 直接报错,不降级 | 用户明示「不写」 |
+| 4 | 默认用新增出图方式,Mermaid 作为降级;显式 `--format=svg|png` 时缺 Python/cairosvg 直接报错 | 用户明示 |
 | 5 | 直接用 fireworks 自带 SKILL,不重写翻译层 | 用户明示「直接用自带的」 |
 | 6 | 本轮(v3.2)只解决图能力,**集成视图 / 行为视图 / 数据深度 3 大 schema 缺口留给 v3.3** | 用户明示「先落」 |
 
@@ -67,7 +67,7 @@ v3.2 用户入口数量不变(仍 7 个),`/arch-diagram` 能力增强。
 
 ### 3.1 目标
 
-1. `/arch-diagram` 支持 `--format=mermaid|svg|png|plantuml`(默认 `mermaid` 保 v3.1 行为)
+1. `/arch-diagram` 支持 `--format=svg|png|plantuml|mermaid`(默认 `svg`,Mermaid 为兼容和降级路径)
 2. `/arch-diagram` 支持 `--type=<14 种之一>`(向后兼容原 6 种)
 3. `/arch-diagram` 支持 `--style=<1..7>` + `--profile=<5 套项目类型预设>`
 4. fireworks 完整搬迁,upstream 升级可追溯(锁 commit SHA,写入 vendor README)
@@ -82,7 +82,7 @@ v3.2 用户入口数量不变(仍 7 个),`/arch-diagram` 能力增强。
 - 新增「数据深度」(config/mapping/ER 基数)字段 → v3.3
 - 重写 fireworks 自带 SKILL prompt(直接复用)
 - 自建 PlantUML 渲染服务(只产 .puml 文本源码,渲染留给用户 IDE)
-- Python/cairosvg 缺失时的降级路径(直接报错,提示 `pip install cairosvg`)
+- 显式 `--format=svg|png` 时的降级路径(直接报错,提示 `pip install cairosvg`)
 
 ---
 
@@ -91,19 +91,20 @@ v3.2 用户入口数量不变(仍 7 个),`/arch-diagram` 能力增强。
 ### 4.1 命令签名
 
 ```bash
-# v3.1 行为(完全保留,作默认)
+# 默认使用 fireworks SVG 出图
 /arch-diagram c4
 
-# v3.2 新增
 /arch-diagram sequence --format=svg --style=6                 # 生产级时序图(claude-official 风格)
 /arch-diagram architecture --format=png --profile=web         # Web 应用推荐预设
 /arch-diagram state-machine --format=plantuml                 # PlantUML 源码(.puml)
 /arch-diagram er-diagram --format=svg --style=3               # ER + blueprint 风格
+/arch-diagram c4 --format=mermaid                             # v3.1 Mermaid 兼容路径
 ```
 
 ### 4.2 默认行为
 
-- 不带 `--format` 时:**mermaid**(写入 `wiki/14-diagrams.md`,与 v3.1 完全一致)
+- 不带 `--format` 时:**svg**(写入 `wiki/assets/diagrams/*.svg`,并在 `wiki/14-diagrams.md` 追加嵌图引用)
+- 默认 SVG 路径失败时:降级到 **mermaid** v3.1 路径,并向用户说明降级原因
 - 不带 `--style` 时:`profile` 推荐风格;若无 `profile`,默认 `1`(flat-icon)
 - 不带 `--type` 时:沿用 v3.1 默认 `c4`
 
@@ -111,10 +112,10 @@ v3.2 用户入口数量不变(仍 7 个),`/arch-diagram` 能力增强。
 
 | format | 位置 | 备注 |
 |---|---|---|
-| mermaid | `wiki/14-diagrams.md` 段落 | v3.1 行为 |
-| svg | `wiki/assets/diagrams/{type}-{style}.svg` | 新建子目录 |
+| svg | `wiki/assets/diagrams/{type}-{style}.svg` | 默认路径 |
 | png | `wiki/assets/diagrams/{type}-{style}.png` | 同上 |
 | plantuml | `wiki/assets/diagrams/{type}.puml` | 同上 |
+| mermaid | `wiki/14-diagrams.md` 段落 | 兼容与降级路径 |
 
 `wiki/14-diagrams.md` 在 svg/png 模式下自动追加 `![architecture](assets/diagrams/architecture-6.png)` 嵌图引用。
 
@@ -148,17 +149,18 @@ understand-arch/
 `skills/arch-diagram/SKILL.md` 重写为**调度器**:
 
 1. 解析 `--format` / `--type` / `--style` / `--profile` 参数
-2. format=mermaid → 走 v3.1 原路径(完全不动)
-3. format=svg|png|plantuml → 调用 `engine/arch/diagram-dispatch.mjs`
-4. SVG/PNG 路径下,把 graph 节点 + arch-layer 节点 + 用户语义描述,拼成自然语言上下文,**透传给 vendor/fireworks-tech-graph/PROMPT.md 自带的 LLM 编排**(不重写)
-5. PlantUML 路径下,LLM 直接出 `.puml` 文本(不调 fireworks)
+2. 未指定 `--format` → 默认走 svg fireworks 新出图路径
+3. format=mermaid → 走 v3.1 原路径(完全不动)
+4. format=svg|png|plantuml → 调用 `engine/arch/diagram-dispatch.mjs`
+5. SVG/PNG 路径下,把 graph 节点 + arch-layer 节点 + 用户语义描述,拼成自然语言上下文,**透传给 vendor/fireworks-tech-graph/PROMPT.md 自带的 LLM 编排**(不重写)
+6. PlantUML 路径下,LLM 直接出 `.puml` 文本(不调 fireworks)
 
 ### 5.3 调度器 `engine/arch/diagram-dispatch.mjs`(新增,确定性,无 LLM)
 
 职责(铁律范围内):
 - 参数 schema 校验(type / style / format / profile 枚举)
 - profile → (type, style) 解析
-- 依赖检查(format=svg|png 时,`python3 -c "import cairosvg"`,不通过直接报错)
+- 依赖检查(format=svg|png 时,`python3 -c "import cairosvg"`,显式图片格式不通过直接报错;默认未指定 format 时由 SKILL 降级 Mermaid)
 - 调 `python3 vendor/fireworks-tech-graph/scripts/generate-from-template.py <type> <out.svg> '<JSON>'`
 - 调 `vendor/fireworks-tech-graph/scripts/validate-svg.sh` 验 SVG
 - format=png 时,调 cairosvg 导 PNG
@@ -242,7 +244,7 @@ format=png 但 cairosvg 缺失:
   Alternative: install librsvg and use rsvg-convert
 ```
 
-不降级到 mermaid(用户明示)。
+显式 `--format=svg|png` 不降级到 mermaid;默认未指定 format 时可降级 Mermaid。
 
 ---
 
@@ -260,7 +262,7 @@ format=png 但 cairosvg 缺失:
 
 - [ ] 真实跑 `/arch-diagram sequence --format=svg --style=6`,产物视觉无明显畸变
 - [ ] 真实跑 `/arch-diagram architecture --format=png --profile=web`,推荐组合正确
-- [ ] mermaid 默认路径产物与 v3.1 完全一致(diff = 0)
+- [ ] 默认路径产出 SVG;显式 `--format=mermaid` 路径与 v3.1 完全一致
 
 ### 8.3 文档层
 
@@ -274,7 +276,7 @@ format=png 但 cairosvg 缺失:
 1. **集成视图层** schema 扩展:`messaging-topic` / `integration-point` / `external-contract` 节点类型 + miner
 2. **行为视图层**:`state-machine` 节点 + `business-rule` 抽取 subagent + 状态图自动生成
 3. **数据深度**:`config-mapping` / `er-cardinality` / `dto-do-mapping` 字段 + miner
-4. fireworks 出图 + 风险热度自动叠加(目前 risk 仍走 mermaid 默认色)
+4. fireworks 出图 + 风险热度自动叠加
 5. CR.md / ADR 自动嵌入 fireworks 图(目前需手动 `--format=png` 后引用)
 
 ---
@@ -301,4 +303,4 @@ format=png 但 cairosvg 缺失:
 | upstream fireworks SKILL.md 改名后,内部相对路径引用断裂 | T1 完成后,通过 `python3 generate-from-template.py` 跑 1 个 fixture 验证;断了改 PROMPT.md 内部链接 |
 | 双 SKILL 同名挂载 | 强制改名 PROMPT.md;`.gitignore` 确认 vendor 下原 SKILL.md 不存在 |
 | Python 3 / cairosvg 跨平台差异 | 验收脚本仅在有 Python + cairosvg 环境跑;无环境 skip 而不 fail |
-| Mermaid 默认路径回归 | T2 单测覆盖 mermaid 不调 python;T5 跑 v3.1 已有 mermaid 图对比 diff=0 |
+| Mermaid 兼容路径回归 | T2 单测覆盖显式 mermaid 不调 python;T5 抽检 v3.1 Mermaid 路径仍可用 |
