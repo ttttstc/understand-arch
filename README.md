@@ -56,7 +56,15 @@ Run:
 /arch-design
 ```
 
-Give it a PRD or change request. It reads the current architecture, finds the affected areas, and drafts a `CR.md` with 14 RFC-style sections:
+Give it a PRD or change request. It first clarifies the request against the current architecture, rules, constraints, ADRs, and project language. Then it writes `CR-OPTION.md`: three readable candidate designs for a human to choose from.
+
+Default candidates:
+
+- Option A: minimal change
+- Option B: architecture improvement
+- Option C: long-term evolution
+
+After you choose an option, or explicitly ask it to continue with the recommendation, it drafts a `CR.md` with 14 RFC-style sections:
 
 - background and goal
 - affected components
@@ -67,6 +75,16 @@ Give it a PRD or change request. It reads the current architecture, finds the af
 - rollout, rollback, testing, and traceability
 
 A senior-review subagent checks the design before it is treated as ready.
+
+### Find Architecture Improvement Opportunities
+
+Run:
+
+```text
+/arch-improve
+```
+
+It reads the current graph, architecture layer, constraints, ADRs, historical CRs, suspicious findings, and coding conventions, then drafts an improvement RFC candidate. It does not change code or create a CR automatically.
 
 ### Audit Architecture Drift
 
@@ -184,6 +202,7 @@ You should see:
 - `/arch-diagram`
 - `/arch-dashboard`
 - `/arch-interview`
+- `/arch-improve`
 
 ### If Commands Do Not Appear
 
@@ -238,6 +257,7 @@ your-project/
         │   └── constraints/
         ├── decisions/
         ├── change-requests/
+        ├── improvements/
         ├── state.yaml
         └── intermediate/
 ```

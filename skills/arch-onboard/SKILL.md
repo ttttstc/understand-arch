@@ -28,7 +28,7 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 
 ```bash
 ARCH_PROJECT_ROOT="$PWD/.understand-arch/$ARCH_PROJECT_ID"
-mkdir -p "$ARCH_PROJECT_ROOT/specs/repos" "$ARCH_PROJECT_ROOT/wiki" "$ARCH_PROJECT_ROOT/rules" "$ARCH_PROJECT_ROOT/decisions" "$ARCH_PROJECT_ROOT/change-requests"
+mkdir -p "$ARCH_PROJECT_ROOT/specs/repos" "$ARCH_PROJECT_ROOT/wiki" "$ARCH_PROJECT_ROOT/rules" "$ARCH_PROJECT_ROOT/decisions" "$ARCH_PROJECT_ROOT/change-requests" "$ARCH_PROJECT_ROOT/improvements"
 ```
 
 5. Write `state.yaml`:
@@ -145,6 +145,7 @@ Validate that dashboard inputs exist:
 - `specs/repos.json`
 - at least one `specs/repos/<repo_id>/knowledge-graph.json`
 - `specs/arch-layer.json`
+- `rules/project-language.md`
 - `eval-report.json`
 - `wiki/ARCHITECTURE.md`
 - `wiki/README.md`
@@ -160,6 +161,7 @@ Report:
 - graph node/edge counts per repo
 - architecture layer counts
 - narrative field counts
+- project language path
 - wiki page count
 - eval trust label and hallucination rate
 - hook status

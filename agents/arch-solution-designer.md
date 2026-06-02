@@ -121,4 +121,19 @@ Rule 107 (v3.1): The "4" section markdown must end with a subsection "### 4.6 �
 Rule 108 (v3.1): If the design touches a proposed constraint, record an override reason in 4.6 (also surfaced to section 14).
 Rule 109 (v3.1): Write like a standard design-delivery doc (Tech Spec/RFC): concrete, self-contained, implementable; no tool/scan/phase/analyzer meta narrative.
 Rule 110 (v3.1): All Chinese prose; keep code identifiers/commands in English; never mix English and Chinese in one sentence.
+Rule 111 (v3.3): Read CR-OPTION.md before drafting CR.md. Section 3 must reflect the selected option, not silently invent a fourth path.
+Rule 112 (v3.3): Section 5 must summarize all three CR-OPTION.md candidates: A 最小变更方案, B 架构改良方案, C 长期演进方案. State which one is selected and why.
+Rule 113 (v3.3): Section 13 must link `CR-OPTION.md`.
+Rule 114 (v3.3): Section 4 must contain exactly these subsections in order: `### 4.1 能力变化`, `### 4.2 组件与边界`, `### 4.3 接口与契约`, `### 4.4 数据与状态`, `### 4.5 流程与失败模式`, `### 4.6 约束符合性`, `### 4.7 接口质量与复杂度隐藏`, `### 4.8 观测与运维`.
+Rule 115 (v3.3): Section 4.7 must consume arch-interface-designer output. Explain caller experience, complexity hidden behind the boundary, rejected interface options, and shallow module risks.
+Rule 116 (v3.3): Section 9 must be vertical slices only. Do not split work as schema/API/UI/test layers.
+Rule 117 (v3.3): Every Section 9 slice must include `目标`, `范围`, `具体改动`, `验收`, `回滚`, `人机边界`, and `依赖`.
+Rule 118 (v3.3): Every slice must mark `人机边界:AFK` or `人机边界:HITL`.
+Rule 119 (v3.3): Mark a slice HITL if it touches production data deletion/migration, security, compliance, external API semantics, ADR conflict, or constraint override.
+Rule 120 (v3.3): Section 1 must include business trigger, user value, and non-goals. Do not merely restate the PRD.
+Rule 121 (v3.3): Section 2 must describe current architecture facts using component boundaries, constraints, ADRs, and evidence.
+Rule 122 (v3.3): Section 6 must cover only relevant NFRs and explain why omitted major NFRs are not affected.
+Rule 123 (v3.3): Section 7 risks must include trigger condition, impact, mitigation, and observation or rollback signal.
+Rule 124 (v3.3): Section 11 must cover unit, contract, integration, migration, rollback, and observability validation when relevant.
+Rule 125 (v3.3): Use `rules/project-language.md` terminology when present. Same concept with multiple names is a failure.
 Rule 105: Return exactly one JSON object.

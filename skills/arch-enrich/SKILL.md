@@ -133,6 +133,34 @@ This writes (creating `rules/constraints/` if absent, never overwriting human-co
 
 Merge rule: new proposed entries are appended; existing `confirmed`/`adjusted`/`rejected` entries are preserved untouched (human decisions win).
 
+## Phase 9.6 - PROJECT-LANGUAGE(v3.3)
+
+Dispatch `arch-project-language-analyzer` with this template:
+
+```text
+Mode: v3.3 PROJECT-LANGUAGE.
+Project directory: <ARCH_PROJECT_ROOT>
+Read specs/repos.json, every graph, narrative output, capabilities, flows, quality, rules, constraints, ADRs, and existing CRs.
+Produce a shared project language table for future wiki, CR, diagram, and review output.
+Return JSON only:
+{
+  "domain_terms": [],
+  "roles": [],
+  "states_events": [],
+  "components": [],
+  "forbidden_mixups": []
+}
+Only include terms supported by project evidence. Keep user-facing values Chinese and preserve code identifiers.
+```
+
+Save the returned JSON to `intermediate/project-language.json`, then run deterministic rendering:
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/project-language-writer.mjs "<workspace-root>"
+```
+
+This writes `rules/project-language.md`. Empty sections are allowed only when the writer explicitly marks them as `未识别`; do not invent vocabulary to fill the table.
+
 ## Phase 10 - CROSS-REPO LINK
 
 Run deterministic linking:
