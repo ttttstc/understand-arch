@@ -22,10 +22,11 @@ v3.3 的核心增量:
 
 1. **CR.md 架构特性设计规范**:在既有 14 段内强化写作合同,不改 14 段标题。
 2. **pre-grill 阶段**:在 `/arch-design` 正式生成 CR 前,先追问 PRD、术语、约束、ADR 和非目标。
-3. **vertical slices 实施计划**:CR §9 从步骤清单升级为可验收的端到端切片。
-4. **接口与 deep module 评审**:CR §4 必须解释接口边界、复杂度隐藏、备选方案与取舍。
-5. **项目语言文档**:沉淀领域词、角色、状态、组件命名,供 wiki / CR / review 共用。
-6. **可选 `/arch-improve`**:输出架构改进 RFC 候选,不直接改代码。
+3. **CR-OPTION.md 候选方案对比**:pre-grill 后默认先生成 3 个可读方案,人确认后再写正式 CR.md。
+4. **vertical slices 实施计划**:CR §9 从步骤清单升级为可验收的端到端切片。
+5. **接口与 deep module 评审**:CR §4 必须解释接口边界、复杂度隐藏、备选方案与取舍。
+6. **项目语言文档**:沉淀领域词、角色、状态、组件命名,供 wiki / CR / review 共用。
+7. **可选 `/arch-improve`**:输出架构改进 RFC 候选,不直接改代码。
 
 ---
 
@@ -73,11 +74,13 @@ v3.3 只吸收这些方法,不搬迁代码,不新增外部依赖。
 
 1. `/arch-design` 生成的 CR.md 更像业界标准 Tech Spec / RFC,研发能照做。
 2. 写 CR 前必须经过 pre-grill,明确目标、非目标、术语、约束、ADR、开放问题。
-3. CR §4 详细设计必须包含接口边界、数据变化、流程、失败模式、约束符合性、备选设计取舍。
-4. CR §9 实施步骤必须按 vertical slices 输出,每个切片有验收标准和人机协作边界。
-5. senior review 增加「可实施性」「接口质量」「取舍质量」「切片质量」rubric。
-6. 新增项目语言文档,让 wiki / CR / diagram / review 使用一致术语。
-7. 可选新增 `/arch-improve`,用于输出架构改进候选 RFC,不直接改代码。
+3. pre-grill 后默认生成 `CR-OPTION.md`,包含 3 个候选方案:最小变更、架构改良、长期演进。
+4. 正式 CR.md 默认必须在人选择/确认候选方案后生成;用户显式要求「按推荐方案继续」时可跳过等待。
+5. CR §4 详细设计必须包含接口边界、数据变化、流程、失败模式、约束符合性、备选设计取舍。
+6. CR §9 实施步骤必须按 vertical slices 输出,每个切片有验收标准和人机协作边界。
+7. senior review 增加「可实施性」「接口质量」「取舍质量」「切片质量」rubric。
+8. 新增项目语言文档,让 wiki / CR / diagram / review 使用一致术语。
+9. 可选新增 `/arch-improve`,用于输出架构改进候选 RFC,不直接改代码。
 
 ### 3.2 非目标
 
@@ -88,6 +91,7 @@ v3.3 只吸收这些方法,不搬迁代码,不新增外部依赖。
 - 不自动创建 GitHub issue。
 - 不自动改业务代码。
 - 不替代 `/arch-interview`;pre-grill 问的是本次变更,interview 沉淀的是项目长期隐式知识。
+- 不把 `CR-OPTION.md` 当成正式设计;它是候选方案对比,正式方案仍落在 `CR.md`。
 
 ---
 
@@ -251,9 +255,242 @@ Return JSON only. All user-facing text in Chinese.
 
 ---
 
-## 6. Vertical Slices 实施计划
+## 6. CR-OPTION.md 候选方案对比
 
-### 6.1 原则
+### 6.1 定位
+
+`CR-OPTION.md` 是 `/arch-design` 在正式生成 `CR.md` 前产出的**人类决策材料**。
+
+pre-grill 只负责把问题问清楚,不应该把设计责任原样丢回给人。既然 agent 已经读取了项目现状、约束、ADR、历史 CR 和影响面,它必须先提出候选方案,让人选择、混合或要求重写。
+
+默认流程:
+
+```text
+PRD / 需求
+  ↓
+arch-pre-grill
+  ↓
+arch-impact-analyzer
+  ↓
+arch-option-designer → 写 CR-OPTION.md(默认三个候选方案)
+  ↓
+人选择 / 混合 / 要求重写
+  ↓
+arch-interface-designer
+  ↓
+arch-solution-designer → 写 CR.md
+  ↓
+arch-review
+```
+
+### 6.2 产物位置
+
+```text
+.understand-arch/{project}/change-requests/CR-YYYY-NNN-<slug>/CR-OPTION.md
+```
+
+同目录下后续生成:
+
+```text
+.understand-arch/{project}/change-requests/CR-YYYY-NNN-<slug>/CR.md
+```
+
+### 6.3 默认三个候选方案
+
+默认必须生成 3 个方案:
+
+| 方案 | 固定名称 | 定位 |
+|---|---|---|
+| A | 最小变更方案 | 在现有边界内实现,优先低风险、少改动、可快速交付 |
+| B | 架构改良方案 | 在满足需求同时修正关键边界或抽象,平衡交付和长期质量 |
+| C | 长期演进方案 | 面向未来扩展和架构一致性,成本更高,适合明确架构升级窗口 |
+
+允许给方案增加项目相关副标题:
+
+```markdown
+## 2. 方案 B:架构改良方案 —— 引入显式桌面能力边界
+```
+
+但不得改掉 A/B/C 三档定位。
+
+### 6.4 CR-OPTION.md 模板
+
+```markdown
+# 候选方案对比:{变更标题}
+
+## 0. 设计问题
+
+### 目标
+- ...
+
+### 非目标
+- ...
+
+### 必须遵守的约束
+- ...
+
+### 当前架构事实
+- ...
+
+### 需要人确认的问题
+- ...
+
+---
+
+## 1. 方案 A:最小变更方案
+
+### 核心思路
+...
+
+### 怎么改
+- ...
+
+### 影响范围
+- ...
+
+### 优点
+- ...
+
+### 代价
+- ...
+
+### 主要风险
+- ...
+
+### 适合在什么情况下选
+- ...
+
+### 不适合在什么情况下选
+- ...
+
+---
+
+## 2. 方案 B:架构改良方案
+
+### 核心思路
+...
+
+### 怎么改
+- ...
+
+### 影响范围
+- ...
+
+### 优点
+- ...
+
+### 代价
+- ...
+
+### 主要风险
+- ...
+
+### 适合在什么情况下选
+- ...
+
+### 不适合在什么情况下选
+- ...
+
+---
+
+## 3. 方案 C:长期演进方案
+
+### 核心思路
+...
+
+### 怎么改
+- ...
+
+### 影响范围
+- ...
+
+### 优点
+- ...
+
+### 代价
+- ...
+
+### 主要风险
+- ...
+
+### 适合在什么情况下选
+- ...
+
+### 不适合在什么情况下选
+- ...
+
+---
+
+## 4. 横向对比
+
+| 维度 | 方案 A | 方案 B | 方案 C |
+|---|---|---|---|
+| 改动成本 | 小 | 中 | 大 |
+| 风险 | 低 | 中 | 高 |
+| 可回滚性 | 高 | 中 | 低 |
+| 架构收益 | 低 | 中 | 高 |
+| 对现有约束的符合度 | ... | ... | ... |
+| 对未来扩展的支持 | ... | ... | ... |
+
+---
+
+## 5. 推荐意见
+
+推荐:{方案 A | 方案 B | 方案 C}
+
+理由:
+- ...
+
+如果优先快速交付,建议选:{方案}
+如果本次是架构升级窗口,建议选:{方案}
+
+---
+
+## 6. 人类决策
+
+- [ ] 采用方案 A
+- [ ] 采用方案 B
+- [ ] 采用方案 C
+- [ ] 混合方案:{说明}
+- [ ] 重新生成候选方案,调整方向:{说明}
+
+决策人:
+决策时间:
+备注:
+```
+
+### 6.5 等待人类决策
+
+默认规则:
+
+- `/arch-design` 生成 `CR-OPTION.md` 后暂停,向用户展示路径和推荐方案。
+- 用户选择 A/B/C、混合方案或要求重写后,才生成正式 `CR.md`。
+- 用户显式说「直接按推荐方案继续」「无需确认」「自动化执行」时,可用推荐方案继续。
+
+正式 `CR.md` 必须引用 `CR-OPTION.md`:
+
+- §5 替代方案:总结 A/B/C 取舍,说明最终采用哪一个。
+- §13 关联:加入 `CR-OPTION.md`。
+- §14 Review:记录是否跳过人工选择,以及理由。
+
+### 6.6 内部结构化数据
+
+允许 `arch-option-designer` 同时返回内部 JSON,供后续 subagent 消费,但用户主产物是 `CR-OPTION.md`。
+
+Node 工具只允许:
+
+- 校验 `CR-OPTION.md` 标题完整。
+- 校验 A/B/C 三方案存在。
+- 校验横向对比和人类决策区存在。
+- 校验不能全是空占位。
+
+Node 工具不得生成方案语义。
+
+---
+
+## 7. Vertical Slices 实施计划
+
+### 7.1 原则
 
 CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 
@@ -266,7 +503,7 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 - 测试与验收
 - 回滚或降级点
 
-### 6.2 Slice 模板
+### 7.2 Slice 模板
 
 ```markdown
 ### Slice 1: {切片名称}
@@ -283,7 +520,7 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 - 依赖:{前置 slice 或外部条件}
 ```
 
-### 6.3 AFK / HITL 标注
+### 7.3 AFK / HITL 标注
 
 每个 slice 必须标注:
 
@@ -302,9 +539,9 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 
 ---
 
-## 7. 项目语言文档
+## 8. 项目语言文档
 
-### 7.1 产物
+### 8.1 产物
 
 新增:
 
@@ -314,7 +551,7 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 
 该文件是人可编辑的项目语言表,用于统一 wiki、CR、diagram、review 的表述。
 
-### 7.2 内容结构
+### 8.2 内容结构
 
 ```markdown
 # Project Language
@@ -340,7 +577,7 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 |---|---|---|
 ```
 
-### 7.3 生成与消费
+### 8.3 生成与消费
 
 - `/arch-onboard` 可由 narrative/capability analyzer 生成初稿,状态为 proposed。
 - `/arch-interview` 可补充或修正。
@@ -349,9 +586,9 @@ CR §9 不再输出横向任务清单,必须输出可验收的端到端切片。
 
 ---
 
-## 8. Deep Module 与接口质量
+## 9. Deep Module 与接口质量
 
-### 8.1 新增内部 subagent
+### 9.1 新增内部 subagent
 
 新增:
 
@@ -367,7 +604,7 @@ agents/arch-interface-designer.md
 - 判断调用方是否容易正确使用,是否需要 adapter/facade/port。
 - 输出给 `arch-solution-designer` 消费,不直接写 CR.md。
 
-### 8.2 输出 JSON
+### 9.2 输出 JSON
 
 ```json
 {
@@ -391,7 +628,7 @@ agents/arch-interface-designer.md
 }
 ```
 
-### 8.3 Review 规则
+### 9.3 Review 规则
 
 senior reviewer 必须检查:
 
@@ -404,9 +641,9 @@ senior reviewer 必须检查:
 
 ---
 
-## 9. `/arch-improve`(可选 P1)
+## 10. `/arch-improve`(可选 P1)
 
-### 9.1 定位
+### 10.1 定位
 
 `/arch-improve` 用于用户主动要求:
 
@@ -417,7 +654,7 @@ senior reviewer 必须检查:
 
 它不改代码,不直接生成实施 PR,只输出架构改进 RFC 候选。
 
-### 9.2 输入
+### 10.2 输入
 
 - graph
 - arch-layer
@@ -427,7 +664,7 @@ senior reviewer 必须检查:
 - suspicious-findings
 - coding-conventions
 
-### 9.3 输出
+### 10.3 输出
 
 ```text
 .understand-arch/{project}/improvements/IMPROVE-YYYY-NNN-<slug>.md
@@ -448,7 +685,7 @@ senior reviewer 必须检查:
 ## 8. 是否建议转 CR
 ```
 
-### 9.4 与 `/arch-design` 的关系
+### 10.4 与 `/arch-design` 的关系
 
 - `/arch-improve` 发现机会。
 - 用户确认后,可转为 `/arch-design` 的 PRD 输入。
@@ -456,7 +693,7 @@ senior reviewer 必须检查:
 
 ---
 
-## 10. 实施顺序
+## 11. 实施顺序
 
 ### Impl-1:补 spec 与文档
 
@@ -476,26 +713,33 @@ senior reviewer 必须检查:
 - 阻塞规则落入 SKILL
 - blocking questions 输出给用户,不生成 CR
 
-### Impl-4:CR 段内合同
+### Impl-4:CR-OPTION.md 候选方案
+
+- 新增 `agents/arch-option-designer.md`
+- 修改 `skills/arch-design/SKILL.md`:impact 后先生成 `CR-OPTION.md`
+- 默认暂停等待人选择;显式「按推荐继续」才自动生成 CR.md
+- 新增 deterministic 校验:三方案、横向对比、人类决策区完整
+
+### Impl-5:CR 段内合同
 
 - 修改 `skills/arch-design/SKILL.md`
 - 修改 `agents/arch-solution-designer.md`
 - 修改 `engine/arch/cr-md-editor.mjs` validate:检查 §4.1-§4.8 子节、§9 slice 模板
 - 不修改 14 段标题
 
-### Impl-5:vertical slices
+### Impl-6:vertical slices
 
 - `arch-solution-designer` 输出 §9 slices
 - `arch-impact-analyzer` 输出 core/adjacent 与 slice 关联
 - reviewer 检查每个 slice 的验收、回滚、AFK/HITL
 
-### Impl-6:interface designer
+### Impl-7:interface designer
 
 - 新增 `agents/arch-interface-designer.md`
-- `/arch-design` 在 impact 后、solution 前 dispatch
+- `/arch-design` 在人确认 `CR-OPTION.md` 后、solution 前 dispatch
 - `arch-solution-designer` 消费 interface JSON 写 §4.7 与 §5
 
-### Impl-7:senior review rubric
+### Impl-8:senior review rubric
 
 - 更新 `agents/arch-senior-reviewer.md`
 - design review 增加 4 个维度:
@@ -505,14 +749,14 @@ senior reviewer 必须检查:
   4. 切片质量
 - finding 分 blocker/major/minor,blocker 不允许 pass
 
-### Impl-8:`/arch-improve`(P1)
+### Impl-9:`/arch-improve`(P1)
 
 - 新增 `skills/arch-improve/SKILL.md`
 - 新增 `agents/arch-improvement-analyzer.md`
 - 输出 improvement RFC 候选
 - 不进入 v3.3 P0 gate,可分支实现
 
-### Impl-9:验收样例
+### Impl-10:验收样例
 
 - 构造一个小型 sample PRD
 - 对 sample workspace 跑 `/arch-design`
@@ -521,12 +765,16 @@ senior reviewer 必须检查:
 
 ---
 
-## 11. 验收标准
+## 12. 验收标准
 
-### 11.1 P0 gate
+### 12.1 P0 gate
 
 - [ ] `/arch-design` 必须先执行 pre-grill。
 - [ ] blocking questions 达阈值时不生成 CR。
+- [ ] pre-grill 可继续时,必须先生成 `CR-OPTION.md`。
+- [ ] `CR-OPTION.md` 默认包含 A/B/C 三个候选方案。
+- [ ] `CR-OPTION.md` 包含横向对比和人类决策区。
+- [ ] 除非用户显式要求按推荐继续,否则未选择方案不得生成正式 CR.md。
 - [ ] CR.md 仍有且只有 14 段标准标题。
 - [ ] §4 包含 `4.1` 到 `4.8` 全部子节。
 - [ ] §4.6 约束符合性未退化。
@@ -537,14 +785,14 @@ senior reviewer 必须检查:
 - [ ] senior review 会拦截模板化 CR、缺备选、缺 slice、缺接口取舍。
 - [ ] 所有面向人文本中文,无工具元叙述。
 
-### 11.2 P1 gate
+### 12.2 P1 gate
 
 - [ ] `rules/project-language.md` 生成并被 `/arch-design` 消费。
 - [ ] 同一概念混用被 reviewer 识别。
 - [ ] `arch-interface-designer` 输出被写入 CR §4.7 和 §5。
 - [ ] `/arch-improve` 可产出改进候选 RFC。
 
-### 11.3 实测命令
+### 12.3 实测命令
 
 实现后必须跑:
 
@@ -567,10 +815,12 @@ node engine/arch/cr-md-editor.mjs validate --file <sample CR.md>
 
 ---
 
-## 12. 禁止行为
+## 13. 禁止行为
 
 - 禁止修改 CR.md 14 段标题。
-- 禁止把 pre-grill、interface design、improvement analysis 写进 Node 脚本。
+- 禁止把 pre-grill、option design、interface design、improvement analysis 写进 Node 脚本。
+- 禁止让人阅读内部 JSON 来做方案决策;给人看的主产物必须是 `CR-OPTION.md`。
+- 禁止未生成 `CR-OPTION.md` 就直接写正式 CR.md,除非用户显式要求跳过。
 - 禁止用「不做」冒充替代方案。
 - 禁止让 §9 输出横向任务清单。
 - 禁止 CR 中出现工具元叙述。
@@ -580,7 +830,7 @@ node engine/arch/cr-md-editor.mjs validate --file <sample CR.md>
 
 ---
 
-## 13. 与已有版本关系
+## 14. 与已有版本关系
 
 | 版本 | 保留 | v3.3 增量 |
 |---|---|---|
