@@ -38,7 +38,7 @@ if (args[0] === "-c") {
   process.exit(0);
 }
 const output = args[2];
-writeFileSync(output, '<svg xmlns="http://www.w3.org/2000/svg"><text>ok</text></svg>');
+writeFileSync(output, '<svg xmlns="http://www.w3.org/2000/svg"><defs><style>text { font-family: Helvetica, Arial, sans-serif; }</style></defs><text>中文 ok</text></svg>');
 `);
   const bash = commandScript(dir, "bash", "process.exit(0);\n");
   const vendor = join(dir, "vendor");
@@ -74,6 +74,8 @@ describe("diagram-dispatch", () => {
     });
 
     expect(result.outputPath.endsWith("architecture-6.svg")).toBe(true);
+    const svg = readFileSync(result.outputPath, "utf-8");
+    expect(svg).toContain("'Noto Sans SC'");
     const wiki = readFileSync(join(archDir, "wiki", "14-diagrams.md"), "utf-8");
     expect(wiki).toContain("![architecture](assets/diagrams/architecture-6.svg)");
   });

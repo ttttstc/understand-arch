@@ -200,7 +200,16 @@ function renderSvg(options, spec, svgPath) {
     [...python.prefixArgs, script, options.fireworksType, svgPath, JSON.stringify(spec)],
     { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] },
   );
+  prioritizeCjkFonts(svgPath);
   runValidate(svgPath);
+}
+
+function prioritizeCjkFonts(svgPath) {
+  const svg = readFileSync(svgPath, "utf-8");
+  if (!/[\u3400-\u9FFF]/.test(svg)) return;
+  const cjkStack = "'Noto Sans SC', 'Microsoft YaHei', 'SimHei', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft JhengHei', 'SimSun', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  const patched = svg.replace(/text\s*\{\s*font-family:\s*[^;]+;\s*\}/, `text { font-family: ${cjkStack}; }`);
+  if (patched !== svg) writeFileSync(svgPath, patched, "utf-8");
 }
 
 function renderPng(svgPath, pngPath) {
