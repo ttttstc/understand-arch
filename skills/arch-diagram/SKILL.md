@@ -1,7 +1,7 @@
 ---
 name: arch-diagram
-description: 基于 graph 与 arch-layer 生成 Mermaid、SVG、PNG 或 PlantUML 架构图。
-argument-hint: ["[type] [arch-project-dir] [--format=mermaid|svg|png|plantuml] [--style=1..7] [--profile=web|middleware|pipeline|agent|multi-repo]"]
+description: 基于 graph 与 arch-layer 生成 Mermaid、SVG、PNG 或 PlantUML 架构图,默认引导用户选择出图风格。
+argument-hint: ["[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [--profile=web|middleware|pipeline|agent|multi-repo]"]
 ---
 
 # /arch-diagram
@@ -24,27 +24,69 @@ argument-hint: ["[type] [arch-project-dir] [--format=mermaid|svg|png|plantuml] [
 - `type`: 默认 `c4`。支持 v3.1 语义类型和 fireworks 原生类型。
 - `arch-project-dir`: 默认读取 `ARCH_PROJECT_ROOT`，否则使用当前目录。
 - `--format`: `svg`、`png`、`plantuml`、`mermaid`，默认 `svg`；`mermaid` 是兼容和降级路径。
-- `--style`: `1..7`，默认由 profile 决定；无 profile 时为 `1`。
+- `--style`: `1..7`，兼容高级用法；默认不要要求用户手敲该参数,应通过风格选择菜单确认。
 - `--profile`: `web`、`middleware`、`pipeline`、`agent`、`multi-repo`。
+
+## 风格选择引导
+
+当用户没有显式传入 `--style` 时,不要直接要求用户补命令参数。先用中文给出风格菜单,并根据 `profile` 或项目类型标出推荐项:
+
+| 编号 | 风格 | 适用场景 |
+|---|---|---|
+| `1` | 扁平图标 | 多仓系统、组件多、需要降低视觉负载 |
+| `2` | 深色终端 | 中间件、运行时、底层平台、偏工程排障语境 |
+| `3` | 工程蓝图 | 数据流水线、部署拓扑、工程设计评审 |
+| `4` | Notion 清爽 | 知识库、轻量内部文档、概念说明 |
+| `5` | 玻璃层次 | Agent 系统、多组件协作、需要突出层级 |
+| `6` | Claude 官方 | Web 应用、正式架构评审、对外汇报 |
+| `7` | OpenAI 官方 | AI 产品、模型链路、简洁现代展示 |
+
+推荐规则:
+
+- `web` 默认推荐 `6`
+- `middleware` 默认推荐 `2`
+- `pipeline` 默认推荐 `3`
+- `agent` 默认推荐 `5`
+- `multi-repo` 默认推荐 `1`
+- 未识别 profile 时,先根据项目事实给 1 个推荐;无法判断时推荐 `6`
+
+交互话术示例:
+
+```text
+我会用新的 SVG 出图方式生成架构图。请选一个视觉风格:
+1 扁平图标  2 深色终端  3 工程蓝图  4 Notion 清爽
+5 玻璃层次  6 Claude 官方(推荐)  7 OpenAI 官方
+
+直接回复编号即可;如果你不选,我会用推荐风格继续。
+```
+
+只有在以下场景可以不等待用户选择:
+
+- 用户已经明确给出 `--style`
+- 用户说“直接生成”“你决定”“默认即可”
+- 当前任务是自动化验收或批处理
+
+非交互场景下,用推荐风格继续,并在回复里说明“已使用推荐风格 N”。
 
 ## 三路调度
 
 ### 默认路径: format=svg
 
 1. 解析 `type`、`style`、`profile` 和项目目录。
-2. 读取 `specs/repos.json`、各仓 `knowledge-graph.json`、`specs/arch-layer.json`，必要时读取用户补充说明。
-3. 打开并遵循 `vendor/fireworks-tech-graph/PROMPT.md`。
-4. 将项目事实、架构判断、目标图类型和用户意图整理为自然语言上下文。
-5. 按 `PROMPT.md` 生成 fireworks JSON。只生成 JSON，不生成 SVG 文本。
-6. 将 JSON 写入临时文件，例如 `.understand-arch/tmp/diagram-spec.json`。
-7. 调用:
+2. 如果用户没有指定 `--style`,按“风格选择引导”先让用户选风格;非交互场景用推荐风格继续。
+3. 读取 `specs/repos.json`、各仓 `knowledge-graph.json`、`specs/arch-layer.json`，必要时读取用户补充说明。
+4. 打开并遵循 `vendor/fireworks-tech-graph/PROMPT.md`。
+5. 将项目事实、架构判断、目标图类型和用户意图整理为自然语言上下文。
+6. 按 `PROMPT.md` 生成 fireworks JSON。只生成 JSON，不生成 SVG 文本。
+7. 将 JSON 写入临时文件，例如 `.understand-arch/tmp/diagram-spec.json`。
+8. 调用:
 
 ```bash
 node engine/arch/diagram-dispatch.mjs --type=<type> --style=<style> --profile=<profile> --arch-dir=<arch-project-dir> --spec-json=<json-path>
 ```
 
-8. 调度器会输出到 `wiki/assets/diagrams/{type}-{style}.svg`，并在 `wiki/14-diagrams.md` 追加嵌图引用。
-9. 如果用户没有显式传入 `--format`,且默认 SVG 路径失败,走 Mermaid 降级路径；如果用户显式传入 `--format=svg`,停止并返回错误。
+9. 调度器会输出到 `wiki/assets/diagrams/{type}-{style}.svg`，并在 `wiki/14-diagrams.md` 追加嵌图引用。
+10. 如果用户没有显式传入 `--format`,且默认 SVG 路径失败,走 Mermaid 降级路径；如果用户显式传入 `--format=svg`,停止并返回错误。
 
 ### format=png
 
