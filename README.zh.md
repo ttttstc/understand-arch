@@ -56,7 +56,33 @@
 **画 4+1 / C4 架构图**
 > `/arch-diagram`
 
-在 wiki 中提供 Mermaid 源码;渲染成图片的能力留给后续版本。
+支持四种输出格式:
+
+| format | 输出位置 | 适用场景 |
+|---|---|---|
+| `mermaid` | `wiki/14-diagrams.md` | 默认路径,与 v3.1 行为一致 |
+| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | 架构评审文档和设计稿 |
+| `png` | `wiki/assets/diagrams/{type}-{style}.png` | Confluence、飞书、钉钉和演示文稿 |
+| `plantuml` | `wiki/assets/diagrams/{type}.puml` | 在 IDE 里继续渲染 PlantUML |
+
+推荐 profile:
+
+| profile | 推荐图 | 风格 |
+|---|---|---|
+| `web` | `architecture`, `flow`, `sequence` | `6` |
+| `middleware` | `architecture`, `data-flow`, `sequence` | `2` |
+| `pipeline` | `data-flow`, `flowchart`, `timeline` | `3` |
+| `agent` | `agent`, `memory`, `sequence` | `5` |
+| `multi-repo` | `architecture`, `network-topology`, `c4` | `1` |
+
+示例:
+
+```bash
+/arch-diagram c4
+/arch-diagram sequence --format=svg --style=6
+/arch-diagram architecture --format=png --profile=web
+/arch-diagram state-machine --format=plantuml
+```
 
 **挖资深成员脑子里的隐式知识**
 > "聊聊这个项目里我没看明白的地方" → `/arch-interview`

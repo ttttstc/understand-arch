@@ -56,7 +56,33 @@ Launches an interactive dashboard: code graph, capability map, risk view, multi-
 **Draw 4+1 / C4 diagrams**
 > `/arch-diagram`
 
-Mermaid sources ship inside the wiki; rendered-image generation is planned for a later release.
+Generates architecture diagrams in four formats:
+
+| format | Output | Use case |
+|---|---|---|
+| `mermaid` | `wiki/14-diagrams.md` | Default path, unchanged from v3.1 |
+| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | Review docs and design decks |
+| `png` | `wiki/assets/diagrams/{type}-{style}.png` | Confluence, Feishu, DingTalk, slides |
+| `plantuml` | `wiki/assets/diagrams/{type}.puml` | IDE-side PlantUML rendering |
+
+Recommended profiles:
+
+| profile | Recommended diagrams | Style |
+|---|---|---|
+| `web` | `architecture`, `flow`, `sequence` | `6` |
+| `middleware` | `architecture`, `data-flow`, `sequence` | `2` |
+| `pipeline` | `data-flow`, `flowchart`, `timeline` | `3` |
+| `agent` | `agent`, `memory`, `sequence` | `5` |
+| `multi-repo` | `architecture`, `network-topology`, `c4` | `1` |
+
+Examples:
+
+```bash
+/arch-diagram c4
+/arch-diagram sequence --format=svg --style=6
+/arch-diagram architecture --format=png --profile=web
+/arch-diagram state-machine --format=plantuml
+```
 
 **Grill the implicit knowledge out of senior engineers**
 > "Let's talk through the parts I can't read off the code" → `/arch-interview`
