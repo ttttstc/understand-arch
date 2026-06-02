@@ -1,73 +1,131 @@
 # understand-arch
 
-> 面向高级架构师的 Claude Code 插件。把你的代码仓维护成一份可信、可追溯的架构知识库 —— 单仓和多仓都支持。
+> 一个运行在 Claude Code 里的架构师助手。它读取真实代码，把架构理解沉淀成可信文档、评审材料、架构图和可视化看板。
 
 [English](./README.md)
 
 ---
 
-## 是什么
+## 它是什么
 
-`understand-arch` 把代码仓变成一份**活的、可信的、与代码同步**的架构知识库:
+`understand-arch` 想帮团队回答一个朴素但很难的问题：
 
-- **知识图谱** — 每个组件、接口、数据模型、部署、业务能力都是图谱节点,与代码同步(底层每条推断都有代码证据支撑)
-- **架构文档** — 一份可通读的 `ARCHITECTURE.md` 白皮书(+ 14 个章节切片),读起来像一篇标准架构技术文档,不是工具报告
-- **方案设计** — 每个变更产出一份 `CR.md`(14 段 RFC 风格),基于 PRD + 当前架构生成
-- **决策留底** — Append-only ADR 台账
-- **团队规范 + 项目约束** — 两层规则:
-  - **规范层**:你的命名规范、合规红线、依赖白名单(你自己写,权威)
-  - **约束层**:AI 从代码里考古挖出的领域不变量、依赖规则、契约、风险点,叠加资深成员脑子里的隐式知识(`/arch-interview` 访谈沉淀),每条都有 5 级证据等级(confirmed / observed / inferred / uncertain / conflicted),AI 挖出的只能是 proposed,**人确认后才进 wiki 与方案评审**
-- **可视化看板** — 交互式查看代码图谱与架构层
+> “这个系统到底是什么、怎么搭起来的、我改它之前要小心什么？”
 
-所有产物都在项目根目录下的一个目录里:`.understand-arch/`。其他位置不会被污染。
+它不是一个自己从头跑 agent loop 的独立智能体运行时。对话、工具调用循环、上下文承载由 Claude Code 负责。`understand-arch` 做的是架构师那层工作：
 
-## 能做什么
+- 用 Understand-Anything 的确定性扫描能力读取代码结构
+- 用 Claude Code Skill 和 subagent 做架构判断
+- 把判断落成可追溯的架构制品
+- 用 reviewer 和 eval 检查产物质量
+- 生成文档、方案、架构图和 dashboard，方便团队讨论
 
-**接手项目(单仓 / 多仓都行)**
-> "帮我看懂这个项目" → `/arch-onboard`
+简单说：它是一个帮你接手项目、理解架构、设计变更、做架构评审的 Claude Code 插件。
 
-扫描所有注册的仓库,产出每仓知识图谱 + 跨仓视图。推断架构风格、组件职责、技术栈选型理由、业务能力、质量属性、风险与技术债。产出一份完整的 `ARCHITECTURE.md` 白皮书,新人能快速上手。
+## 它能做什么
 
-**把架构当一篇文档读**
-> 打开 `.understand-arch/{project}/wiki/ARCHITECTURE.md`
+### 看懂一个代码仓
 
-一篇从头读到尾的架构技术文档:项目总览、组件、接口、数据模型、能力、质量、风险与技术债、部署、流程、决策、变更、规则。用平实语言写,不带工具术语,不教你"怎么读" —— 只讲这个项目的架构。
+运行：
 
-**基于当前架构设计一份方案**
-> "根据这份 PRD 设计方案" → `/arch-design`
+```text
+/arch-onboard
+```
 
-读 PRD + 当前架构 → 找出受影响的节点(跨仓追踪,分核心改动集和邻接复核集)→ 产出一份 `CR.md`(14 段:背景 / 影响面 / 方案 / 替代方案 / NFR / 风险 / 改动清单 / 灰度 / 回滚 / 测试 / 关联 / …)。高级架构师 agent 终审后才标 ready。
+它会扫描一个仓库，或多个相关仓库，构建知识图谱，并让 Claude Code 里的 subagent 推断架构层信息：架构风格、组件职责、业务能力、接口、质量属性、风险、技术债，以及目前无法确认的信息。
 
-**审视基线是否还可信**
-> "现在的架构基线还能信么" → `/arch-audit`
+产物会写到：
 
-对比已存指纹和当前状态。识别模型与现实的漂移、可追溯性断裂、降级状态。必要时建议刷新。
+```text
+.understand-arch/{project}/
+```
 
-**重新生成或刷新文档**
-> "更新 wiki" / "给 CTO 一份高层汇报" → `/arch-wiki`
+### 生成一篇能读的架构文档
 
-基于最新图谱 + 架构层重渲 `ARCHITECTURE.md` 和 14 个切片。支持受众化:`cto` / `newcomer` / `pm` / `architect`。高级架构师 agent 做质量评审(首次 / cto / architect 跑完整审,日常刷新跑轻量审)。
+打开：
 
-**可视化架构**
-> "打开看板" → `/arch-dashboard`
+```text
+.understand-arch/{project}/wiki/ARCHITECTURE.md
+```
 
-启动交互式看板:代码图谱、能力地图、风险视图、多仓拓扑、分步架构导览。
+这是主文档。它不是给工具看的摘要，而是给新架构师、技术负责人和团队成员读的架构技术文档。它会讲清楚项目定位、核心组件、流程、接口、数据、风险、部署、决策和约束。
 
-**画 4+1 / C4 架构图**
-> `/arch-diagram`
+同一份内容也会拆成 14 个章节文件，方便单独评审和维护。
 
-支持四种输出格式:
+### 基于当前架构设计变更
 
-| format | 输出位置 | 适用场景 |
+运行：
+
+```text
+/arch-design
+```
+
+你给它一份 PRD 或变更说明，它会读取当前架构，找出受影响范围，并生成一份 `CR.md`。这份设计文档包含 14 个 RFC 风格章节：
+
+- 背景与目标
+- 影响范围
+- 方案设计
+- 替代方案
+- 非功能需求
+- 风险与技术债
+- 改动清单
+- 灰度、回滚、测试和追踪关系
+
+生成后还会经过高级架构师 subagent 评审，避免只产出格式正确但内容空的方案。
+
+### 检查架构基线是否还可信
+
+运行：
+
+```text
+/arch-audit
+```
+
+它会对比已保存的架构基线和当前代码状态，检查文档是否过期、证据是否断裂、图谱是否漂移，并提示是否需要刷新。
+
+### 刷新或改写 wiki
+
+运行：
+
+```text
+/arch-wiki
+```
+
+它会基于最新图谱和架构层重新生成 `ARCHITECTURE.md` 与 14 个章节。
+
+也可以按受众生成：
+
+```text
+/arch-wiki --audience=cto
+/arch-wiki --audience=newcomer
+/arch-wiki --audience=pm
+/arch-wiki --audience=architect
+```
+
+### 生成架构图
+
+运行：
+
+```text
+/arch-diagram
+```
+
+默认使用新的 SVG 出图能力，Mermaid 保留为兼容和降级路径。
+
+支持格式：
+
+| 格式 | 输出位置 | 适合场景 |
 |---|---|---|
-| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | 默认路径,用于架构评审文档和设计稿 |
-| `png` | `wiki/assets/diagrams/{type}-{style}.png` | Confluence、飞书、钉钉和演示文稿 |
-| `plantuml` | `wiki/assets/diagrams/{type}.puml` | 在 IDE 里继续渲染 PlantUML |
-| `mermaid` | `wiki/14-diagrams.md` | 兼容和降级路径 |
+| `svg` | `wiki/assets/diagrams/{type}-{style}.svg` | 架构评审文档、wiki、设计稿 |
+| `png` | `wiki/assets/diagrams/{type}-{style}.png` | 飞书、Confluence、钉钉、PPT |
+| `plantuml` | `wiki/assets/diagrams/{type}.puml` | 已经使用 PlantUML 的团队 |
+| `mermaid` | `wiki/14-diagrams.md` | 兼容和降级 |
 
-推荐 profile:
+你通常不需要记风格编号。`/arch-diagram` 会引导你选择风格，也会根据项目类型给出推荐。
 
-| profile | 推荐图 | 风格 |
+推荐 profile：
+
+| profile | 推荐图 | 推荐风格 |
 |---|---|---|
 | `web` | `architecture`, `flow`, `sequence` | `6` |
 | `middleware` | `architecture`, `data-flow`, `sequence` | `2` |
@@ -75,24 +133,40 @@
 | `agent` | `agent`, `memory`, `sequence` | `5` |
 | `multi-repo` | `architecture`, `network-topology`, `c4` | `1` |
 
-示例:
+示例：
 
-```bash
-/arch-diagram c4
-/arch-diagram sequence --format=svg --style=6
-/arch-diagram architecture --format=png --profile=web
-/arch-diagram state-machine --format=plantuml
+```text
+/arch-diagram
+/arch-diagram architecture --format=png
+/arch-diagram sequence --format=svg
 /arch-diagram c4 --format=mermaid
 ```
 
-**挖资深成员脑子里的隐式知识**
-> "聊聊这个项目里我没看明白的地方" → `/arch-interview`
+### 打开可视化看板
 
-很多关键约束写不进代码注释,只在老员工脑子里:为什么这个模块只能单线程跑、为什么这个字段不能改名、这条依赖链当年是为了绕过哪个坑。`/arch-interview` 会先把 onboard 阶段 AI 考古挖出的"可疑实现点"(怪味道、定制逻辑、无效引用、被吞异常等)摆出来,**一次一题**地按场景(领域 / 依赖 / 历史 / 定制 / 风险 / 运维 / 测试)向你提问,每题附 AI 推荐答案,你确认 / 修正 / 跳过即可。访谈结束沉淀为 proposed 约束,经你确认后并入约束层。
+运行：
+
+```text
+/arch-dashboard
+```
+
+它会打开交互式 dashboard，用来看代码图谱、能力地图、风险视图、多仓拓扑和分步架构导览。
+
+### 沉淀资深成员脑子里的隐式知识
+
+运行：
+
+```text
+/arch-interview
+```
+
+有些关键约束不在代码里：为什么某个模块只能单线程，为什么某个字段不能改名，为什么一条依赖链看起来别扭，或者一次历史事故留下了什么设计边界。
+
+`/arch-interview` 会把这些问题变成一次引导式访谈。你只需要逐题确认、修正或跳过。确认后的约束可以进入 wiki 和方案评审。
 
 ## 安装
 
-在 Claude Code 中依次执行:
+在 Claude Code 中执行：
 
 ```text
 /plugin marketplace add https://github.com/ttttstc/understand-arch
@@ -100,7 +174,13 @@
 /reload-plugins
 ```
 
-插件 manifest 保持极简,Claude Code 直接从 `skills/*/SKILL.md` 自动发现 slash command。执行 `/reload-plugins` 后,在任意 prompt 输入 `/arch-`,应该能看到 7 个命令:
+重载后输入：
+
+```text
+/arch-
+```
+
+应该能看到这些命令：
 
 - `/arch-onboard`
 - `/arch-design`
@@ -110,71 +190,79 @@
 - `/arch-dashboard`
 - `/arch-interview`
 
-### 看不到命令?
+### 看不到命令怎么办
 
-1. **是否执行了 `/reload-plugins`?** 没执行 Claude Code 不会扫到新安装的 plugin skill。
-2. **检查插件是否真装上**:`/plugin list` 应能看到 `understand-arch`。
-3. **命令格式**:`/arch-onboard`(短横线),**不是** `/arch:onboard`(冒号语法不支持)。
-4. **强制重载**:重启 Claude Code,再 `/reload-plugins`。
+1. 先执行 `/reload-plugins`。
+2. 用 `/plugin list` 确认已经安装 `understand-arch`。
+3. 命令名使用短横线，比如 `/arch-onboard`，不是 `/arch:onboard`。
+4. 如果还看不到，重启 Claude Code 后再执行 `/reload-plugins`。
 
-### 可选:开启 git commit 自动刷新
+## 第一次怎么用
 
-默认情况下,基线仅在你执行 `/arch-onboard` 或 `/arch-audit` 时刷新。如果希望每次 git commit 后自动刷新:
-
-```text
-/arch-onboard --enable-hooks
-```
-
-会把项目 state 文件里的 `hooks_enabled` 设为 `true`。任何时候改回 `false` 即可关闭。
-
-## 怎么开始
+在你想分析的项目里运行：
 
 ```text
 /arch-onboard
 ```
 
-首次运行会:
-1. 扫描你的代码仓(多仓项目会自动发现兄弟仓库并询问是否纳入)
-2. 构建知识图谱
-3. 推断架构层(风格、组件、能力、质量、风险、技术债)
-4. 渲染 `ARCHITECTURE.md` + 14 个切片
-5. 告诉你哪些信息它无法确定(known_unknowns),你来决定要不要进一步补全
+首次运行会：
 
-后续命令都基于同一个 workspace 增量演进。自然语言触发也可以:
+1. 扫描代码仓
+2. 必要时发现相关兄弟仓库
+3. 构建知识图谱
+4. 推断架构层
+5. 生成 wiki
+6. 告诉你哪些地方目前无法确认
 
-- "帮我看懂这个项目" → `/arch-onboard`
-- "根据这份 PRD 设计方案" → `/arch-design`
-- "基线还能信么" → `/arch-audit`
-- "给 CTO 整一份汇报" → `/arch-wiki --audience=cto`
+之后其他命令都会基于同一个 `.understand-arch/` 工作区继续演进。
 
-## 在你文件系统上看到什么
+自然语言也可以触发：
 
-```
+- “帮我看懂这个项目” -> `/arch-onboard`
+- “根据这份 PRD 设计方案” -> `/arch-design`
+- “架构基线还能信么” -> `/arch-audit`
+- “给 CTO 一份总览” -> `/arch-wiki --audience=cto`
+
+## 会在项目里写入什么
+
+只会新增一个目录：
+
+```text
 your-project/
-├── src/
-├── package.json
-├── …
-└── .understand-arch/                 ← 我们唯一新增的目录
+└── .understand-arch/
     └── {project}/
         ├── specs/
-        │   ├── repos.json            ← 注册的仓库
-        │   ├── repos/{id}/knowledge-graph.json   ← 每仓代码图谱
-        │   └── arch-layer.json       ← 架构层(风格/能力/风险/…)
+        │   ├── repos.json
+        │   ├── repos/{id}/knowledge-graph.json
+        │   └── arch-layer.json
         ├── wiki/
-        │   ├── ARCHITECTURE.md       ← 完整可读白皮书
-        │   └── 01..14-*.md           ← 章节切片
-        ├── rules/                    ← 团队规范(根目录,你编辑)
-        │   └── constraints/          ← 项目约束(AI 考古 + 访谈,人确认后生效)
-        ├── decisions/                ← ADR 台账(append-only)
-        ├── change-requests/          ← CR.md 文件
-        ├── state.yaml                ← 工作流状态
-        └── intermediate/             ← 扫描中间产物(gitignored)
+        │   ├── ARCHITECTURE.md
+        │   ├── 01..14-*.md
+        │   └── assets/diagrams/
+        ├── rules/
+        │   └── constraints/
+        ├── decisions/
+        ├── change-requests/
+        ├── state.yaml
+        └── intermediate/
 ```
 
-自动生成的 `.gitignore` 会把 `intermediate/` 和埋点排除掉。其他目录默认随代码一起 commit。
+`intermediate/` 是扫描中间产物，会被 gitignore。架构文档、规则、决策和变更设计默认适合跟代码一起版本化。
+
+## 可选：git commit 时自动刷新
+
+默认情况下，架构基线只会在你运行 `/arch-onboard` 或 `/arch-audit` 时刷新。
+
+如果希望围绕 git commit 自动刷新：
+
+```text
+/arch-onboard --enable-hooks
+```
+
+之后也可以在项目 state 文件里把 `hooks_enabled` 改回 `false` 关闭。
 
 ## License
 
 MIT — 见 [LICENSE](./LICENSE)。
 
-架构扫描引擎 fork 自 [Understand-Anything](https://github.com/Lum1104/Understand-Anything)(MIT)。见 [engine/NOTICE](./engine/NOTICE)。
+架构扫描能力 fork 自 [Understand-Anything](https://github.com/Lum1104/Understand-Anything)（MIT）。见 [engine/NOTICE](./engine/NOTICE)。
