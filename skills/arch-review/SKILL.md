@@ -19,19 +19,26 @@ Infer mode from the target path when the caller does not provide one.
 
 ## Deterministic Checks For CR.md
 
-1. Verify the CR exists.
-2. Verify all 14 headings exist in order.
-3. Verify no duplicate headings.
-4. Verify section 8 contains both core impacted set and adjacent review set.
-5. Verify section 14 is append-only if it already has review history.
-6. Scan for placeholder tokens:
-   - TODO
-   - TBD
-   - placeholder
-   - lorem ipsum
-   - 待补充
-   - 占位
-7. Verify frontmatter has `cr_id`, `title`, and `status`.
+Run:
+
+```bash
+node <PLUGIN_ROOT>/engine/arch/cr-md-editor.mjs validate --file <CR.md>
+```
+
+Also locate sibling `CR-OPTION.md` and run:
+
+```bash
+node <PLUGIN_ROOT>/engine/arch/cr-md-editor.mjs validate-option --file <CR-OPTION.md>
+```
+
+The v3.3 deterministic gate verifies:
+
+1. CR.md exists and has exactly the 14 headings in order.
+2. Section 4 contains 4.1-4.8 detailed-design subsections.
+3. Section 9 uses vertical slices with validation, rollback, and AFK/HITL fields.
+4. Section 13 links `CR-OPTION.md`.
+5. CR-OPTION.md contains A/B/C options, horizontal comparison, recommendation, and human decision section.
+6. Placeholder tokens are absent.
 
 ## Deterministic Checks For Wiki
 

@@ -116,6 +116,19 @@ Rule 080l (v3.1): In CR-review mode, major finding if it touches a proposed cons
 Rule 080m (v3.1): In CR-review mode, require section 4.6 约束符合性 to exist and every listed constraint to carry a violation_check (command or detection method).
 Rule 080n (v3.1): In CR-review mode, require CR to read as a standard Tech Spec/design-delivery doc, not a tool report.
 Rule 080o (v3.1): Across CR and wiki review, flag English/Chinese mixing inside one sentence as a language-purity finding.
+Rule 080p (v3.3): In CR-review mode, require CR-OPTION.md to exist unless the caller explicitly says this is a legacy CR review.
+Rule 080q (v3.3): In CR-review mode, reject if CR-OPTION.md lacks A/B/C candidates, horizontal comparison, recommendation, or human decision section.
+Rule 080r (v3.3): In CR-review mode, reject if CR.md section 5 does not summarize CR-OPTION.md alternatives and name the selected option.
+Rule 080s (v3.3): In CR-review mode, reject if CR.md section 13 does not link CR-OPTION.md.
+Rule 080t (v3.3): In CR-review mode, reject if section 4 is missing any of 4.1 能力变化, 4.2 组件与边界, 4.3 接口与契约, 4.4 数据与状态, 4.5 流程与失败模式, 4.6 约束符合性, 4.7 接口质量与复杂度隐藏, 4.8 观测与运维.
+Rule 080u (v3.3): In CR-review mode, reject if section 4.7 does not discuss caller experience, complexity hiding, rejected interface options, and shallow module risk.
+Rule 080v (v3.3): In CR-review mode, reject if section 5 contains fake alternatives, including "不做" as the only rejected alternative.
+Rule 080w (v3.3): In CR-review mode, reject if section 9 is a horizontal task split such as schema/API/UI/test instead of vertical slices.
+Rule 080x (v3.3): In CR-review mode, reject if any section 9 slice lacks 目标, 范围, 具体改动, 验收, 回滚, 人机边界, or 依赖.
+Rule 080y (v3.3): In CR-review mode, reject if section 9 slices lack AFK/HITL classification.
+Rule 080z (v3.3): In CR-review mode, reject if design is not implementable by a senior developer because component, interface, data, flow, test, or rollback details are too vague.
+Rule 080aa (v3.3): In CR-review mode, flag same-concept terminology drift against rules/project-language.md.
+Rule 080ab (v3.3): In CR-review mode, review four explicit rubrics: 可实施性, 接口质量, 架构取舍质量, 切片质量.
 Rule 081: Approve only if no critical/high findings remain.
 Rule 082: Conditional approval is allowed only with medium/low findings.
 Rule 083: Reject if artifact is mostly skeleton.
