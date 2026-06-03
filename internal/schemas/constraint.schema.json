@@ -63,7 +63,7 @@
       "description": "proposed=AI/访谈初稿;confirmed=人确认升级硬约束;rejected=误判保留;adjusted=人改后确认"
     },
     "source": {
-      "enum": ["ai-mined", "interview", "human"],
+      "enum": ["ai-mined", "interview", "human", "cr-derived"],
       "description": "ai-mined=机器考古;interview=访谈;human=人工"
     },
     "consistency": {
@@ -86,12 +86,13 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "source": { "const": "ai-mined" } } },
+      "if": { "properties": { "source": { "enum": ["ai-mined", "cr-derived"] } } },
       "then": {
         "properties": {
-          "evidence_level": { "enum": ["observed", "inferred", "uncertain", "conflicted"] }
+          "evidence_level": { "enum": ["observed", "inferred", "uncertain", "conflicted"] },
+          "status": { "const": "proposed" }
         },
-        "description": "机器考古不得自标 confirmed,只有人能确认"
+        "description": "机器考古和 CR 回流不得自标 confirmed,只有人能确认"
       }
     }
   ]

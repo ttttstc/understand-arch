@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://understand-arch.local/schemas/agent-card.schema.json",
+  "title": "understand-arch v3.4 agent cards",
+  "description": "给 Agent 使用的高密度检索卡片派生层。卡片由 graph、arch-layer、constraints、ADR 确定性派生,摘要由 subagent 填充。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "generated_at", "cards"],
+  "properties": {
+    "version": { "const": "3.4" },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "cards": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/agentCard" }
+    }
+  },
+  "$defs": {
+    "cardType": {
+      "enum": [
+        "ComponentCard",
+        "CapabilityCard",
+        "InterfaceCard",
+        "DataModelCard",
+        "FlowCard",
+        "RiskCard",
+        "ConstraintCard",
+        "DecisionCard"
+      ]
+    },
+    "evidenceLevel": {
+      "enum": ["confirmed", "observed", "inferred", "uncertain", "conflicted"]
+    },
+    "anchors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graph_node_ids", "file_paths", "line_ranges"],
+      "properties": {
+        "graph_node_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "file_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "line_ranges": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "integer", "minimum": 1 },
+              { "type": "integer", "minimum": 1 }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "agentCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$schema",
+        "id",
+        "type",
+        "title",
+        "focused_summary",
+        "anchors",
+        "semantic_tags",
+        "related_card_ids",
+        "evidence_level",
+        "source_artifact",
+        "source_hash"
+      ],
+      "properties": {
+        "$schema": { "const": "internal/schemas/agent-card.schema.json" },
+        "id": {
+          "type": "string",
+          "pattern": "^card:(component|capability|interface|data-model|flow|risk|constraint|decision):[a-zA-Z0-9_.:-]+$"
+        },
+        "type": { "$ref": "#/$defs/cardType" },
+        "title": { "type": "string", "minLength": 1 },
+        "focused_summary": { "type": "string", "maxLength": 200 },
+        "anchors": { "$ref": "#/$defs/anchors" },
+        "semantic_tags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "related_card_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "evidence_level": { "$ref": "#/$defs/evidenceLevel" },
+        "source_artifact": { "type": "string", "minLength": 1 },
+        "source_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

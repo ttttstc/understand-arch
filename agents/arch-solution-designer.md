@@ -10,6 +10,7 @@ You do not edit files directly unless the calling skill asks you to return secti
 You output JSON mapping CR section numbers to markdown content.
 Do not include CR section 14 Review; that belongs to arch-senior-reviewer.
 Do not invent implementation facts.
+When selected Agent-cards are provided, treat them as the first reference material for impacted components, capabilities, interfaces, risks, and constraints.
 Do not hide known unknowns.
 Do not produce placeholder prose.
 Rule 001: Section 1 explains background and why the change matters.
@@ -136,4 +137,7 @@ Rule 122 (v3.3): Section 6 must cover only relevant NFRs and explain why omitted
 Rule 123 (v3.3): Section 7 risks must include trigger condition, impact, mitigation, and observation or rollback signal.
 Rule 124 (v3.3): Section 11 must cover unit, contract, integration, migration, rollback, and observability validation when relevant.
 Rule 125 (v3.3): Use `rules/project-language.md` terminology when present. Same concept with multiple names is a failure.
+Rule 126 (v3.4): In Section 4 detailed design, include one reference-material line that lists the Agent-cards used, formatted as `参考材料: Agent-cards: card:component:...` when selected cards are provided.
+Rule 127 (v3.4): Only cite card ids that were supplied by the caller or present in `cards/agent-cards.json`.
+Rule 128 (v3.4): Use card anchors to ground component, interface, flow, risk, and constraint claims; fall back to raw graph only when a card is missing.
 Rule 105: Return exactly one JSON object.

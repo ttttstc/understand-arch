@@ -767,13 +767,14 @@ Report to the user: `[Phase 6.5/6] Saving code fact graph...`
 
 1. Write the final knowledge graph to `$ARCH_PROJECT_DIR/knowledge-graph.json`.
 
-2. **Generate structural fingerprints baseline.** This creates the basis for future automatic incremental updates and **must succeed before `meta.json` is written** — otherwise auto-update sees a fresh commit hash with no fingerprints to compare against, classifies every file as STRUCTURAL, and escalates to `FULL_UPDATE` on every subsequent commit (issue #152).
+2. **Generate structural fingerprints baseline.** This creates the basis for future automatic incremental updates and **must succeed before `meta.json` is written** — otherwise auto-update sees a fresh commit hash with no fingerprints to compare against, classifies every file as STRUCTURAL, and escalates to `FULL_UPDATE` on every subsequent commit (issue #152). v3.4 writes the planner baseline to `$ARCH_PROJECT_ROOT/specs/repos/$ARCH_REPO_ID/.fingerprint.json`; the script also keeps the old local `fingerprints.json` for compatibility.
 
    Write the input file:
    ```bash
    cat > $ARCH_PROJECT_DIR/intermediate/fingerprint-input.json <<EOF
    {
      "projectRoot": "$PROJECT_ROOT",
+     "repoId": "$ARCH_REPO_ID",
      "sourceFilePaths": [<all source file paths from Phase 1, as JSON array>],
      "gitCommitHash": "<current commit hash>"
    }

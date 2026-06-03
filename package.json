@@ -1,6 +1,6 @@
 {
   "name": "@understand-arch/plugin",
-  "version": "3.3.0-rc1",
+  "version": "3.4.0-rc1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

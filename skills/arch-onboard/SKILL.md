@@ -18,6 +18,7 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 - Fail if any of `arch-layer.architecture_style`, `arch-layer.component_profiles`, `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
 - Write `eval-report.json` and include its trust label in the final report.
 - Hooks are disabled unless the user passes `--enable-hooks`.
+- v3.4 default behavior is incremental after the first successful onboard. Do not expose or teach extra parameters in normal output.
 
 ## Resolve Project
 
@@ -73,6 +74,24 @@ Write `specs/repos.json`:
 ```
 
 ## Phase A - Code Fact Graphs
+
+Before dispatching graph analysis, check whether this is a first run or an incremental run:
+
+1. If `specs/repos/*/.fingerprint.json` is absent, run the existing full flow.
+2. If a baseline exists, run the deterministic planner:
+
+```bash
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/incremental-planner.mjs --arch-dir="$ARCH_PROJECT_ROOT"
+```
+
+3. Save the JSON output to `intermediate/incremental-plan.json`.
+4. Apply the planner action:
+   - `SKIP`: do not dispatch `/arch-analyze` or `arch-enrich`; run cards derivation, cards summary if needed, cards-check, eval, and final report.
+   - `PARTIAL_UPDATE`: dispatch `/arch-analyze` only for `files_to_reanalyze` when the analyzer supports file-scoped rerun; otherwise rerun the affected repo graph and preserve per-repo boundaries. Then call `arch-enrich` with subset mode using `affected_arch_nodes`.
+   - `ARCHITECTURE_UPDATE`: rerun repo graph and full `arch-enrich`.
+   - `FULL_UPDATE`: run the existing full flow and tell the user the change set was large enough to justify a full rebuild.
+
+The planner is the only place that calls UA staleness, changed-file, fingerprint, and classifier primitives. Do not reimplement those decisions in this skill.
 
 For every repo entry, dispatch `/arch-analyze` with environment:
 
