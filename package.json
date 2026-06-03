@@ -1,12 +1,14 @@
 {
   "name": "@understand-arch/plugin",
-  "version": "3.1.0-rc1",
+  "version": "3.2.0-rc1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "pnpm --filter @understand-arch/core test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard test",
+    "arch:test": "vitest run --config engine/arch/vitest.config.mjs",
+    "diagram:test": "bash vendor/fireworks-tech-graph/scripts/test-all-styles.sh",
+    "test": "pnpm arch:test && pnpm --filter @understand-arch/core test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard test",
     "verify": "pnpm test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard build"
   },
   "dependencies": {
