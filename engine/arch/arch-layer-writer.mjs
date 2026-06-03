@@ -154,6 +154,47 @@ function writeLayer(layer) {
   writeFileSync(layerPath, `${JSON.stringify(layer, null, 2)}\n`, "utf-8");
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function itemNodeIds(item) {
+  return [
+    ...asArray(item.node_ids),
+    ...asArray(item.nodeIds),
+    ...asArray(item.supporting_node_ids),
+    ...asArray(item.inside_node_ids),
+    ...asArray(item.evidence_refs).filter((ref) => typeof ref === "string" && ref.includes("::")),
+    ...asArray(item.steps).flatMap((step) => [...asArray(step.node_ids), ...asArray(step.nodeIds)]),
+  ];
+}
+
+function touchesSubset(item, subsetIds) {
+  if (!subsetIds || subsetIds.size === 0) return true;
+  return itemNodeIds(item).some((id) => subsetIds.has(id));
+}
+
+export function mergeLayerPatch(layer, patch) {
+  const subsetMode = Boolean(patch.subset_mode);
+  const subsetIds = new Set(asArray(patch.subset_arch_node_ids));
+  const payload = patch.patch && typeof patch.patch === "object" ? patch.patch : patch;
+
+  for (const key of Object.keys(payload)) {
+    if (key === "subset_mode" || key === "subset_arch_node_ids" || key === "previous_arch_layer" || key === "patch") continue;
+    if (Array.isArray(layer[key]) && Array.isArray(payload[key])) {
+      const incoming = subsetMode ? payload[key].filter((item) => touchesSubset(item, subsetIds)) : payload[key];
+      const byId = new Map(layer[key].map((item) => [item.id || JSON.stringify(item), item]));
+      for (const item of incoming) byId.set(item.id || JSON.stringify(item), item);
+      layer[key] = [...byId.values()];
+    } else if (key === "architecture_style" && payload[key] && typeof payload[key] === "object") {
+      layer[key] = { ...layer[key], ...payload[key] };
+    } else if (key === "project" || key === "freshness") {
+      layer[key] = { ...layer[key], ...payload[key] };
+    }
+  }
+  return layer;
+}
+
 if (command === "init") {
   const layer = readJson(layerPath, emptyLayer());
   writeLayer(validateShape(layer));
@@ -166,17 +207,7 @@ if (command === "init") {
   if (!patchPath) throw new Error("merge requires a patch JSON path");
   const layer = readJson(layerPath, emptyLayer());
   const patch = readJson(patchPath, {});
-  for (const key of Object.keys(patch)) {
-    if (Array.isArray(layer[key]) && Array.isArray(patch[key])) {
-      const byId = new Map(layer[key].map((item) => [item.id || JSON.stringify(item), item]));
-      for (const item of patch[key]) byId.set(item.id || JSON.stringify(item), item);
-      layer[key] = [...byId.values()];
-    } else if (key === "architecture_style" && patch[key] && typeof patch[key] === "object") {
-      layer[key] = { ...layer[key], ...patch[key] };
-    } else if (key === "project" || key === "freshness") {
-      layer[key] = { ...layer[key], ...patch[key] };
-    }
-  }
+  mergeLayerPatch(layer, patch);
   writeLayer(validateShape(layer));
   console.log(layerPath);
 } else {

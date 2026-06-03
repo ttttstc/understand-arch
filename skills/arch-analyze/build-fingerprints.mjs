@@ -4,7 +4,8 @@
  *
  * Builds the structural-fingerprint baseline used by auto-update's
  * incremental change detection. Runs once per /arch-analyze full rebuild
- * (Phase 7 step 2.5), generating .understand-arch/fingerprints.json.
+ * (Phase 7 step 2.5), generating the per-repo fingerprint baseline consumed
+ * by understand-arch v3.4 incremental planning.
  *
  * Replaces the LLM-written fingerprint script that previously sat in
  * SKILL.md as a code example — that example had the wrong signature
@@ -15,9 +16,9 @@
  *   node build-fingerprints.mjs <input.json>
  *
  * Input JSON:
- *   { projectRoot: string, sourceFilePaths: string[], gitCommitHash: string }
+ *   { projectRoot: string, sourceFilePaths: string[], gitCommitHash: string, repoId?: string }
  *
- * Writes: <projectRoot>/.understand-arch/fingerprints.json
+ * Writes: <ARCH_PROJECT_ROOT>/specs/repos/<repo_id>/.fingerprint.json
  * Exit code: 0 on success (including 0 files analyzed); non-zero on error.
  */
 
@@ -55,6 +56,10 @@ function archProjectDir(projectRoot) {
   return process.env.ARCH_PROJECT_DIR || join(projectRoot, '.understand-arch', process.env.ARCH_PROJECT_ID || basename(projectRoot));
 }
 
+function archProjectRoot(projectRoot) {
+  return process.env.ARCH_PROJECT_ROOT || archProjectDir(projectRoot);
+}
+
 async function main() {
   const [, , inputPath] = process.argv;
   if (!inputPath) {
@@ -62,7 +67,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { projectRoot, sourceFilePaths, gitCommitHash } = JSON.parse(
+  const { projectRoot, sourceFilePaths, gitCommitHash, repoId } = JSON.parse(
     readFileSync(inputPath, 'utf-8'),
   );
 
@@ -84,12 +89,19 @@ async function main() {
   registerAllParsers(registry);
 
   const store = buildFingerprintStore(projectRoot, sourceFilePaths, registry, gitCommitHash);
-  const outDir = archProjectDir(projectRoot);
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, 'fingerprints.json'), JSON.stringify(store, null, 2), 'utf-8');
+  const archRoot = archProjectRoot(projectRoot);
+  const resolvedRepoId = repoId || process.env.ARCH_REPO_ID || basename(projectRoot);
+  const repoOutDir = join(archRoot, 'specs', 'repos', resolvedRepoId);
+  mkdirSync(repoOutDir, { recursive: true });
+  writeFileSync(join(repoOutDir, '.fingerprint.json'), JSON.stringify(store, null, 2), 'utf-8');
+
+  // Compatibility for older UA-derived flows that still look beside ARCH_PROJECT_DIR.
+  const legacyOutDir = archProjectDir(projectRoot);
+  mkdirSync(legacyOutDir, { recursive: true });
+  writeFileSync(join(legacyOutDir, 'fingerprints.json'), JSON.stringify(store, null, 2), 'utf-8');
 
   const fileCount = Object.keys(store.files).length;
-  process.stdout.write(`Fingerprints baseline: ${fileCount} files\n`);
+  process.stdout.write(`Fingerprints baseline: ${fileCount} files -> ${join(repoOutDir, '.fingerprint.json')}\n`);
 }
 
 await main();

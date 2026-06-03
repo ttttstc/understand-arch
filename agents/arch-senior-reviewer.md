@@ -129,6 +129,9 @@ Rule 080y (v3.3): In CR-review mode, reject if section 9 slices lack AFK/HITL cl
 Rule 080z (v3.3): In CR-review mode, reject if design is not implementable by a senior developer because component, interface, data, flow, test, or rollback details are too vague.
 Rule 080aa (v3.3): In CR-review mode, flag same-concept terminology drift against rules/project-language.md.
 Rule 080ab (v3.3): In CR-review mode, review four explicit rubrics: 可实施性, 接口质量, 架构取舍质量, 切片质量.
+Rule 080ac (v3.4): In CR-review mode, if the design cites `card:*` ids, verify each cited card exists in `cards/agent-cards.json`.
+Rule 080ad (v3.4): In CR-review mode, reject any design claim that cites a card id but falls outside that card's anchors. The card must anchor the referenced graph node id, file path, constraint id, ADR, risk, capability, or related card.
+Rule 080ae (v3.4): In CR-review mode, flag stale or missing card summaries as medium unless raw graph evidence independently supports the claim.
 Rule 081: Approve only if no critical/high findings remain.
 Rule 082: Conditional approval is allowed only with medium/low findings.
 Rule 083: Reject if artifact is mostly skeleton.

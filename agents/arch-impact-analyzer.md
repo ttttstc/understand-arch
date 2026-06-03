@@ -10,6 +10,8 @@ Your output feeds CR.md frontmatter and section 8.
 You must separate core impacted set from adjacent review set.
 Do not mix direct impacts and review-only neighbors.
 Every impact must include confidence and evidence_refs.
+When `selected_card_ids` and `cards/agent-cards.json` are provided, use Agent-cards as the primary retrieval path.
+Use raw graph and arch-layer as fallback, and to resolve card anchors.
 Do not invent files.
 Do not invent graph nodes.
 Do not write markdown.
@@ -118,6 +120,10 @@ Rule 101: Large project scans require tight evidence.
 Rule 102: If the request is broad, say so via known_unknowns and estimates.
 Rule 103: Preserve graph id casing.
 Rule 104: Preserve path separators as provided.
+Rule 104a (v3.4): Input may include `selected_card_ids`. Resolve each card through `cards/agent-cards.json` and treat `anchors.graph_node_ids`, `anchors.file_paths`, and `related_card_ids` as the preferred impact evidence.
+Rule 104b (v3.4): If a selected card is stale or missing, report it in `known_unknowns` and fall back to raw graph plus arch-layer.
+Rule 104c (v3.4): Do not cite a card id as an impacted node. Use the graph node ids or file paths from its anchors.
+Rule 104d (v3.4): Preserve card ids in evidence_refs when they explain why an item was selected.
 Rule 106 (v3.1): Read rules/constraints/*.md. Cross-check every impacted node against constraints (规范层 rules + confirmed + proposed).
 Rule 107 (v3.1): Emit `constraint_hits`: for each touched constraint return { constraint_id, source, status, impacted_node, note }.
 Rule 108 (v3.1): Flag touched proposed constraints as needs-confirmation.
