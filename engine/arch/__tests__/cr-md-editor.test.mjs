@@ -131,8 +131,27 @@ describe("cr-md-editor validation", () => {
     expect(result.findings.some((finding) => finding.message.includes("vertical slices"))).toBe(true);
   });
 
+  it("rejects CRs missing a required section 4 subsection", () => {
+    const broken = validCr().replace("### 4.7 接口质量与复杂度隐藏", "### 4.7 接口说明");
+    const result = validateCr(tempFile("CR.md", broken));
+    expect(result.ok).toBe(false);
+    expect(result.findings.some((finding) => finding.message.includes("### 4.7 接口质量与复杂度隐藏"))).toBe(true);
+  });
+
+  it("rejects CR slices without AFK or HITL classification", () => {
+    const broken = validCr().replace("- 人机边界:AFK", "- 人机边界:待人工判断");
+    const result = validateCr(tempFile("CR.md", broken));
+    expect(result.ok).toBe(false);
+    expect(result.findings.some((finding) => finding.message.includes("AFK or HITL"))).toBe(true);
+  });
+
   it("accepts CR-OPTION.md with three human-readable options", () => {
     expect(validateOption(tempFile("CR-OPTION.md", validOption()))).toMatchObject({ ok: true });
+  });
+
+  it("accepts CR-OPTION.md recommendation phrased as adopting an option", () => {
+    const option = validOption().replace("推荐:方案 B", "推荐: 采用 方案 B");
+    expect(validateOption(tempFile("CR-OPTION.md", option))).toMatchObject({ ok: true });
   });
 
   it("rejects CR-OPTION.md missing option C", () => {

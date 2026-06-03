@@ -80,7 +80,31 @@ npm run verify exit 0
 
 ---
 
-## 5. 待人工验收
+## 5. PR #19 Review 修复
+
+已按 PR #19 评审意见修复:
+
+| 项 | 修复 |
+|---|---|
+| cr-md-editor 冗余三元表达式 | `findMissingInOrder` 简化为直接 `text.indexOf(heading)` |
+| pre-grill 与 arch-frame 职责重叠 | `arch-frame` 明确消费 pre-grill JSON,只做增量 framing |
+| `design_readiness=draft_only` 未处理 | `/arch-design` workflow 增加 draft-only 分支与低置信草稿标注要求 |
+| 推荐意见正则漏检 | `validate-option` 支持 `推荐: 采用 方案 B` |
+| 测试覆盖缺口 | 新增缺 §4 子节、缺 AFK/HITL、project-language writer 测试 |
+| Electron 特定术语 | `arch-interface-designer` 改为通用 runtime/framework/internal details |
+| improvement analyzer 双输出灵活性 | 默认 Markdown,显式请求时支持 `{ markdown, summary }` JSON |
+
+新增测试后:
+
+```text
+pnpm arch:test
+3 test files passed
+12 tests passed
+```
+
+---
+
+## 6. 待人工验收
 
 建议用 Typola 或 sample workspace 走一次真实 `/arch-design`:
 

@@ -95,9 +95,7 @@ function findMissingInOrder(text, required) {
   let last = -1;
   const missing = [];
   for (const heading of required) {
-    const idx = heading.endsWith(":")
-      ? text.indexOf(heading)
-      : text.indexOf(heading);
+    const idx = text.indexOf(heading);
     if (idx < 0) missing.push(heading);
     else if (idx < last) missing.push(`${heading} (out of order)`);
     else last = idx;
@@ -167,7 +165,7 @@ export function validateOption(file) {
   if (!/- \[ \] 采用方案 A/.test(text) || !/- \[ \] 采用方案 B/.test(text) || !/- \[ \] 采用方案 C/.test(text)) {
     findings.push({ severity: "high", message: "Human decision checklist must include options A, B, and C" });
   }
-  if (!/推荐[:：]\s*方案\s*[ABC]/.test(text)) findings.push({ severity: "high", message: "Recommendation must choose 方案 A/B/C" });
+  if (!/推荐[:：]\s*(?:采用|选择)?\s*方案\s*[ABC]/.test(text)) findings.push({ severity: "high", message: "Recommendation must choose 方案 A/B/C" });
 
   const placeholders = hasPlaceholders(text);
   if (placeholders.length) findings.push({ severity: "high", message: `Placeholder text found: ${placeholders.join(", ")}` });

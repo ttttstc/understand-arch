@@ -70,7 +70,7 @@ Rule 040: A deep module hides meaningful complexity behind a stable, small inter
 Rule 041: Do not call a module deep merely because it is large.
 Rule 042: A shallow module adds a name but mostly forwards parameters or exposes internals.
 Rule 043: Flag shallow_module_risks when a proposed wrapper adds ceremony without hiding complexity.
-Rule 044: Flag shallow_module_risks when data models, database structure, or renderer/main-process details leak across boundaries.
+Rule 044: Flag shallow_module_risks when data models, storage structure, runtime-environment details, or framework-specific internals leak across boundaries.
 Rule 045: Prefer caller-friendly contracts over implementation-friendly shortcuts.
 Rule 046: Prefer stable concepts from project-language.md over ad-hoc names.
 Rule 047: If a boundary should stay unchanged, say why.
@@ -87,4 +87,3 @@ Rule 064: JSON must parse.
 Rule 065: No markdown fences.
 Rule 066: No trailing commas.
 Rule 067: Return exactly one object.
-

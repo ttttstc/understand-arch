@@ -1,14 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-
-const projectRoot = resolve(process.argv[2] || ".");
-const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
-const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
-const interDir = join(archDir, "intermediate");
-const rulesDir = join(archDir, "rules");
-const outputPath = join(rulesDir, "project-language.md");
-const inputPath = join(interDir, "project-language.json");
+import { fileURLToPath } from "node:url";
 
 function readJson(path) {
   try {
@@ -18,7 +11,7 @@ function readJson(path) {
   }
 }
 
-function table(headers, rows, pick) {
+export function table(headers, rows, pick) {
   const sep = `|${headers.map(() => "---").join("|")}|`;
   const head = `|${headers.join("|")}|`;
   const body = rows.length
@@ -27,9 +20,7 @@ function table(headers, rows, pick) {
   return [head, sep, body].join("\n");
 }
 
-function main() {
-  if (!existsSync(rulesDir)) mkdirSync(rulesDir, { recursive: true });
-  const data = readJson(inputPath);
+export function renderProjectLanguage(data) {
   const domainTerms = Array.isArray(data.domain_terms) ? data.domain_terms : [];
   const roles = Array.isArray(data.roles) ? data.roles : [];
   const statesEvents = Array.isArray(data.states_events) ? data.states_events : [];
@@ -67,10 +58,8 @@ ${table(["组件", "推荐中文名", "代码标识符", "说明"], components, 
 ${table(["不推荐", "推荐", "原因"], forbiddenMixups, (row) => [row.avoid, row.recommended, row.reason])}
 `;
 
-  writeFileSync(outputPath, md.trimEnd() + "\n", "utf-8");
-  process.stdout.write(JSON.stringify({
-    ok: true,
-    file: outputPath,
+  return {
+    markdown: md.trimEnd() + "\n",
     counts: {
       domain_terms: domainTerms.length,
       roles: roles.length,
@@ -78,7 +67,30 @@ ${table(["不推荐", "推荐", "原因"], forbiddenMixups, (row) => [row.avoid,
       components: components.length,
       forbidden_mixups: forbiddenMixups.length,
     },
+  };
+}
+
+function main() {
+  const projectRoot = resolve(process.argv[2] || ".");
+  const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
+  const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
+  const interDir = join(archDir, "intermediate");
+  const rulesDir = join(archDir, "rules");
+  const outputPath = join(rulesDir, "project-language.md");
+  const inputPath = join(interDir, "project-language.json");
+
+  if (!existsSync(rulesDir)) mkdirSync(rulesDir, { recursive: true });
+  const data = readJson(inputPath);
+  const rendered = renderProjectLanguage(data);
+
+  writeFileSync(outputPath, rendered.markdown, "utf-8");
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    file: outputPath,
+    counts: rendered.counts,
   }, null, 2) + "\n");
 }
 
-main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

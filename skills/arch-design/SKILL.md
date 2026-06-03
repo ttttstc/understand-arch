@@ -73,32 +73,33 @@ The CR must contain exactly:
 1. 读 `rules/` + `rules/project-language.md` + `rules/constraints/`,建立本次 design 适用的术语和约束集(规范层 + confirmed + proposed)。
 2. Dispatch `arch-pre-grill`.
 3. If `design_readiness=needs_user_answer` or `blocking_questions.length >= 3`, stop and ask the user the blocking questions. Do not create CR-OPTION.md or CR.md.
-4. Dispatch `arch-frame`.
-5. If `blocking_unknown_count >= 3`, stop and ask the user. Do not invent answers.
-6. Dispatch `arch-impact-analyzer`(交叉比对约束:受影响节点是否落在某约束管辖范围,踩到的标注)。
-7. 若影响面触碰 proposed 约束 → 提示用户先确认该约束(软阻塞),用户可 override。
-8. Dispatch `arch-option-designer` to produce `CR-OPTION.md` with A/B/C candidates.
-9. Write `CR-OPTION.md` in the CR directory and run:
+4. If `design_readiness=draft_only`, ask the user whether to continue as an explicitly low-confidence draft. If they continue, every downstream dispatch must carry `draft_only: true`, CR-OPTION.md must label the recommendation as draft-only, and CR.md §12 must list the unresolved evidence.
+5. Dispatch `arch-frame`, passing the pre-grill JSON. `arch-frame` must not redo the same clarification from scratch; it consumes pre-grill as the source of problem/goals/non-goals and only adds implementation framing, missing acceptance criteria, and blocking_unknown_count.
+6. If `blocking_unknown_count >= 3`, stop and ask the user. Do not invent answers.
+7. Dispatch `arch-impact-analyzer`(交叉比对约束:受影响节点是否落在某约束管辖范围,踩到的标注)。
+8. 若影响面触碰 proposed 约束 → 提示用户先确认该约束(软阻塞),用户可 override。
+9. Dispatch `arch-option-designer` to produce `CR-OPTION.md` with A/B/C candidates.
+10. Write `CR-OPTION.md` in the CR directory and run:
 
 ```bash
 node <PLUGIN_ROOT>/engine/arch/cr-md-editor.mjs validate-option --file <CR_DIR>/CR-OPTION.md
 ```
 
-10. Unless the user explicitly said "按推荐方案继续", "无需确认", or "自动化执行", stop and ask the user to choose A/B/C, a mixed option, or regeneration. Do not write formal CR.md before this decision.
-11. Once the user has selected an option, use `cr-md-editor.mjs` to create the CR skeleton.
-12. Dispatch `arch-interface-designer` with the selected option, CR-OPTION.md, pre-grill JSON, impact JSON, graph, arch-layer, rules, constraints, ADRs, and project-language.md.
-13. Dispatch `arch-solution-designer`(先读相关约束作为设计护栏,主动遵守,并消费 selected option + interface JSON)。
-14. Write sections 1-7 and 9-13 with `cr-md-editor.mjs`。**§ 4 详细设计必须含 4.1-4.8 子节,其中 4.6 为约束符合性,4.7 为接口质量与复杂度隐藏**。
-15. Write section 8 from the impact analyzer, preserving two groups:
+11. Unless the user explicitly said "按推荐方案继续", "无需确认", or "自动化执行", stop and ask the user to choose A/B/C, a mixed option, or regeneration. Do not write formal CR.md before this decision.
+12. Once the user has selected an option, use `cr-md-editor.mjs` to create the CR skeleton.
+13. Dispatch `arch-interface-designer` with the selected option, CR-OPTION.md, pre-grill JSON, impact JSON, graph, arch-layer, rules, constraints, ADRs, and project-language.md.
+14. Dispatch `arch-solution-designer`(先读相关约束作为设计护栏,主动遵守,并消费 selected option + interface JSON)。
+15. Write sections 1-7 and 9-13 with `cr-md-editor.mjs`。**§ 4 详细设计必须含 4.1-4.8 子节,其中 4.6 为约束符合性,4.7 为接口质量与复杂度隐藏**。
+16. Write section 8 from the impact analyzer, preserving two groups:
    - core impacted set
    - adjacent review set
-16. Ensure section 5 summarizes A/B/C from CR-OPTION.md and states the selected option.
-17. Ensure section 13 links `CR-OPTION.md`.
-18. If the user skipped option confirmation, ensure section 14 records that skip and reason.
-19. Run `cr-md-editor.mjs validate --file <CR.md>`.
-20. Dispatch `arch-review`(约束验收:违反 confirmed/规范层 → blocker;触碰 proposed 未 override → major finding;v3.3 还验可实施性/接口质量/取舍质量/切片质量)。
-21. Append findings only to section 14.
-22. If review rejects, rerun the specific failed analyzer once using retry hints.
+17. Ensure section 5 summarizes A/B/C from CR-OPTION.md and states the selected option.
+18. Ensure section 13 links `CR-OPTION.md`.
+19. If the user skipped option confirmation, ensure section 14 records that skip and reason.
+20. Run `cr-md-editor.mjs validate --file <CR.md>`.
+21. Dispatch `arch-review`(约束验收:违反 confirmed/规范层 → blocker;触碰 proposed 未 override → major finding;v3.3 还验可实施性/接口质量/取舍质量/切片质量)。
+22. Append findings only to section 14.
+23. If review rejects, rerun the specific failed analyzer once using retry hints.
 
 ## CR-OPTION.md(v3.3)
 
@@ -164,7 +165,10 @@ CR § 4 详细设计必须包含 4.1-4.8,其中 `### 4.6 约束符合性` 列出
 ```text
 Mode: PRD hard gate.
 Request: <user PRD/request>
+Pre-grill JSON: <pre-grill output>
 Read available graph, arch-layer, rules, ADRs, and CRs.
+Consume pre-grill problem_statement/goals/non_goals/domain_terms as the starting point.
+Do not duplicate pre-grill's responsibility. Add only implementation framing, missing acceptance criteria, and any remaining blocking_unknown_count.
 Return JSON only:
 {
   "problem_statement": "...",
@@ -259,6 +263,7 @@ Return JSON only with verdict, findings, retry_hints, summary.
 
 - Three or more blocking unknowns: stop.
 - Pre-grill design_readiness=needs_user_answer: stop before CR-OPTION.md.
+- Pre-grill design_readiness=draft_only: continue only with explicit user consent, mark CR-OPTION.md and CR.md as low-confidence draft, and put unresolved evidence in CR §12.
 - Missing CR-OPTION.md or invalid CR-OPTION.md: stop before CR.md.
 - User has not selected an option and did not explicitly ask to continue with recommendation: stop after CR-OPTION.md.
 - Missing baseline: stop unless draft mode is explicit.
