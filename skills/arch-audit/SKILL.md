@@ -53,6 +53,30 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/constrain
 
 This validates `rules/constraints/`: entry structure, evidence_level/status/source legality, ai-mined never confirmed, evidence links to code (not internal `risk:`/`qa:`/`debt:` ids), and suspicious-findings completeness.
 
+5c. Check agent cards and decision feedback (v3.4):
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/cards-check.mjs --arch-dir="<ARCH_PROJECT_ROOT>"
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/decision-extractor-runner.mjs collect --arch-dir="<ARCH_PROJECT_ROOT>"
+```
+
+If `intermediate/decision-extractor-input.json` contains new CR/ADR sources since the previous audit, dispatch `arch-decision-extractor`:
+
+```text
+Mode: v3.4 audit fallback decision extraction.
+Project: <ARCH_PROJECT_ROOT>
+Read intermediate/decision-extractor-input.json.
+Extract proposed constraints only.
+Return JSON only with constraints[].
+Every constraint source must be cr-derived, status proposed, evidence_level not confirmed.
+```
+
+Save the returned JSON to `intermediate/decision-extractor-output.json`, then merge:
+
+```bash
+ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/decision-extractor-runner.mjs merge --arch-dir="<ARCH_PROJECT_ROOT>" --output="<ARCH_PROJECT_ROOT>/intermediate/decision-extractor-output.json"
+```
+
 6. Check dashboard inputs:
    - at least one repo graph exists
    - `specs/arch-layer.json` exists
@@ -95,6 +119,12 @@ The markdown report must include:
 - eval trust label, evidence closure rate, hallucination rate, coverage, consistency, and information density
 - dashboard readiness
 - CR/ADR/rules status
+- self-iteration status: proposed constraints added since last audit, split by CR/ADR and history
+- proposed constraint source distribution:
+  - `cr-derived` -> CR 回流
+  - `ai-mined` with note containing `git history` -> git 历史考古
+  - other `ai-mined` -> 代码考古
+  - `interview` -> 访谈
 - findings ordered by severity
 - recommended rerun commands
 

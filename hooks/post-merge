@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+set -u
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PLUGIN_ROOT="${UNDERSTAND_ARCH_PLUGIN_ROOT:-$ROOT}"
+
+find "$ROOT/.understand-arch" -name state.yaml -type f 2>/dev/null | while read -r state_file; do
+  if ! grep -Eq 'hooks_enabled:[[:space:]]*true' "$state_file"; then
+    continue
+  fi
+  arch_dir="$(dirname "$state_file")"
+  if [ ! -f "$PLUGIN_ROOT/engine/arch/decision-extractor-runner.mjs" ]; then
+    echo "understand-arch post-merge: decision extractor not found, skipped" >&2
+    continue
+  fi
+  ARCH_PROJECT_ROOT="$arch_dir" node "$PLUGIN_ROOT/engine/arch/decision-extractor-runner.mjs" run --arch-dir="$arch_dir" --workspace="$ROOT" >/dev/null 2>&1 || {
+    echo "understand-arch post-merge: decision extraction skipped after non-blocking failure" >&2
+  }
+done

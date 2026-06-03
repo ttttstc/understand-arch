@@ -20,6 +20,8 @@
 - 用 reviewer 和 eval 检查产物质量
 - 生成文档、方案、架构图和 dashboard，方便团队讨论
 
+知识库会从你日常的 commit、CR 和 ADR 自动学习，而不只是一次性 onboard。
+
 简单说：它是一个帮你接手项目、理解架构、设计变更、做架构评审的 Claude Code 插件。
 
 ## 它能做什么
