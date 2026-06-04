@@ -132,15 +132,56 @@ function checkCommand(command, args, label) {
   }
 }
 
+function commandWorks(command, args) {
+  const result = spawnSync(command.bin, [...command.prefixArgs, ...args], { encoding: "utf-8" });
+  return result.status === 0;
+}
+
+function pythonCommand() {
+  const configured = process.env.ARCH_DIAGRAM_PYTHON ? [commandConfig("ARCH_DIAGRAM_PYTHON", "python3")] : [];
+  const candidates = configured.length > 0
+    ? configured
+    : [
+        { bin: "python3", prefixArgs: [] },
+        { bin: "python", prefixArgs: [] },
+        { bin: "py", prefixArgs: ["-3"] },
+      ];
+  for (const candidate of candidates) {
+    if (commandWorks(candidate, ["--version"]) && commandWorks(candidate, ["-c", "import cairosvg"])) return candidate;
+  }
+  const names = candidates.map((candidate) => [candidate.bin, ...candidate.prefixArgs].join(" ")).join(", ");
+  fail(`Python 3/cairosvg 不可用. Tried: ${names}. Install Python 3 and cairosvg, or set ARCH_DIAGRAM_PYTHON to a Python executable with cairosvg installed.`);
+}
+
+function commandPathCandidates(name) {
+  if (process.platform !== "win32") return [name];
+  try {
+    return execFileSync("where.exe", [name], { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] })
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch {
+    return [name];
+  }
+}
+
+function bashCommand() {
+  if (process.env.ARCH_DIAGRAM_BASH) return commandConfig("ARCH_DIAGRAM_BASH", "bash");
+  const candidates = unique([
+    ...commandPathCandidates("bash"),
+    ...commandPathCandidates("sh"),
+    "bash",
+  ]).map((bin) => ({ bin, prefixArgs: [] }));
+  for (const candidate of candidates) {
+    if (commandWorks(candidate, ["--version"])) return candidate;
+  }
+  fail(`Bash 不可用. Tried: ${candidates.map((candidate) => candidate.bin).join(", ")}. Install Git Bash or set ARCH_DIAGRAM_BASH.`);
+}
+
 function checkDependencies(format) {
   if (format !== "svg" && format !== "png") return;
-  const python = commandConfig("ARCH_DIAGRAM_PYTHON", "python3");
-  checkCommand(python, ["--version"], "Python 3");
-  checkCommand(
-    python,
-    ["-c", "import cairosvg"],
-    "PNG export requires cairosvg.\n  Install: pip install cairosvg",
-  );
+  pythonCommand();
+  bashCommand();
 }
 
 function loadSpec(options) {
@@ -175,24 +216,29 @@ function normalizeForCli(path) {
   return path.replace(/\\/g, "/");
 }
 
-function validationEnv() {
-  if (!process.env.ARCH_DIAGRAM_PYTHON) return process.env;
+function unique(values) {
+  return [...new Set(values.filter((value) => value !== undefined && value !== null && String(value).trim() !== "").map(String))];
+}
+
+function validationEnv(python) {
+  if (python.bin === "python3" && python.prefixArgs.length === 0) return process.env;
   const shimDir = mkdtempSync(join(tmpdir(), "understand-arch-python3-"));
   const shimPath = join(shimDir, "python3");
-  writeFileSync(shimPath, `#!/bin/sh\nexec "${normalizeForCli(process.env.ARCH_DIAGRAM_PYTHON)}" "$@"\n`, "utf-8");
+  const prefix = python.prefixArgs.map((arg) => `"${arg.replace(/"/g, '\\"')}"`).join(" ");
+  writeFileSync(shimPath, `#!/bin/sh\nexec "${normalizeForCli(python.bin)}"${prefix ? ` ${prefix}` : ""} "$@"\n`, "utf-8");
   chmodSync(shimPath, 0o755);
   return { ...process.env, PATH: `${shimDir}${delimiter}${process.env.PATH || ""}` };
 }
 
-function runValidate(svgPath) {
-  const bash = commandConfig("ARCH_DIAGRAM_BASH", "bash");
+function runValidate(svgPath, python) {
+  const bash = bashCommand();
   const script = join(vendorRoot(), "scripts", "validate-svg.sh");
   if (!existsSync(script)) fail(`找不到 SVG 校验脚本: ${script}`);
-  execFileSync(bash.bin, [...bash.prefixArgs, normalizeForCli(script), normalizeForCli(svgPath)], { env: validationEnv(), stdio: "pipe" });
+  execFileSync(bash.bin, [...bash.prefixArgs, normalizeForCli(script), normalizeForCli(svgPath)], { env: validationEnv(python), stdio: "pipe" });
 }
 
 function renderSvg(options, spec, svgPath) {
-  const python = commandConfig("ARCH_DIAGRAM_PYTHON", "python3");
+  const python = pythonCommand();
   const script = join(vendorRoot(), "scripts", "generate-from-template.py");
   if (!existsSync(script)) fail(`找不到 fireworks 渲染脚本: ${script}`);
   execFileSync(
@@ -201,7 +247,7 @@ function renderSvg(options, spec, svgPath) {
     { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] },
   );
   prioritizeCjkFonts(svgPath);
-  runValidate(svgPath);
+  runValidate(svgPath, python);
 }
 
 function prioritizeCjkFonts(svgPath) {
@@ -213,7 +259,7 @@ function prioritizeCjkFonts(svgPath) {
 }
 
 function renderPng(svgPath, pngPath) {
-  const python = commandConfig("ARCH_DIAGRAM_PYTHON", "python3");
+  const python = pythonCommand();
   execFileSync(
     python.bin,
     [...python.prefixArgs, "-c", "import cairosvg,sys; cairosvg.svg2png(url=sys.argv[1], write_to=sys.argv[2], scale=2)", svgPath, pngPath],

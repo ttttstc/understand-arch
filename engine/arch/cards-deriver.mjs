@@ -129,6 +129,15 @@ function nodeFiles(nodeIds, nodesById) {
   return unique(nodeIds.map((id) => normalizePath(nodesById.get(id)?.filePath || nodesById.get(id)?.path)));
 }
 
+function evidenceFilePath(ref, nodesById) {
+  const value = normalizePath(ref);
+  if (!value || nodesById.has(value)) return null;
+  if (/^[^/\\:]+::/.test(value)) return null;
+  if (/^(risk|qa|debt|cap|component|flow|constraint|adr):/i.test(value)) return null;
+  if (!value.includes("/") && !value.includes("\\")) return null;
+  return value.replace(/:(\d+)(?::\d+)?$/, "");
+}
+
 function evidenceNodeIds(item, nodesById) {
   const direct = [
     ...asArray(item.node_ids),
@@ -149,7 +158,7 @@ function anchorsFor(item, nodesById) {
     ...nodeFiles(graphNodeIds, nodesById),
     ...asArray(item.file_paths).map(normalizePath),
     ...asArray(item.files).map(normalizePath),
-    ...asArray(item.evidence_refs).filter((ref) => ref.includes("/") || ref.includes("\\")).map((ref) => normalizePath(ref.split(":").slice(0, -1).join(":") || ref)),
+    ...asArray(item.evidence_refs).map((ref) => evidenceFilePath(ref, nodesById)),
   ]);
   const lineRanges = asArray(item.line_ranges).filter((range) => Array.isArray(range) && range.length === 2);
   return {
@@ -169,12 +178,13 @@ function evidenceLevel(item, fallback = "observed") {
 
 function card(kind, source, fields) {
   const stableId = normalizeCardLocalId(kind, fields.stableId || source.id || fields.title);
+  const summary = fields.focused_summary || focusedSummary(kind, source, fields);
   return {
     $schema: CARD_SCHEMA,
     id: `card:${kind}:${stableId}`,
     type: fields.type,
     title: fields.title || source.name || source.title || source.id,
-    focused_summary: fields.focused_summary || "",
+    focused_summary: summary,
     anchors: fields.anchors || { graph_node_ids: [], file_paths: [], line_ranges: [] },
     semantic_tags: unique(fields.semantic_tags || []),
     related_card_ids: unique(fields.related_card_ids || []),
@@ -182,6 +192,40 @@ function card(kind, source, fields) {
     source_artifact: fields.source_artifact,
     source_hash: hashValue(source),
   };
+}
+
+function focusedSummary(kind, source, fields) {
+  const title = fields.title || source.name || source.title || source.id || kind;
+  const text = firstSummaryText([
+    source.focused_summary,
+    source.summary,
+    source.description,
+    source.narrative,
+    source.rationale,
+    source.purpose,
+    source.selection_rationale,
+    source.constraint,
+    source.mitigation,
+    source.outcome,
+    source.reason,
+    asArray(source.responsibilities).join("; "),
+    asArray(source.tradeoffs).join("; "),
+    asArray(source.risks).join("; "),
+    asArray(source.gaps).join("; "),
+    asArray(source.steps).map((step) => step.description).join("; "),
+  ]);
+  const base = text ? `${title}: ${text}` : `${title}: ${kind} derived from ${fields.source_artifact || "project evidence"}.`;
+  return truncate(base, 200);
+}
+
+function firstSummaryText(values) {
+  return values.map((value) => String(value || "").trim()).find(Boolean) || "";
+}
+
+function truncate(value, maxLength) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1)}…`;
 }
 
 function normalizeCardLocalId(kind, value) {
@@ -419,7 +463,9 @@ export function deriveCards(options = {}) {
     if (pinnedIds.has(cardEntry.id) && existingById.has(cardEntry.id)) byId.set(cardEntry.id, existingById.get(cardEntry.id));
     else {
       const existing = existingById.get(cardEntry.id);
-      const focused_summary = existing?.source_hash === cardEntry.source_hash ? existing.focused_summary || "" : "";
+      const focused_summary = existing?.source_hash === cardEntry.source_hash
+        ? existing.focused_summary || cardEntry.focused_summary || ""
+        : cardEntry.focused_summary || "";
       byId.set(cardEntry.id, { ...cardEntry, focused_summary, related_card_ids: [] });
     }
   }

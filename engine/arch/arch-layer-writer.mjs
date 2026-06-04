@@ -124,6 +124,7 @@ function validateShape(layer) {
     requireInference(debt, `technical debt ${debt.id || debt.title || "<unknown>"}`);
     requireCodeEvidence(debt, `technical debt ${debt.id || debt.title || "<unknown>"}`);
   }
+  ensureTour(layer);
   return layer;
 }
 
@@ -147,6 +148,58 @@ function isCodeEvidenceRef(ref) {
   if (/^[^:]+::(file|function|class|module|service|endpoint|schema|table|resource|document):/.test(ref)) return true;
   if (/\.(?:[cm]?[jt]sx?|tsx?|vue|svelte|css|scss|html|json|ya?ml|toml|md|py|go|rs|java|kt|cs|cpp|c|h)(?::\d+)?$/i.test(ref)) return true;
   return false;
+}
+
+function ensureTour(layer) {
+  if (Array.isArray(layer.tour) && layer.tour.length > 0) return;
+  const steps = [];
+  const styleRefs = asArray(layer.architecture_style?.evidence_refs);
+  if (layer.architecture_style?.primary) {
+    steps.push({
+      order: steps.length + 1,
+      title: "架构风格与边界",
+      description: `从 ${layer.architecture_style.primary} 的判断进入系统，先理解主要组件如何组织以及当前取舍。`,
+      nodeIds: unique([...styleRefs, ...itemRefs(layer.component_profiles).slice(0, 5)]),
+    });
+  }
+  if (asArray(layer.capabilities).length > 0) {
+    steps.push({
+      order: steps.length + 1,
+      title: "核心能力链路",
+      description: "沿能力地图查看系统为用户提供的主要价值，以及每项能力背后的支撑节点。",
+      nodeIds: unique([...layer.capabilities.slice(0, 6).map((item) => item.id), ...itemRefs(layer.capabilities).slice(0, 8)]),
+    });
+  }
+  if (asArray(layer.flows).length > 0) {
+    steps.push({
+      order: steps.length + 1,
+      title: "关键流程",
+      description: "按运行流程理解组件协作、输入输出和容易受变更影响的路径。",
+      nodeIds: unique([...layer.flows.slice(0, 4).map((item) => item.id), ...itemRefs(layer.flows).slice(0, 8)]),
+    });
+  }
+  if (asArray(layer.risks).length > 0 || asArray(layer.technical_debt).length > 0) {
+    steps.push({
+      order: steps.length + 1,
+      title: "风险与演进约束",
+      description: "最后聚焦风险、技术债和扩展约束，判断后续设计需要优先保护的边界。",
+      nodeIds: unique([
+        ...layer.risks.slice(0, 4).map((item) => item.id),
+        ...layer.technical_debt.slice(0, 4).map((item) => item.id),
+        ...itemRefs(layer.risks).slice(0, 6),
+        ...itemRefs(layer.technical_debt).slice(0, 6),
+      ]),
+    });
+  }
+  layer.tour = steps.filter((step) => step.nodeIds.length > 0);
+}
+
+function itemRefs(items) {
+  return asArray(items).flatMap((item) => itemNodeIds(item));
+}
+
+function unique(values) {
+  return [...new Set(values.filter((value) => value !== undefined && value !== null && String(value).trim() !== "").map(String))];
 }
 
 function writeLayer(layer) {
@@ -202,6 +255,10 @@ if (command === "init") {
 } else if (command === "validate") {
   validateShape(readJson(layerPath));
   console.log("arch-layer ok");
+} else if (command === "repair") {
+  const layer = validateShape(readJson(layerPath));
+  writeLayer(layer);
+  console.log(layerPath);
 } else if (command === "merge") {
   const patchPath = process.argv[5] ? resolve(process.argv[5]) : null;
   if (!patchPath) throw new Error("merge requires a patch JSON path");

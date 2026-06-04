@@ -8,6 +8,14 @@ argument-hint: ["[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [
 
 `/arch-diagram` 是架构图调度器。默认格式是 `svg`，优先走 `vendor/fireworks-tech-graph/PROMPT.md` 的新增出图能力；`mermaid` 保留为兼容路径和默认出图失败后的降级路径；`plantuml` 只输出 `.puml` 源码。
 
+## Subagent Dispatch Is Mandatory
+
+This skill is an orchestrator. It must use the Claude Code Task tool for semantic diagram grouping and fireworks JSON translation.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-diagram cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. `diagram-dispatch.mjs` remains deterministic and must not translate architecture semantics into JSON.
+
 ## 全局规则
 
 1. 所有面向人的说明默认中文；代码标识符、路径、命令参数和第三方产品名保留英文。
@@ -77,7 +85,7 @@ argument-hint: ["[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [
 3. 读取 `specs/repos.json`、各仓 `knowledge-graph.json`、`specs/arch-layer.json`，必要时读取用户补充说明。
 4. 打开并遵循 `vendor/fireworks-tech-graph/PROMPT.md`。
 5. 将项目事实、架构判断、目标图类型和用户意图整理为自然语言上下文。
-6. 按 `PROMPT.md` 生成 fireworks JSON。只生成 JSON，不生成 SVG 文本。
+6. Use the Claude Code Task tool with `subagent_type=arch-solution-designer` to apply `vendor/fireworks-tech-graph/PROMPT.md` and generate fireworks JSON. Do not inline this phase. The user must see subagent activity in Claude Code. The Task result must be JSON only, not SVG text.
 7. 将 JSON 写入临时文件，例如 `.understand-arch/tmp/diagram-spec.json`。
 8. 调用:
 
@@ -135,7 +143,7 @@ Generate diagrams as markdown/Mermaid projections of existing graph and architec
 
 ## LLM Dispatch
 
-If the diagram requires semantic grouping, dispatch `arch-solution-designer`:
+If the diagram requires semantic grouping, use the Claude Code Task tool with `subagent_type=arch-solution-designer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: architecture diagram projection.

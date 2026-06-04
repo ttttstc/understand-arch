@@ -21,9 +21,11 @@ describe("cards-deriver", () => {
     const index = JSON.parse(readFileSync(join(archDir, "cards", "index.json"), "utf-8"));
     expect(index["src/auth.ts"].card_ids).toContain("card:component:auth");
     expect(index["rules/constraints/CON-001-auth.md"].constraint_ids).toContain("CON-001");
+    expect(cards.every((card) => String(card.focused_summary || "").trim())).toBe(true);
+    expect(cards.flatMap((card) => card.anchors.file_paths).some((filePath) => filePath.includes("::"))).toBe(false);
     const check = checkCards({ archDir });
     expect(check.ok).toBe(true);
-    expect(check.findings.some((finding) => finding.code === "missing_summary")).toBe(true);
+    expect(check.findings.some((finding) => finding.code === "missing_summary")).toBe(false);
   });
 
   it("pin 的卡片不被覆盖", () => {

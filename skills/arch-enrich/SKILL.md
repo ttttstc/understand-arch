@@ -53,13 +53,17 @@ If the plan action is `ARCHITECTURE_UPDATE` or `FULL_UPDATE`, run the existing f
 - `intermediate/arch-layer-review.json`
 - `eval-report.json`
 
-## Subagent Dispatch Contract
+## Subagent Dispatch Is Mandatory
 
-For every LLM phase, use Claude Code `Task` or `Agent` with the named `subagent_type`. If neither tool is available, stop and report that v3.0 cannot satisfy the iron law in this runtime. Do not inline semantic inference in the main session and do not move it into Node/Python.
+This skill is an orchestrator. It must use the Claude Code Task tool for semantic phases.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-enrich cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. Node scripts in this skill are deterministic read/write, validation, fingerprinting, eval, and merge tools only.
 
 ## Phase 7 - NARRATIVE
 
-Dispatch `arch-narrative-analyzer` with this template:
+Use the Claude Code Task tool with `subagent_type=arch-narrative-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3 Phase 7 NARRATIVE.
@@ -86,7 +90,7 @@ Save the returned JSON to `intermediate/narrative.json`.
 
 ## Phase 8 - CAPABILITY
 
-Dispatch `arch-capability-analyzer` with this template:
+Use the Claude Code Task tool with `subagent_type=arch-capability-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3 Phase 8 CAPABILITY.
@@ -109,7 +113,7 @@ Save the returned JSON to `intermediate/capabilities.json`.
 
 ## Phase 9 - QUALITY
 
-Dispatch `arch-quality-analyzer` with this template:
+Use the Claude Code Task tool with `subagent_type=arch-quality-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3 Phase 9 QUALITY.
@@ -137,7 +141,9 @@ Save the returned JSON to `intermediate/quality.json`.
 
 ## Phase 9.5 - CONSTRAINT-MINE + HISTORY-MINE(规格约束层,v3.1/v3.4)
 
-Dispatch `arch-constraint-miner` with this template:
+Send these N dispatches in a single message to run concurrently (N=2):
+
+1. Use the Claude Code Task tool with `subagent_type=arch-constraint-miner`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3.1 Phase 9.5 CONSTRAINT-MINE.
@@ -156,13 +162,13 @@ All user-facing text in Chinese. Constraints and conventions are proposed only.
 Suspicious findings must be thorough — they are a standalone risk map and the source for /arch-interview.
 ```
 
-In parallel, collect git-history signals deterministically:
+2. First collect git-history signals deterministically, then use the Claude Code Task tool with `subagent_type=arch-history-miner`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```bash
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/history-miner-runner.mjs collect --arch-dir="<ARCH_PROJECT_ROOT>"
 ```
 
-Dispatch `arch-history-miner` with this template:
+Use this Task prompt for `subagent_type=arch-history-miner`:
 
 ```text
 Mode: v3.4 Phase 9.5 HISTORY-MINE.
@@ -201,7 +207,7 @@ Merge rule: new proposed entries are appended; existing `confirmed`/`adjusted`/`
 
 ## Phase 9.6 - PROJECT-LANGUAGE(v3.3)
 
-Dispatch `arch-project-language-analyzer` with this template:
+Use the Claude Code Task tool with `subagent_type=arch-project-language-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3.3 PROJECT-LANGUAGE.
@@ -237,7 +243,7 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/cross-rep
 
 Read `intermediate/cross-edges.json`.
 
-If any cross-repo dependency is ambiguous, dispatch `arch-impact-analyzer` with only the ambiguous evidence:
+If any cross-repo dependency is ambiguous, use the Claude Code Task tool with `subagent_type=arch-impact-analyzer` and only the ambiguous evidence. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3 Phase 10 AMBIGUOUS CROSS-REPO LINK.
@@ -261,7 +267,7 @@ Run deterministic cards-check. `missing_summary` warnings are expected before th
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/cards-check.mjs --arch-dir="<ARCH_PROJECT_ROOT>"
 ```
 
-If any card has an empty `focused_summary`, dispatch `arch-card-summarizer` with this template:
+If any card has an empty `focused_summary`, use the Claude Code Task tool with `subagent_type=arch-card-summarizer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3.4 Phase 11 CARDS-SUMMARY.
@@ -292,7 +298,7 @@ After merge, `cards-check` should have no `missing_summary` warnings for cards t
 
 ## Phase 11.5 - ARCH-TOUR
 
-Dispatch `tour-builder` in architecture-tour mode:
+Use the Claude Code Task tool with `subagent_type=tour-builder` in architecture-tour mode. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: v3 Phase 11 ARCH-TOUR.
@@ -340,7 +346,7 @@ node <PLUGIN_ROOT>/engine/arch/arch-layer-writer.mjs validate "<workspace-root>"
 
 Run wiki projection later in `/arch-wiki`; here only ensure that all referenced graph ids exist in the per-repo graphs.
 
-Dispatch `arch-senior-reviewer`:
+Use the Claude Code Task tool with `subagent_type=arch-senior-reviewer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: arch-layer.

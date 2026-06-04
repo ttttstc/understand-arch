@@ -8,6 +8,14 @@ argument-hint: ["[audience=cto|newcomer|pm|architect] [arch-project-dir]"]
 
 Render and review the human-readable architecture wiki. The main product is `ARCHITECTURE.md`; the 14 pages are slice views. `ARCHITECTURE.md` must be the full 01-14 chapter concatenation with a table of contents, not a separate summary. The wiki is a deterministic projection of graph plus `arch-layer.json`; it is not an independent source of truth and must not run LLM inference during rendering.
 
+## Subagent Dispatch Is Mandatory
+
+This skill is an orchestrator. It must use the Claude Code Task tool for semantic wiki review and audience refinement phases.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-wiki cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. Rendering remains deterministic in `render-wiki.mjs`; subagents may review or refine source gaps only.
+
 ## Required Pages
 
 Write exactly `ARCHITECTURE.md`, these pages, and README:
@@ -46,6 +54,8 @@ Write exactly `ARCHITECTURE.md`, these pages, and README:
 - `architect`: include all details, tradeoffs, risks, debt, ADRs, and cross-repo topology.
 
 Default audience is `newcomer`.
+
+If the user specifies multiple audiences, Send these N dispatches in a single message to run concurrently (N=<audience-count>). Use the Claude Code Task tool with `subagent_type=wiki-reviewer` once per audience. Do not inline this phase. The user must see subagent activity in Claude Code. Each audience review must return JSON only with verdict, findings, retry_hints, and summary for its audience.
 
 ## Rendering Procedure
 
@@ -97,7 +107,7 @@ Run deterministic projection check:
 node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-Dispatch `wiki-reviewer` for F1-F7:
+Use the Claude Code Task tool with `subagent_type=wiki-reviewer` for F1-F7. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: wiki-review.
@@ -109,7 +119,7 @@ Return JSON only with verdict, findings, retry_hints, and summary.
 Reject placeholders, missing projections, missing timestamps, missing long-form synthesis, and generic pages.
 ```
 
-For first onboard and for `cto` or `architect`, also dispatch `arch-senior-reviewer` for Q1-Q7:
+For first onboard and for `cto` or `architect`, also use the Claude Code Task tool with `subagent_type=arch-senior-reviewer` for Q1-Q7. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: wiki-review.

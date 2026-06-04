@@ -81,6 +81,20 @@ describe("incremental-planner", () => {
     expect(plan.rerun_tour).toBe(true);
   });
 
+  it("旧版非 structural fingerprint 基线会要求 FULL_UPDATE 而不是崩溃", async () => {
+    const { archDir } = writeFixture();
+    writeFileSync(join(archDir, "specs", "repos", "sample", ".fingerprint.json"), `${JSON.stringify({
+      repo_id: "sample",
+      generated_at: "2026-06-04T00:00:00.000Z",
+      file_count: 3,
+    }, null, 2)}\n`, "utf-8");
+
+    const plan = await planIncremental({ archDir, registry: fakeRegistry });
+
+    expect(plan.action).toBe("FULL_UPDATE");
+    expect(plan.reason).toContain("missing or incompatible fingerprint baseline");
+  });
+
   it("增量 graph 合并复用 UA mergeGraphUpdate", () => {
     const merged = mergeIncrementalGraph({
       existingGraph: {
