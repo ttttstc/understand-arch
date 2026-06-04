@@ -30,7 +30,7 @@ export class ProtobufParser implements AnalyzerPlugin {
     let match;
     while ((match = messageRegex.exec(content)) !== null) {
       const startLine = content.slice(0, match.index).split("\n").length;
-      const fields = this.extractMessageFields(content, match.index);
+      const fieldDetails = this.extractMessageFieldDetails(content, match.index);
       const afterMatch = content.slice(match.index);
       const closeBrace = this.findClosingBrace(afterMatch);
       const endLine = content.slice(0, match.index + closeBrace + 1).split("\n").length;
@@ -39,7 +39,11 @@ export class ProtobufParser implements AnalyzerPlugin {
         name: match[1],
         kind: "message",
         lineRange: [startLine, endLine],
-        fields,
+        fields: fieldDetails.map((field) => field.name),
+        attributes: {
+          protobuf_kind: "message",
+          fields: fieldDetails,
+        },
       });
     }
 
@@ -74,7 +78,7 @@ export class ProtobufParser implements AnalyzerPlugin {
       const closeBrace = this.findClosingBrace(afterService);
       const body = afterService.slice(match[0].length, closeBrace);
 
-      const rpcRegex = /rpc\s+(\w+)\s*\(/g;
+      const rpcRegex = /rpc\s+(\w+)\s*\(\s*([\w.]+)\s*\)\s*returns\s*\(\s*([\w.]+)\s*\)/g;
       let rpcMatch;
       while ((rpcMatch = rpcRegex.exec(body)) !== null) {
         const lineNum = content.slice(0, startIdx + rpcMatch.index).split("\n").length;
@@ -82,6 +86,15 @@ export class ProtobufParser implements AnalyzerPlugin {
           method: "rpc",
           path: `${serviceName}.${rpcMatch[1]}`,
           lineRange: [lineNum, lineNum],
+          attributes: {
+            protocol: "grpc",
+            service: serviceName,
+            rpc: rpcMatch[1],
+            request_type: rpcMatch[2],
+            response_type: rpcMatch[3],
+            request_params: [{ name: "request", in: "message", type: rpcMatch[2], required: true }],
+            responses: { ok: { type: rpcMatch[3] } },
+          },
         });
       }
     }
@@ -89,21 +102,50 @@ export class ProtobufParser implements AnalyzerPlugin {
   }
 
   private extractMessageFields(content: string, startIdx: number): string[] {
-    const fields: string[] = [];
+    return this.extractMessageFieldDetails(content, startIdx).map((field) => field.name);
+  }
+
+  private extractMessageFieldDetails(content: string, startIdx: number): Array<{
+    name: string;
+    type: string;
+    number: number;
+    repeated: boolean;
+    optional: boolean;
+    required: boolean;
+    map: boolean;
+  }> {
+    const details: Array<{
+      name: string;
+      type: string;
+      number: number;
+      repeated: boolean;
+      optional: boolean;
+      required: boolean;
+      map: boolean;
+    }> = [];
     const afterMsg = content.slice(startIdx);
     const openBrace = afterMsg.indexOf("{");
-    if (openBrace === -1) return fields;
+    if (openBrace === -1) return details;
 
     const closeBrace = this.findClosingBrace(afterMsg);
     const body = afterMsg.slice(openBrace + 1, closeBrace);
 
-    const fieldRegex = /^\s*(?:repeated\s+|optional\s+|required\s+|map<[^>]+>\s+)?\w+\s+(\w+)\s*=/gm;
+    const fieldRegex = /^\s*(?:(repeated|optional|required)\s+)?((?:map<[^>]+>)|[\w.]+)\s+(\w+)\s*=\s*(\d+)/gm;
     let match;
     while ((match = fieldRegex.exec(body)) !== null) {
-      fields.push(match[1]);
+      const [, label = "", type, name, numberText] = match;
+      details.push({
+        name,
+        type,
+        number: Number(numberText),
+        repeated: label === "repeated",
+        optional: label === "optional",
+        required: label === "required",
+        map: type.startsWith("map<"),
+      });
     }
 
-    return fields;
+    return details;
   }
 
   private extractEnumValues(content: string, startIdx: number): string[] {

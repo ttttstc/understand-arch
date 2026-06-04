@@ -11,6 +11,8 @@ import { ProtobufParser } from "../plugins/parsers/protobuf-parser.js";
 import { TerraformParser } from "../plugins/parsers/terraform-parser.js";
 import { MakefileParser } from "../plugins/parsers/makefile-parser.js";
 import { ShellParser } from "../plugins/parsers/shell-parser.js";
+import { OpenAPIParser } from "../plugins/parsers/openapi-parser.js";
+import { IntegrationExtractor } from "../plugins/parsers/integration-extractor.js";
 import { registerAllParsers } from "../plugins/parsers/index.js";
 import { PluginRegistry } from "../plugins/registry.js";
 
@@ -292,6 +294,12 @@ CREATE TABLE posts (
     expect(result.definitions![0].fields).toContain("id");
     expect(result.definitions![0].fields).toContain("name");
     expect(result.definitions![0].fields).toContain("email");
+    expect(result.definitions![0].attributes?.columns).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "name", type: "TEXT", nullable: false }),
+    ]));
+    expect(result.definitions![1].attributes?.foreign_keys).toEqual(expect.arrayContaining([
+      expect.objectContaining({ columns: ["user_id"], references: "users", referenced_columns: ["id"] }),
+    ]));
     expect(result.definitions![1]).toMatchObject({ name: "posts", kind: "table" });
   });
 
@@ -305,6 +313,9 @@ CREATE TABLE posts (
     const content = "CREATE UNIQUE INDEX idx_users_email ON users(email);";
     const result = parser.analyzeFile("indexes.sql", content);
     expect(result.definitions!.some(d => d.name === "idx_users_email" && d.kind === "index")).toBe(true);
+    const index = result.definitions!.find(d => d.name === "idx_users_email")!;
+    expect(index.attributes?.columns).toEqual(["email"]);
+    expect(index.attributes?.table).toBe("users");
   });
 });
 
@@ -346,6 +357,11 @@ type Mutation {
     expect(result.endpoints!.length).toBeGreaterThanOrEqual(3);
     expect(result.endpoints!.some(e => e.method === "Query" && e.path === "users")).toBe(true);
     expect(result.endpoints!.some(e => e.method === "Mutation" && e.path === "createUser")).toBe(true);
+    const user = result.endpoints!.find(e => e.path === "user")!;
+    expect(user.attributes?.request_params).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "id", type: "ID!", required: true }),
+    ]));
+    expect(user.attributes?.return_type).toBe("User");
   });
 
   it("extracts enum definitions", () => {
@@ -371,6 +387,9 @@ describe("ProtobufParser", () => {
     expect(result.definitions![0].fields).toContain("name");
     expect(result.definitions![0].fields).toContain("age");
     expect(result.definitions![0].fields).toContain("emails");
+    expect(result.definitions![0].attributes?.fields).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "emails", type: "string", repeated: true, number: 3 }),
+    ]));
   });
 
   it("extracts enum definitions", () => {
@@ -391,6 +410,62 @@ describe("ProtobufParser", () => {
     expect(result.endpoints!).toHaveLength(2);
     expect(result.endpoints![0]).toMatchObject({ method: "rpc", path: "UserService.GetUser" });
     expect(result.endpoints![1]).toMatchObject({ method: "rpc", path: "UserService.CreateUser" });
+    expect(result.endpoints![0].attributes).toMatchObject({ request_type: "GetUserRequest", response_type: "User" });
+  });
+});
+
+describe("OpenAPIParser", () => {
+  const parser = new OpenAPIParser();
+
+  it("extracts OpenAPI paths, params, requestBody, responses, and schemas", () => {
+    const content = JSON.stringify({
+      openapi: "3.0.0",
+      paths: {
+        "/users/{id}": {
+          get: {
+            operationId: "getUser",
+            parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+            responses: { "200": { description: "ok", content: { "application/json": {} } } },
+            security: [{ bearerAuth: [] }]
+          }
+        }
+      },
+      components: {
+        schemas: {
+          User: { type: "object", required: ["id"], properties: { id: { type: "string" }, name: { type: "string" } } }
+        }
+      }
+    });
+    const result = parser.analyzeFile("openapi.json", content);
+    expect(result.endpoints).toHaveLength(1);
+    expect(result.endpoints![0].attributes).toMatchObject({
+      http_method: "GET",
+      path: "/users/{id}",
+      operation: "getUser",
+      auth_required: true,
+    });
+    expect(result.endpoints![0].attributes?.request_params).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "id", in: "path", type: "string", required: true }),
+    ]));
+    expect(result.definitions![0].attributes?.fields).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "id", type: "string", required: true }),
+    ]));
+  });
+});
+
+describe("IntegrationExtractor", () => {
+  const extractor = new IntegrationExtractor();
+
+  it("extracts external service hints from package dependencies and config keys", () => {
+    const packageResult = extractor.analyzeFile("package.json", JSON.stringify({
+      dependencies: { stripe: "^1.0.0", redis: "^4.0.0", "@aws-sdk/client-s3": "^3.0.0" }
+    }));
+    expect(packageResult.resources!.map((resource) => resource.name)).toEqual(expect.arrayContaining(["stripe", "redis", "s3"]));
+
+    const configResult = extractor.analyzeFile("application.yaml", "DATABASE_URL: postgres://example\nKAFKA_BROKERS: localhost\nSTRIPE_API_KEY: sk_test\n");
+    const names = configResult.resources!.map((resource) => resource.name);
+    expect(names).toEqual(expect.arrayContaining(["postgres", "kafka", "stripe"]));
+    expect(configResult.resources!.find((resource) => resource.name === "stripe")!.attributes?.config_keys).toContain("STRIPE_API_KEY");
   });
 });
 
@@ -609,10 +684,10 @@ describe("EnvParser edge cases", () => {
 });
 
 describe("registerAllParsers", () => {
-  it("registers all 12 parsers with a PluginRegistry", () => {
+  it("registers all built-in parsers with a PluginRegistry", () => {
     const registry = new PluginRegistry();
     registerAllParsers(registry);
-    expect(registry.getPlugins()).toHaveLength(12);
+    expect(registry.getPlugins()).toHaveLength(14);
     expect(registry.getSupportedLanguages()).toContain("markdown");
     expect(registry.getSupportedLanguages()).toContain("yaml");
     expect(registry.getSupportedLanguages()).toContain("json");
@@ -625,5 +700,14 @@ describe("registerAllParsers", () => {
     expect(registry.getSupportedLanguages()).toContain("terraform");
     expect(registry.getSupportedLanguages()).toContain("makefile");
     expect(registry.getSupportedLanguages()).toContain("shell");
+    expect(registry.getSupportedLanguages()).toContain("openapi");
+  });
+
+  it("merges multiple parsers for the same language", () => {
+    const registry = new PluginRegistry();
+    registerAllParsers(registry);
+    const result = registry.analyzeFile("package.json", JSON.stringify({ name: "x", dependencies: { stripe: "^1.0.0" } }))!;
+    expect(result.sections!.map((section) => section.name)).toContain("dependencies");
+    expect(result.resources!.some((resource) => resource.name === "stripe")).toBe(true);
   });
 });

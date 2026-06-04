@@ -10,7 +10,7 @@ import { LanguageRegistry } from "../languages/language-registry.js";
  */
 export class PluginRegistry {
   private plugins: AnalyzerPlugin[] = [];
-  private languageMap = new Map<string, AnalyzerPlugin>();
+  private languageMap = new Map<string, AnalyzerPlugin[]>();
   private languageRegistry: LanguageRegistry;
 
   constructor(languageRegistry?: LanguageRegistry) {
@@ -20,7 +20,8 @@ export class PluginRegistry {
   register(plugin: AnalyzerPlugin): void {
     this.plugins.push(plugin);
     for (const lang of plugin.languages) {
-      this.languageMap.set(lang, plugin);
+      const existing = this.languageMap.get(lang) ?? [];
+      this.languageMap.set(lang, [...existing, plugin]);
     }
   }
 
@@ -31,13 +32,19 @@ export class PluginRegistry {
     this.languageMap.clear();
     for (const p of this.plugins) {
       for (const lang of p.languages) {
-        this.languageMap.set(lang, p);
+          const existing = this.languageMap.get(lang) ?? [];
+          this.languageMap.set(lang, [...existing, p]);
       }
     }
   }
 
   getPluginForLanguage(language: string): AnalyzerPlugin | null {
-    return this.languageMap.get(language) ?? null;
+    const plugins = this.languageMap.get(language) ?? [];
+    return plugins[plugins.length - 1] ?? null;
+  }
+
+  getPluginsForLanguage(language: string): AnalyzerPlugin[] {
+    return [...(this.languageMap.get(language) ?? [])];
   }
 
   getPluginForFile(filePath: string): AnalyzerPlugin | null {
@@ -54,9 +61,16 @@ export class PluginRegistry {
   }
 
   analyzeFile(filePath: string, content: string): StructuralAnalysis | null {
-    const plugin = this.getPluginForFile(filePath);
-    if (!plugin) return null;
-    return plugin.analyzeFile(filePath, content);
+    return this.analyzeFileAll(filePath, content);
+  }
+
+  analyzeFileAll(filePath: string, content: string): StructuralAnalysis | null {
+    const langConfig = this.languageRegistry.getForFile(filePath);
+    if (!langConfig) return null;
+    const plugins = this.getPluginsForLanguage(langConfig.id);
+    if (plugins.length === 0) return null;
+    const analyses = plugins.map((plugin) => plugin.analyzeFile(filePath, content));
+    return mergeAnalyses(analyses);
   }
 
   resolveImports(filePath: string, content: string): ImportResolution[] | null {
@@ -78,4 +92,19 @@ export class PluginRegistry {
   getSupportedLanguages(): string[] {
     return [...this.languageMap.keys()];
   }
+}
+
+function mergeAnalyses(analyses: StructuralAnalysis[]): StructuralAnalysis {
+  return {
+    functions: analyses.flatMap((analysis) => analysis.functions),
+    classes: analyses.flatMap((analysis) => analysis.classes),
+    imports: analyses.flatMap((analysis) => analysis.imports),
+    exports: analyses.flatMap((analysis) => analysis.exports),
+    sections: analyses.flatMap((analysis) => analysis.sections ?? []),
+    definitions: analyses.flatMap((analysis) => analysis.definitions ?? []),
+    services: analyses.flatMap((analysis) => analysis.services ?? []),
+    endpoints: analyses.flatMap((analysis) => analysis.endpoints ?? []),
+    steps: analyses.flatMap((analysis) => analysis.steps ?? []),
+    resources: analyses.flatMap((analysis) => analysis.resources ?? []),
+  };
 }

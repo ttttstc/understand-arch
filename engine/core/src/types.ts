@@ -37,6 +37,7 @@ export interface GraphNode {
   complexity: "simple" | "moderate" | "complex";
   languageNotes?: string;
   domainMeta?: DomainMeta;
+  attributes?: Record<string, unknown>;
 }
 
 // GraphEdge with rich relationship modeling
@@ -120,6 +121,7 @@ export interface DefinitionInfo {
   kind: string;
   lineRange: [number, number];
   fields: string[];
+  attributes?: Record<string, unknown>;
 }
 
 export interface ServiceInfo {
@@ -127,12 +129,14 @@ export interface ServiceInfo {
   image?: string;
   ports: number[];
   lineRange?: [number, number];
+  attributes?: Record<string, unknown>;
 }
 
 export interface EndpointInfo {
   method?: string;
   path: string;
   lineRange: [number, number];
+  attributes?: Record<string, unknown>;
 }
 
 export interface StepInfo {
@@ -144,6 +148,7 @@ export interface ResourceInfo {
   name: string;
   kind: string;
   lineRange: [number, number];
+  attributes?: Record<string, unknown>;
 }
 
 export interface ReferenceResolution {

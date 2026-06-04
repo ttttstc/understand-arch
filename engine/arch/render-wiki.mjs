@@ -66,9 +66,17 @@ function list(items, render, empty) {
   return `${items.map(render).join("\n")}\n`;
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function nodesOf(types) {
   const wanted = new Set(types);
   return graphs.flatMap(({ graph }) => graph.nodes || []).filter((node) => wanted.has(node.type));
+}
+
+function allNodes() {
+  return graphs.flatMap(({ graph }) => graph.nodes || []);
 }
 
 function projectName() {
@@ -242,6 +250,71 @@ function graphNodesText(types, empty) {
   );
 }
 
+function apiTechnicalList() {
+  const endpoints = nodesOf(["endpoint"]).filter((node) => node.attributes);
+  return list(endpoints, (node) => {
+    const attrs = node.attributes || {};
+    const params = asArray(attrs.request_params).map((param) => `${param.name || "参数"}:${param.type || "unknown"}${param.required ? "(必填)" : ""}`).join("、") || "未识别到结构化参数";
+    const responses = attrs.responses && typeof attrs.responses === "object"
+      ? Object.entries(attrs.responses).map(([status, value]) => `${status}:${value?.type || value?.description || "response"}`).join("、")
+      : "未识别到结构化响应";
+    return `- **${attrs.http_method || node.name || "API"} ${attrs.path || ""}**：参数：${params}；响应：${responses}；鉴权：${attrs.auth_required === true ? "需要" : attrs.auth_required === false ? "未声明" : "未知"}；来源：${node.filePath || node.id}。`;
+  }, "当前没有从代码或接口规格中识别到结构化 API 技术清单。");
+}
+
+function dbTechnicalList() {
+  const tables = nodesOf(["table"]).filter((node) => node.attributes?.columns || node.attributes?.primary_key || node.attributes?.foreign_keys || node.attributes?.indexes);
+  return list(tables, (node) => {
+    const attrs = node.attributes || {};
+    const columns = asArray(attrs.columns).map((column) => `${column.name}:${column.type || "unknown"}${column.nullable === false ? " not null" : ""}`).join("、") || "未识别到列";
+    const primaryKey = asArray(attrs.primary_key).join("、") || "未识别";
+    const foreignKeys = asArray(attrs.foreign_keys).map((fk) => `${asArray(fk.columns).join("+")} -> ${fk.references}.${asArray(fk.referenced_columns).join("+")}`).join("、") || "无";
+    const indexes = asArray(attrs.indexes).map((index) => `${index.name || "index"}(${asArray(index.columns).join(",")})`).join("、") || "无";
+    return `- **${node.name || nodeDisplayName(node.id)}**：列：${columns}；主键：${primaryKey}；索引：${indexes}；外键：${foreignKeys}；来源：${node.filePath || node.id}。`;
+  }, "当前没有从迁移或 schema 文件中识别到结构化数据表清单。");
+}
+
+function integrationTechnicalList() {
+  const integrations = allNodes().filter((node) => {
+    const attrs = node.attributes || {};
+    return attrs.service_id || attrs.service_kind || attrs.config_keys || attrs.sdk_imports || attrs.endpoints;
+  });
+  return list(integrations, (node) => {
+    const attrs = node.attributes || {};
+    const keys = asArray(attrs.config_keys).join("、") || "未识别";
+    const sdks = asArray(attrs.sdk_imports).join("、") || "未识别";
+    const endpoints = asArray(attrs.endpoints).join("、") || "未识别";
+    return `- **${attrs.service_id || node.name || nodeDisplayName(node.id)}**：类型：${attrs.service_kind || "unknown"}；配置 key：${keys}；SDK：${sdks}；端点：${endpoints}；调用位置：${node.filePath || node.id}。`;
+  }, "当前没有从配置、依赖或代码中识别到结构化外部服务集成清单。");
+}
+
+function projectContextText() {
+  const graphProjects = graphs.map(({ repo, graph }) => `- **${repo.name || repo.repo_id || graph.project?.name || "repo"}**：语言：${(graph.project?.languages || []).join("、") || "未识别"}；框架：${(graph.project?.frameworks || []).join("、") || "未识别"}；节点数：${(graph.nodes || []).length}。`).join("\n") || "- 当前没有读取到仓库图谱。";
+  const entrypoints = entrypointNodes().slice(0, 20).map((node) => `- ${node.name || node.id} (${node.filePath || node.id})`).join("\n") || "- 未识别到明确入口。";
+  return section("项目概述", `**${projectName()}**：${sentence(layer.project?.description || "项目说明尚不充分,需结合代码结构继续补充")}`) +
+    section("仓库与技术栈", `${graphProjects}\n\n${techBullets()}`) +
+    section("入口与关键路径", entrypoints) +
+    section("Agent 使用提示", "详细架构长文见 `ARCHITECTURE.md`；API 技术清单见接口章节；数据结构见数据模型章节；外部服务见集成清单。");
+}
+
+function entrypointNodes() {
+  const explicitRuntime = nodesOf(["endpoint", "service", "pipeline"]);
+  const files = allNodes().filter((node) => {
+    if (node.type !== "file") return false;
+    const tags = asArray(node.tags).map((tag) => String(tag).toLowerCase());
+    if (tags.some((tag) => tag === "entry" || tag === "entry-point" || tag === "entrypoint")) return true;
+    const path = String(node.filePath || node.id).replace(/\\/g, "/").toLowerCase();
+    return /(^|\/)(index|main|app)\.(ts|tsx|js|jsx|html|go|rs|py|java|kt|swift)$/.test(path)
+      || /(^|\/)src\/renderer\/main\.(ts|tsx|js|jsx)$/.test(path);
+  });
+  const seen = new Set();
+  return [...explicitRuntime, ...files].filter((node) => {
+    if (seen.has(node.id)) return false;
+    seen.add(node.id);
+    return true;
+  });
+}
+
 function collaboratorNames(component) {
   return (component.collaborators || []).map((id) => {
     const profile = (layer.component_profiles || []).find((candidate) => candidate.id === id);
@@ -324,12 +397,12 @@ const chapters = [
   {
     file: "03-interfaces.md",
     title: "03 接口与集成",
-    content: () => section("技术栈与选型", techBullets()) + section("外部依赖与集成", depsText()) + section("服务接口", graphNodesText(["endpoint", "schema"], "本项目没有独立的后端服务接口。")),
+    content: () => section("技术栈与选型", techBullets()) + section("外部依赖与集成", depsText()) + section("服务接口", graphNodesText(["endpoint", "schema"], "本项目没有独立的后端服务接口。")) + section("5.N API 技术清单", apiTechnicalList()) + section("13.N 集成清单", integrationTechnicalList()),
   },
   {
     file: "04-data-models.md",
     title: "04 数据模型与边界",
-    content: () => section("系统边界", boundariesText()) + section("数据模型", graphNodesText(["table", "schema"], "本项目没有独立的数据表或后端 schema。")),
+    content: () => section("系统边界", boundariesText()) + section("数据模型", graphNodesText(["table", "schema"], "本项目没有独立的数据表或后端 schema。")) + section("4.N 技术清单", dbTechnicalList()),
   },
   {
     file: "05-capabilities.md",
@@ -377,7 +450,7 @@ const chapters = [
     content: () => section("待确认事项", list(layer.known_unknowns, (unknown) => typeof unknown === "string"
       ? `- ${unknown}`
       : `- **${unknown.question}**：${unknown.reason} 状态：${unknown.status || "未明确"}；负责人：${unknown.owner || "未明确"}。`,
-    "当前没有明确的待确认架构事项。")),
+    "当前没有明确的待确认架构事项。")) + section("13.N 集成清单", integrationTechnicalList()),
   },
   {
     file: "14-diagrams.md",
@@ -390,6 +463,8 @@ const renderedChapters = chapters.map((chapter) => ({
   ...chapter,
   bodyMarkdown: `${chapter.content().trim()}\n`,
 }));
+
+writeDoc(join(wikiDir, "00-project-context.md"), h("00 项目上下文") + projectContextText());
 
 for (const chapter of renderedChapters) {
   writeDoc(join(wikiDir, chapter.file), h(chapter.title) + chapter.bodyMarkdown);
@@ -406,6 +481,7 @@ const architecture = h(`${layer.project?.name || basename(archDir)} 架构全景
 writeDoc(join(wikiDir, "ARCHITECTURE.md"), architecture);
 
 writeDoc(join(wikiDir, "README.md"), h("Wiki README") + [
+  "- [00-project-context.md](00-project-context.md) 是给 Agent 工具读取的项目上下文摘要。",
   "- [ARCHITECTURE.md](ARCHITECTURE.md) 是主产物长文，按 01-14 顺序完整拼接全部切片章节。",
   "- 01-14 是同源章节的单页切片，可按具体主题单独查阅。",
   "- 结构化来源保存在项目规格文件中，正文只呈现架构事实、判断和取舍。",
@@ -419,4 +495,4 @@ function writeDoc(path, content) {
   writeFileSync(path, `${content.trimEnd()}\n`, "utf-8");
 }
 
-console.log(JSON.stringify({ wikiDir, pages: 16, generatedAt, commit }, null, 2));
+console.log(JSON.stringify({ wikiDir, pages: 17, generatedAt, commit }, null, 2));

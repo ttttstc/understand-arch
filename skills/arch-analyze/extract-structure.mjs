@@ -204,6 +204,7 @@ export function buildResult(file, totalLines, nonEmptyLines, analysis, callGraph
       fields: d.fields || [],
       startLine: d.lineRange[0],
       endLine: d.lineRange[1],
+      ...(d.attributes ? { attributes: d.attributes } : {}),
     }));
   }
 
@@ -213,6 +214,7 @@ export function buildResult(file, totalLines, nonEmptyLines, analysis, callGraph
       image: s.image,
       ports: s.ports || [],
       ...(s.lineRange ? { startLine: s.lineRange[0], endLine: s.lineRange[1] } : {}),
+      ...(s.attributes ? { attributes: s.attributes } : {}),
     }));
   }
 
@@ -222,6 +224,7 @@ export function buildResult(file, totalLines, nonEmptyLines, analysis, callGraph
       path: e.path,
       startLine: e.lineRange[0],
       endLine: e.lineRange[1],
+      ...(e.attributes ? { attributes: e.attributes } : {}),
     }));
   }
 
@@ -239,6 +242,7 @@ export function buildResult(file, totalLines, nonEmptyLines, analysis, callGraph
       kind: r.kind,
       startLine: r.lineRange[0],
       endLine: r.lineRange[1],
+      ...(r.attributes ? { attributes: r.attributes } : {}),
     }));
   }
 

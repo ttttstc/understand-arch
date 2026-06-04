@@ -21,6 +21,7 @@ It is not a standalone autonomous agent runtime. Claude Code carries the convers
 - diagrams and a dashboard for navigation and discussion
 
 The knowledge base learns from everyday commits, CRs, and ADRs instead of staying as a one-time onboarding snapshot.
+It also extracts structured technical facts such as API parameters, database fields, and external dependency configuration so design work can use concrete code evidence.
 
 In plain terms: it is a practical architecture assistant for onboarding, design review, architecture documentation, and change planning.
 

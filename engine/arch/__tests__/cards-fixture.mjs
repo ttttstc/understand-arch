@@ -20,6 +20,7 @@ export function writeFixture() {
   writeFileSync(join(repoRoot, "src", "auth.ts"), "export function login() { return true; }\n", "utf-8");
   writeFileSync(join(repoRoot, "src", "user.ts"), "export interface User { id: string }\n", "utf-8");
   writeFileSync(join(repoRoot, "src", "api.ts"), "export const route = '/login';\n", "utf-8");
+  writeFileSync(join(repoRoot, "src", "schema.sql"), "CREATE TABLE users (id uuid primary key, email text not null);\n", "utf-8");
 
   writeFileSync(join(archDir, "specs", "repos.json"), JSON.stringify({
     repos: [{
@@ -34,7 +35,51 @@ export function writeFixture() {
     version: "3.0",
     nodes: [
       { id: "sample::module:auth", type: "module", name: "Auth Module", filePath: "src/auth.ts", summary: "认证模块", tags: ["auth"] },
-      { id: "sample::endpoint:login", type: "endpoint", name: "POST /login", filePath: "src/api.ts", summary: "登录入口", tags: ["auth", "api"] },
+      {
+        id: "sample::endpoint:login",
+        type: "endpoint",
+        name: "POST /login",
+        filePath: "src/api.ts",
+        summary: "登录入口",
+        tags: ["auth", "api"],
+        attributes: {
+          protocol: "http",
+          http_method: "POST",
+          path: "/login",
+          request_params: [{ name: "email", in: "body", type: "string", required: true }],
+          responses: { "200": { type: "LoginResult" } },
+          auth_required: false
+        }
+      },
+      {
+        id: "sample::table:users",
+        type: "table",
+        name: "users",
+        filePath: "src/schema.sql",
+        summary: "用户表",
+        tags: ["user"],
+        attributes: {
+          columns: [{ name: "id", type: "uuid", nullable: false }, { name: "email", type: "text", nullable: false }],
+          primary_key: ["id"],
+          indexes: [{ name: "idx_users_email", columns: ["email"], unique: true }],
+          foreign_keys: []
+        }
+      },
+      {
+        id: "sample::resource:stripe",
+        type: "resource",
+        name: "stripe",
+        filePath: "src/api.ts",
+        summary: "支付服务",
+        tags: ["payment"],
+        attributes: {
+          service_id: "stripe",
+          service_kind: "payment",
+          config_keys: ["STRIPE_API_KEY"],
+          sdk_imports: ["stripe"],
+          endpoints: ["https://api.stripe.com"]
+        }
+      },
       { id: "sample::data-model:user", type: "data-model", name: "User", filePath: "src/user.ts", summary: "用户实体", tags: ["user"] }
     ],
     edges: [
