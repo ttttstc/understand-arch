@@ -1,6 +1,6 @@
 {
   "name": "@understand-arch/plugin",
-  "version": "3.4.0-rc1",
+  "version": "3.5.0-rc1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,8 +8,9 @@
     "build": "tsc",
     "arch:test": "vitest run --config engine/arch/vitest.config.mjs",
     "diagram:test": "bash vendor/fireworks-tech-graph/scripts/test-all-styles.sh",
+    "dispatch:lint": "node engine/arch/dispatch-lint.mjs --strict",
     "test": "pnpm arch:test && pnpm --filter @understand-arch/core test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard test",
-    "verify": "pnpm test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard build"
+    "verify": "pnpm dispatch:lint && pnpm test && pnpm --filter @understand-arch/core build && pnpm --filter @understand-arch/dashboard build"
   },
   "dependencies": {
     "@understand-arch/core": "workspace:*",

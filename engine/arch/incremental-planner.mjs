@@ -31,6 +31,10 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function unique(values) {
+  return [...new Set(values.filter((value) => value !== undefined && value !== null && String(value).trim() !== "").map(String))];
+}
+
 function inferArchDir(options = {}) {
   if (options.archDir) return resolve(options.archDir);
   if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
@@ -66,6 +70,15 @@ function currentCommit(repoRoot) {
   }
 }
 
+function isGitRepo(repoRoot) {
+  try {
+    execFileSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd: repoRoot, encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function normalizePath(value) {
   return String(value || "").replace(/\\/g, "/").replace(/^\.\//, "");
 }
@@ -86,6 +99,21 @@ function loadRepos(archDir) {
 
 function graphKnownFiles(graph) {
   return [...new Set(asArray(graph.nodes).map((node) => normalizePath(node.filePath)).filter(Boolean))].sort();
+}
+
+function isFingerprintStore(value) {
+  return Boolean(value && typeof value === "object" && value.files && typeof value.files === "object" && !Array.isArray(value.files));
+}
+
+function emptyAnalysis() {
+  return {
+    fileChanges: [],
+    newFiles: [],
+    deletedFiles: [],
+    structurallyChangedFiles: [],
+    cosmeticOnlyFiles: [],
+    unchangedFiles: [],
+  };
 }
 
 function lookupAffected(index, changedFiles) {
@@ -144,7 +172,7 @@ export async function planIncremental(options = {}) {
     const graph = readJson(repo.graph_path, { nodes: [], edges: [] });
     const allKnownFiles = graphKnownFiles(graph);
 
-    if (!store) {
+    if (!isFingerprintStore(store)) {
       plan = mergePlan(plan, {
         action: "FULL_UPDATE",
         files_to_reanalyze: allKnownFiles,
@@ -153,27 +181,27 @@ export async function planIncremental(options = {}) {
         affected_arch_nodes: [],
         affected_card_ids: [],
         affected_constraint_ids: [],
-        reason: `${repo.repo_id}: missing fingerprint baseline`,
-        repo_plan: { repo_id: repo.repo_id, action: "FULL_UPDATE", reason: "missing fingerprint baseline" },
+        reason: `${repo.repo_id}: missing or incompatible fingerprint baseline`,
+        repo_plan: { repo_id: repo.repo_id, action: "FULL_UPDATE", reason: "missing or incompatible fingerprint baseline" },
       });
       continue;
     }
 
     const since = options.since || store.gitCommitHash;
-    const changedFiles = options.changedFilesByRepo?.[repo.repo_id] || options.changedFiles || (options.useGetChangedFiles
-      ? getChangedFiles(repo.path, since)
-      : isStale(repo.path, since).changedFiles);
-    const stale = changedFiles.length > 0;
-    const analysis = stale
-      ? analyzeChanges(repo.path, changedFiles.map(normalizePath), store, registry)
-      : {
-          fileChanges: [],
-          newFiles: [],
-          deletedFiles: [],
-          structurallyChangedFiles: [],
-          cosmeticOnlyFiles: [],
-          unchangedFiles: [],
-        };
+    const explicitChangedFiles = options.changedFilesByRepo?.[repo.repo_id] || options.changedFiles;
+    const candidateFiles = explicitChangedFiles
+      ? explicitChangedFiles
+      : isGitRepo(repo.path)
+        ? options.useGetChangedFiles
+          ? getChangedFiles(repo.path, since)
+          : isStale(repo.path, since).changedFiles
+        : unique([...Object.keys(store.files || {}), ...allKnownFiles]);
+    const analysis = candidateFiles.length > 0
+      ? analyzeChanges(repo.path, candidateFiles.map(normalizePath), store, registry)
+      : emptyAnalysis();
+    const changedFiles = analysis.fileChanges
+      .filter((change) => change.changeLevel !== "NONE")
+      .map((change) => normalizePath(change.filePath));
     const decision = classifyUpdate(analysis, allKnownFiles.length || Object.keys(store.files || {}).length, allKnownFiles);
     const affectedFiles = decision.filesToReanalyze.length > 0 ? decision.filesToReanalyze : changedFiles;
     const affected = lookupAffected(index, affectedFiles);

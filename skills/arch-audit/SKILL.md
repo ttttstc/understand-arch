@@ -8,6 +8,14 @@ argument-hint: ["[arch-project-dir] [--full]"]
 
 Use this when the user asks whether the architecture baseline is trustworthy. The audit checks code graph freshness, architecture-layer completeness, wiki projection, eval-report trust signals, dashboard readiness, rules/ADR consistency, and CR review quality.
 
+## Subagent Dispatch Is Mandatory
+
+This skill is an orchestrator. It must use the Claude Code Task tool for semantic review and extraction phases.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-audit cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. Deterministic checks may run as Node scripts, but semantic review and extraction must stay in subagents.
+
 ## Inputs
 
 - `.understand-arch/<project>/specs/repos.json`
@@ -45,13 +53,21 @@ node <PLUGIN_ROOT>/engine/arch/wiki-projection-check.mjs "<ARCH_PROJECT_ROOT>"
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/eval-report.mjs "<ARCH_PROJECT_ROOT>"
 ```
 
-5b. Check constraint layer (v3.1):
+5b. Check constraint layer and audit fallback signals (v3.1/v3.4):
+
+Send these N dispatches in a single message to run concurrently (N=3):
+
+1. Run the deterministic constraint check:
 
 ```bash
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/constraint-check.mjs "<workspace-root>"
 ```
 
 This validates `rules/constraints/`: entry structure, evidence_level/status/source legality, ai-mined never confirmed, evidence links to code (not internal `risk:`/`qa:`/`debt:` ids), and suspicious-findings completeness.
+
+2. Use the Claude Code Task tool with `subagent_type=arch-decision-extractor` for audit fallback extraction if new CR/ADR sources exist. Do not inline this phase. The user must see subagent activity in Claude Code.
+
+3. Use the Claude Code Task tool with `subagent_type=arch-suspicious-recheck` for suspicious finding sanity review. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 5c. Check agent cards and decision feedback (v3.4):
 
@@ -60,7 +76,7 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/cards-che
 ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/decision-extractor-runner.mjs collect --arch-dir="<ARCH_PROJECT_ROOT>"
 ```
 
-If `intermediate/decision-extractor-input.json` contains new CR/ADR sources since the previous audit, dispatch `arch-decision-extractor`:
+If `intermediate/decision-extractor-input.json` contains new CR/ADR sources since the previous audit, use this Task prompt for `subagent_type=arch-decision-extractor`:
 
 ```text
 Mode: v3.4 audit fallback decision extraction.
@@ -89,7 +105,7 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/decision-
 
 ## LLM Review
 
-Dispatch `arch-senior-reviewer` in audit mode:
+Use the Claude Code Task tool with `subagent_type=arch-senior-reviewer` in audit mode. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: audit.

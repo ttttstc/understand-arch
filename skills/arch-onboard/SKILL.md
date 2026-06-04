@@ -196,3 +196,9 @@ Report:
 - Wiki placeholder found: fail onboard.
 - Senior reviewer reject: fail onboard.
 - Unknown repo path: fail before dispatching.
+
+## Task Calling Convention
+
+`arch-onboard` is only an orchestrator. When it invokes `/arch-analyze`, `arch-enrich`, or `arch-wiki`, it must preserve their own Task-based subagent dispatch contracts instead of compressing those phases into the main conversation or a script.
+
+Use the Claude Code Task tool for skill handoff when the runtime exposes skill execution through Task. Do not inline this phase. The user must see subagent activity in Claude Code for `/arch-analyze` Phase 0-6 and `arch-enrich` Phase 7-13. If the Task tool is unavailable, stop and report that v3.5 requires visible Claude Code subagent activity.

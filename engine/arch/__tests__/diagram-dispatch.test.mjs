@@ -97,6 +97,6 @@ process.exit(0);
       style: "1",
       "arch-dir": dir,
       "spec-json": join(dir, "missing.json"),
-    })).toThrow("PNG export requires cairosvg");
+    })).toThrow("Python 3/cairosvg 不可用");
   });
 });

@@ -16,6 +16,14 @@ Use this when the user asks:
 
 This command does not modify application code and does not automatically create CR.md. It produces an improvement candidate that a human can choose to turn into `/arch-design`.
 
+## Subagent Dispatch Is Mandatory
+
+This skill is an orchestrator. It must use the Claude Code Task tool for the semantic improvement-analysis phase.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-improve cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. This command must not modify application code.
+
 ## Inputs
 
 - Current `.understand-arch/<project>/specs/repos.json`.
@@ -57,11 +65,13 @@ The Markdown must use this structure:
 
 1. Resolve `ARCH_PROJECT_ROOT`.
 2. Read graph, arch-layer, rules, constraints, ADRs, historical CRs, suspicious findings, coding conventions, and project language.
-3. Dispatch `arch-improvement-analyzer`.
+3. Use the Claude Code Task tool with `subagent_type=arch-improvement-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 4. Write the returned Markdown into `improvements/IMPROVE-YYYY-NNN-<slug>.md`.
 5. Report the file path and whether it recommends turning into `/arch-design`.
 
 ## Dispatch Template
+
+Use the Claude Code Task tool with `subagent_type=arch-improvement-analyzer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
 ```text
 Mode: architecture improvement candidate.
@@ -81,4 +91,3 @@ All user-facing prose must be Chinese.
 - Do not auto-create CR.md.
 - Do not auto-create ADR.
 - Do not edit source code.
-

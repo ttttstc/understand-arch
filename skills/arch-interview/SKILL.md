@@ -12,6 +12,14 @@ argument-hint: ["[--scenario=domain|dependency|history|customization|risk|ops|te
 
 本 skill 全程中文交互(代码标识符/路径/命令保留英文,不中英混杂)。
 
+## Subagent Dispatch Is Mandatory
+
+This skill is an orchestrator. It must Use the Claude Code Task tool for the semantic question-preparation phase of the interview loop.
+
+For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-interview cannot satisfy v3.5 because LLM phases would run inline."
+
+Do not inline this phase. The user must see subagent activity in Claude Code. The main conversation may ask and receive the human interview answer, but anomaly interpretation and recommended answer drafting must stay in a subagent.
+
 ## Inputs(只读取 onboard 产物,不临时重新分析)
 
 - `rules/constraints/suspicious-findings.md`(onboard 侦查的反常点 + 可疑度 + 影响面)
@@ -49,6 +57,26 @@ argument-hint: ["[--scenario=domain|dependency|history|customization|risk|ops|te
 - 给出具体位置(file:line / node id)+ 为什么觉得反常
 - **给出 AI 的推荐答案**(基于代码猜测 + 行业常见模式),让受访人确认/纠正,降低回答成本
 - 用 AskUserQuestion 或直接对话,等受访人回答后再问下一个
+
+Before each question, use the Claude Code Task tool with `subagent_type=arch-constraint-miner` in interview-question mode to prepare the anomaly interpretation and recommended answer. Do not inline this phase. The user must see subagent activity in Claude Code.
+
+Task prompt:
+
+```text
+Mode: interview-question.
+Scenario: <scenario>.
+Project directory: <ARCH_PROJECT_ROOT>.
+Suspicious finding: <single selected finding with location and impact>.
+Existing constraints: <related constraint ids>.
+Produce JSON only:
+{
+  "question": "...",
+  "recommended_answer": "...",
+  "evidence_refs": [],
+  "duplicate_constraint_ids": []
+}
+All user-facing text must be Chinese. Do not create confirmed constraints. Do not invent human testimony.
+```
 
 提问模板:
 ```

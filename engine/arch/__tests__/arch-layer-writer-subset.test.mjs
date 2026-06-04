@@ -38,6 +38,8 @@ describe("arch-layer-writer subset_mode", () => {
     expect(layer.component_profiles.find((item) => item.id === "component:billing").name).toBe("Billing");
     expect(layer.capabilities.find((item) => item.id === "cap:auth").name).toBe("认证 v2");
     expect(layer.capabilities.find((item) => item.id === "cap:billing").name).toBe("计费");
+    expect(layer.tour.length).toBeGreaterThan(0);
+    expect(layer.tour[0].nodeIds).toContain("sample::module:auth");
   });
 });
 
