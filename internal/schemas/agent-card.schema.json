@@ -24,7 +24,11 @@
         "FlowCard",
         "RiskCard",
         "ConstraintCard",
-        "DecisionCard"
+        "DecisionCard",
+        "ApiContractCard",
+        "DbSchemaCard",
+        "IntegrationCard",
+        "ProjectContextCard"
       ]
     },
     "evidenceLevel": {
@@ -79,7 +83,7 @@
         "$schema": { "const": "internal/schemas/agent-card.schema.json" },
         "id": {
           "type": "string",
-          "pattern": "^card:(component|capability|interface|data-model|flow|risk|constraint|decision):[a-zA-Z0-9_.:-]+$"
+          "pattern": "^card:(component|capability|interface|data-model|flow|risk|constraint|decision|api-contract|db-schema|integration|project-context):[a-zA-Z0-9_.:-]+$"
         },
         "type": { "$ref": "#/$defs/cardType" },
         "title": { "type": "string", "minLength": 1 },

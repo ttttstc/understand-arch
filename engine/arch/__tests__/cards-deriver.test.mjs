@@ -10,7 +10,7 @@ function readCards(archDir) {
 }
 
 describe("cards-deriver", () => {
-  it("派生 8 类卡并生成反向索引", () => {
+  it("派生 12 类卡并生成反向索引", () => {
     const { archDir } = writeFixture();
     const result = deriveCards({ archDir });
     const cards = readCards(archDir);

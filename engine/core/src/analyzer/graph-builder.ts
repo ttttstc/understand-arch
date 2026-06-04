@@ -239,6 +239,7 @@ export class GraphBuilder {
         summary: `${def.kind}: ${def.name} (${def.fields.length} fields)`,
         tags: [],
         complexity: meta.complexity,
+        attributes: def.attributes,
       }, fileId);
     }
 
@@ -252,6 +253,7 @@ export class GraphBuilder {
         summary: `Service ${svc.name}${svc.image ? ` (image: ${svc.image})` : ""}`,
         tags: [],
         complexity: meta.complexity,
+        attributes: svc.attributes,
       }, fileId);
     }
 
@@ -267,6 +269,7 @@ export class GraphBuilder {
         summary: `Endpoint: ${name}`,
         tags: [],
         complexity: meta.complexity,
+        attributes: ep.attributes,
       }, fileId);
     }
 
@@ -295,6 +298,7 @@ export class GraphBuilder {
         summary: `Resource: ${res.name} (${res.kind})`,
         tags: [],
         complexity: meta.complexity,
+        attributes: res.attributes,
       }, fileId);
     }
   }

@@ -1,7 +1,7 @@
 ---
 name: arch-onboard
-description: Onboard a single-repo or multi-repo system with the v3.0 pipeline, producing per-repo code graphs, arch-layer.json, wiki, and dashboard inputs.
-argument-hint: ["[project-name] [--repo <path>]... [--enable-hooks]"]
+description: Onboard a single-repo or multi-repo system with the v3.0 pipeline, producing per-repo code graphs, arch-layer.json, wiki, agent-context, and dashboard inputs.
+argument-hint: ["[project-name] [--repo <path>]... [--enable-hooks] [--no-agent-context]"]
 ---
 
 # /arch-onboard
@@ -19,6 +19,7 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 - Write `eval-report.json` and include its trust label in the final report.
 - Hooks are disabled unless the user passes `--enable-hooks`.
 - v3.4 default behavior is incremental after the first successful onboard. Do not expose or teach extra parameters in normal output.
+- v3.6 emits `.understand-arch/<project>/agent-context/` by default. If `--no-agent-context` is present, skip only that optional output. Never write `AGENTS.md` or `CLAUDE.md` to the user repository root.
 
 ## Resolve Project
 
@@ -169,6 +170,14 @@ Validate that dashboard inputs exist:
 - `wiki/ARCHITECTURE.md`
 - `wiki/README.md`
 
+Unless `--no-agent-context` is present, run:
+
+```bash
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/agent-context-init.mjs --arch-dir="$ARCH_PROJECT_ROOT"
+```
+
+This writes only under `.understand-arch/<project>/agent-context/`. If `--no-agent-context` is present, do not create that directory.
+
 Tell the user they can run `/arch-dashboard <ARCH_PROJECT_ROOT>`.
 
 ## Final Report
@@ -182,6 +191,7 @@ Report:
 - narrative field counts
 - project language path
 - wiki page count
+- agent-context status
 - eval trust label and hallucination rate
 - hook status
 - paths to outputs

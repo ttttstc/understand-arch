@@ -20,12 +20,17 @@ export const CARD_TYPES = [
   "RiskCard",
   "ConstraintCard",
   "DecisionCard",
+  "ApiContractCard",
+  "DbSchemaCard",
+  "IntegrationCard",
+  "ProjectContextCard",
 ];
 
 const CARD_SCHEMA = "internal/schemas/agent-card.schema.json";
 const COMPONENT_NODE_TYPES = new Set(["component", "module", "service", "package", "layer"]);
 const INTERFACE_NODE_TYPES = new Set(["interface", "endpoint", "api", "route"]);
 const DATA_NODE_TYPES = new Set(["data-model", "schema", "table", "entity", "model"]);
+const INTEGRATION_NODE_TYPES = new Set(["service", "resource", "config"]);
 
 function readJson(path, fallback = undefined) {
   if (!existsSync(path)) return fallback;
@@ -239,6 +244,10 @@ function normalizeCardLocalId(kind, value) {
     risk: ["risk", "debt"],
     constraint: ["constraint", "con"],
     decision: ["decision", "adr"],
+    "api-contract": ["api-contract", "api", "endpoint"],
+    "db-schema": ["db-schema", "db", "table", "schema"],
+    integration: ["integration", "external", "service"],
+    "project-context": ["project-context", "project"],
   }[kind] || [kind];
   for (const alias of aliases) {
     const prefix = `${alias}:`;
@@ -437,12 +446,113 @@ function deriveDecisionCards(archDir, layer, nodesById) {
   }));
 }
 
+function hasApiAttributes(node) {
+  const attrs = node.attributes || {};
+  return node.type === "endpoint" && (attrs.http_method || attrs.path || attrs.request_params || attrs.responses || attrs.protocol);
+}
+
+function deriveApiContractCards(nodesById) {
+  return [...nodesById.values()]
+    .filter(hasApiAttributes)
+    .map((node) => {
+      const attrs = node.attributes || {};
+      const method = attrs.http_method || node.name?.split(" ")[0] || "API";
+      const path = attrs.path || node.name || node.id;
+      return card("api-contract", node, {
+        type: "ApiContractCard",
+        title: `${method} ${path}`.trim(),
+        stableId: node.id,
+        anchors: anchorsFor({ node_ids: [node.id] }, nodesById),
+        semantic_tags: ["api-contract", "api", String(attrs.protocol || "unknown"), String(method).toLowerCase(), ...(node.tags || [])],
+        source_artifact: `graph:${node.id}`,
+        evidence_level: "observed",
+      });
+    });
+}
+
+function hasDbAttributes(node) {
+  const attrs = node.attributes || {};
+  return node.type === "table" && (attrs.columns || attrs.primary_key || attrs.foreign_keys || attrs.indexes || attrs.sql_kind);
+}
+
+function deriveDbSchemaCards(nodesById) {
+  return [...nodesById.values()]
+    .filter(hasDbAttributes)
+    .map((node) => card("db-schema", node, {
+      type: "DbSchemaCard",
+      title: node.name || node.id,
+      stableId: node.id,
+      anchors: anchorsFor({ node_ids: [node.id] }, nodesById),
+      semantic_tags: ["db-schema", "database", node.type, ...(node.tags || [])],
+      source_artifact: `graph:${node.id}`,
+      evidence_level: "observed",
+    }));
+}
+
+function isIntegrationNode(node) {
+  const attrs = node.attributes || {};
+  return INTEGRATION_NODE_TYPES.has(node.type) && (attrs.service_id || attrs.service_kind || attrs.config_keys || attrs.sdk_imports || attrs.endpoints);
+}
+
+function deriveIntegrationCards(nodesById) {
+  return [...nodesById.values()]
+    .filter(isIntegrationNode)
+    .map((node) => {
+      const attrs = node.attributes || {};
+      return card("integration", node, {
+        type: "IntegrationCard",
+        title: attrs.service_id || node.name || node.id,
+        stableId: node.id,
+        anchors: anchorsFor({ node_ids: [node.id] }, nodesById),
+        semantic_tags: ["integration", "external-service", attrs.service_kind, ...(node.tags || [])],
+        source_artifact: `graph:${node.id}`,
+        evidence_level: "observed",
+      });
+    });
+}
+
+function deriveProjectContextCards(layer, graphByRepo, nodesById) {
+  const cards = [];
+  for (const [repoId, { graph }] of graphByRepo.entries()) {
+    const source = {
+      id: `project-context:${repoId}`,
+      name: graph.project?.name || layer.project?.name || repoId,
+      summary: layer.project?.description || graph.project?.description || "",
+      languages: graph.project?.languages || [],
+      frameworks: graph.project?.frameworks || [],
+      node_ids: asArray(graph.nodes).slice(0, 50).map((node) => node.id),
+    };
+    cards.push(card("project-context", source, {
+      type: "ProjectContextCard",
+      title: `${source.name} 项目上下文`,
+      stableId: source.id,
+      anchors: { graph_node_ids: [], file_paths: [], line_ranges: [] },
+      semantic_tags: ["project-context", "overview", ...asArray(source.languages), ...asArray(source.frameworks)],
+      source_artifact: `graph:${repoId}:project`,
+      evidence_level: "observed",
+    }));
+  }
+  if (cards.length === 0) {
+    const source = { id: `project-context:${layer.project?.name || "project"}`, name: layer.project?.name || "project", summary: layer.project?.description || "" };
+    cards.push(card("project-context", source, {
+      type: "ProjectContextCard",
+      title: `${source.name} 项目上下文`,
+      stableId: source.id,
+      anchors: { graph_node_ids: [], file_paths: [], line_ranges: [] },
+      semantic_tags: ["project-context", "overview"],
+      source_artifact: "arch-layer:project",
+      evidence_level: "observed",
+    }));
+  }
+  return cards;
+}
+
 export function deriveCards(options = {}) {
   const archDir = inferArchDir(options);
   const cardsDir = join(archDir, "cards");
   const layerPath = options.layerPath ? resolve(options.layerPath) : join(archDir, "specs", "arch-layer.json");
   const archLayer = readJson(layerPath, { component_profiles: [], capabilities: [], flows: [], risks: [], technical_debt: [], architecture_decisions: [] });
-  const { nodesById } = loadGraphs(archDir, archLayer);
+  const { graphByRepo, nodesById } = loadGraphs(archDir, archLayer);
   const existingDoc = readJson(join(cardsDir, "agent-cards.json"), { cards: [] });
   const existingById = new Map(asArray(existingDoc.cards).map((cardEntry) => [cardEntry.id, cardEntry]));
   const pinnedIds = new Set(readJson(join(cardsDir, "pinned.json"), []));
@@ -456,6 +566,10 @@ export function deriveCards(options = {}) {
     ...deriveRiskCards(archLayer, nodesById),
     ...deriveConstraintCards(archDir),
     ...deriveDecisionCards(archDir, archLayer, nodesById),
+    ...deriveApiContractCards(nodesById),
+    ...deriveDbSchemaCards(nodesById),
+    ...deriveIntegrationCards(nodesById),
+    ...deriveProjectContextCards(archLayer, graphByRepo, nodesById),
   ];
 
   const byId = new Map();
@@ -533,8 +647,15 @@ export function sourceHashForCard(cardEntry, options = {}) {
   const { nodesById } = loadGraphs(archDir, layer);
   if (cardEntry.source_artifact.startsWith("graph:")) {
     const nodeId = cardEntry.source_artifact.slice("graph:".length);
+    if (nodeId.endsWith(":project")) {
+      const repoId = nodeId.slice(0, -":project".length);
+      const { graphByRepo } = loadGraphs(archDir, layer);
+      const graph = graphByRepo.get(repoId)?.graph;
+      return graph ? hashValue({ repoId, project: graph.project }) : null;
+    }
     return nodesById.has(nodeId) ? hashValue(nodesById.get(nodeId)) : null;
   }
+  if (cardEntry.source_artifact === "arch-layer:project") return hashValue(layer.project || {});
   if (cardEntry.source_artifact.startsWith("arch-layer:")) {
     return hashArchLayerSource(cardEntry.source_artifact, layer);
   }

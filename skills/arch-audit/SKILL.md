@@ -103,6 +103,12 @@ ARCH_PROJECT_ROOT="<ARCH_PROJECT_ROOT>" node <PLUGIN_ROOT>/engine/arch/decision-
    - section 14 exists
    - placeholders are absent
 
+8. Compute v3.6 technical checklist completeness from graph nodes:
+   - API count: endpoint nodes with `attributes.request_params` or `attributes.responses`
+   - DB count: table nodes with `attributes.columns`, `attributes.primary_key`, `attributes.foreign_keys`, or `attributes.indexes`
+   - external integration count: resource/service/config nodes with `attributes.service_id`, `attributes.config_keys`, or `attributes.sdk_imports`
+   - agent context status: `.understand-arch/<project>/agent-context/AGENTS.md` and `CLAUDE.md` exist or were intentionally skipped
+
 ## LLM Review
 
 Use the Claude Code Task tool with `subagent_type=arch-senior-reviewer` in audit mode. Do not inline this phase. The user must see subagent activity in Claude Code.
@@ -136,6 +142,7 @@ The markdown report must include:
 - dashboard readiness
 - CR/ADR/rules status
 - self-iteration status: proposed constraints added since last audit, split by CR/ADR and history
+- 技术参考清单完整度:N 个 API / M 张表 / K 个外部依赖; agent-context 状态
 - proposed constraint source distribution:
   - `cr-derived` -> CR 回流
   - `ai-mined` with note containing `git history` -> git 历史考古
