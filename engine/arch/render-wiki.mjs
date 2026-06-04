@@ -290,11 +290,29 @@ function integrationTechnicalList() {
 
 function projectContextText() {
   const graphProjects = graphs.map(({ repo, graph }) => `- **${repo.name || repo.repo_id || graph.project?.name || "repo"}**：语言：${(graph.project?.languages || []).join("、") || "未识别"}；框架：${(graph.project?.frameworks || []).join("、") || "未识别"}；节点数：${(graph.nodes || []).length}。`).join("\n") || "- 当前没有读取到仓库图谱。";
-  const entrypoints = nodesOf(["endpoint", "service", "pipeline"]).slice(0, 20).map((node) => `- ${node.name || node.id} (${node.filePath || node.id})`).join("\n") || "- 未识别到明确入口。";
+  const entrypoints = entrypointNodes().slice(0, 20).map((node) => `- ${node.name || node.id} (${node.filePath || node.id})`).join("\n") || "- 未识别到明确入口。";
   return section("项目概述", `**${projectName()}**：${sentence(layer.project?.description || "项目说明尚不充分,需结合代码结构继续补充")}`) +
     section("仓库与技术栈", `${graphProjects}\n\n${techBullets()}`) +
     section("入口与关键路径", entrypoints) +
     section("Agent 使用提示", "详细架构长文见 `ARCHITECTURE.md`；API 技术清单见接口章节；数据结构见数据模型章节；外部服务见集成清单。");
+}
+
+function entrypointNodes() {
+  const explicitRuntime = nodesOf(["endpoint", "service", "pipeline"]);
+  const files = allNodes().filter((node) => {
+    if (node.type !== "file") return false;
+    const tags = asArray(node.tags).map((tag) => String(tag).toLowerCase());
+    if (tags.some((tag) => tag === "entry" || tag === "entry-point" || tag === "entrypoint")) return true;
+    const path = String(node.filePath || node.id).replace(/\\/g, "/").toLowerCase();
+    return /(^|\/)(index|main|app)\.(ts|tsx|js|jsx|html|go|rs|py|java|kt|swift)$/.test(path)
+      || /(^|\/)src\/renderer\/main\.(ts|tsx|js|jsx)$/.test(path);
+  });
+  const seen = new Set();
+  return [...explicitRuntime, ...files].filter((node) => {
+    if (seen.has(node.id)) return false;
+    seen.add(node.id);
+    return true;
+  });
 }
 
 function collaboratorNames(component) {

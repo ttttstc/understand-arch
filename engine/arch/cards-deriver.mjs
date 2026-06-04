@@ -514,14 +514,7 @@ function deriveIntegrationCards(nodesById) {
 function deriveProjectContextCards(layer, graphByRepo, nodesById) {
   const cards = [];
   for (const [repoId, { graph }] of graphByRepo.entries()) {
-    const source = {
-      id: `project-context:${repoId}`,
-      name: graph.project?.name || layer.project?.name || repoId,
-      summary: layer.project?.description || graph.project?.description || "",
-      languages: graph.project?.languages || [],
-      frameworks: graph.project?.frameworks || [],
-      node_ids: asArray(graph.nodes).slice(0, 50).map((node) => node.id),
-    };
+    const source = projectContextSource(repoId, graph, layer);
     cards.push(card("project-context", source, {
       type: "ProjectContextCard",
       title: `${source.name} 项目上下文`,
@@ -545,6 +538,17 @@ function deriveProjectContextCards(layer, graphByRepo, nodesById) {
     }));
   }
   return cards;
+}
+
+function projectContextSource(repoId, graph, layer) {
+  return {
+    id: `project-context:${repoId}`,
+    name: graph.project?.name || layer.project?.name || repoId,
+    summary: layer.project?.description || graph.project?.description || "",
+    languages: graph.project?.languages || [],
+    frameworks: graph.project?.frameworks || [],
+    node_ids: asArray(graph.nodes).slice(0, 50).map((node) => node.id),
+  };
 }
 
 export function deriveCards(options = {}) {
@@ -651,7 +655,7 @@ export function sourceHashForCard(cardEntry, options = {}) {
       const repoId = nodeId.slice(0, -":project".length);
       const { graphByRepo } = loadGraphs(archDir, layer);
       const graph = graphByRepo.get(repoId)?.graph;
-      return graph ? hashValue({ repoId, project: graph.project }) : null;
+      return graph ? hashValue(projectContextSource(repoId, graph, layer)) : null;
     }
     return nodesById.has(nodeId) ? hashValue(nodesById.get(nodeId)) : null;
   }

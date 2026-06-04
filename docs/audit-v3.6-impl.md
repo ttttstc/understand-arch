@@ -64,6 +64,28 @@ v3.6 T1 收敛版实现完成。实现严格落在 graph / arch-layer / cards �
 | `technical/` 目录 | 不存在 |
 | `specs/technical-reference.json` | 不存在 |
 
+### Typola 真实项目 dogfood
+
+测试项目:`D:\AI\workspace\Typola`  
+产物目录:`D:\AI\workspace\Typola\.understand-arch\typola`
+
+| 命令 | 结果 | 摘要 |
+|---|---|---|
+| `node engine/arch/cards-deriver.mjs --arch-dir=D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | 生成 `cards/agent-cards.json`,共 26 张卡 |
+| `node engine/arch/cards-check.mjs --arch-dir=D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | `ok:true`,无 stale,无 findings |
+| `node engine/arch/render-wiki.mjs D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | 生成 17 个 wiki 页面,`ARCHITECTURE.md` 约 24KB / 255 行 |
+| `node engine/arch/wiki-projection-check.mjs D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | `ok:true`,长文/切片比例 0.937,无 findings |
+| `node engine/arch/eval-report.mjs D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | `trust_label:high`,`hallucination_rate:0`,`placeholder_count:0` |
+| `node engine/arch/agent-context-init.mjs --arch-dir=D:\AI\workspace\Typola\.understand-arch\typola` | exit 0 | 只生成 `agent-context/AGENTS.md` 和 `CLAUDE.md` |
+
+真实项目质量判断:
+
+- Typola graph 当前为 37 nodes / 42 edges,包含 6 个 module,13 个 file,15 个 function,3 个 document。
+- `arch-layer.json` 已有 architecture_style、7 个 component_profiles、5 个 tech_stack、8 个 capabilities、6 个 quality_attributes、4 个 risks、4 个 technical_debt、3 个 flows、3 个 external_dependencies。
+- v3.6 新技术事实中,Typola 产生 1 张 `ProjectContextCard`;`ApiContractCard` / `DbSchemaCard` / `IntegrationCard` 为 0。原因是 Typola 当前源码没有 OpenAPI/SQL/schema/package manifest,也没有后端 HTTP API 或 DB schema;wiki 如实声明“没有独立后端服务接口/数据表清单/结构化外部服务集成清单”。
+- 入口投影已按真实项目修正:`wiki/00-project-context.md` 现在列出 `src/App.tsx`,`src/main.tsx`,`src/renderer/index.html`,`src/renderer/main.tsx`,不再误报“未识别到明确入口”。
+- 根目录零写入实测:Typola 根目录文件仍只有 `design.md`,`Markdown编辑器-规划文档.md`,`vision.md`;未新增根 `AGENTS.md` / `CLAUDE.md`。
+
 ## 红线验收
 
 | 红线 | 结果 |
