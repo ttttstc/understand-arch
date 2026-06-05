@@ -23,6 +23,8 @@ It is not a standalone autonomous agent runtime. Claude Code carries the convers
 The knowledge base learns from everyday commits, CRs, and ADRs instead of staying as a one-time onboarding snapshot.
 It also extracts structured technical facts such as API parameters, database fields, and external dependency configuration so design work can use concrete code evidence.
 
+For other AI coding tools (Claude Code itself, Cursor, etc.), it writes an `AGENTS.md` / `CLAUDE.md` to `.understand-arch/{project}/agent-context/`. You decide whether to symlink it to your repo root — `understand-arch` never writes there.
+
 In plain terms: it is a practical architecture assistant for onboarding, design review, architecture documentation, and change planning.
 
 ## What It Can Do
@@ -182,6 +184,14 @@ Some important constraints never appear in code: why a module must stay single-t
 
 ## Installation
 
+### Basic install (covers everything except SVG/PNG diagrams)
+
+Required:
+
+- Claude Code
+- Node.js 18+ and `pnpm`
+- `git`
+
 In Claude Code:
 
 ```text
@@ -189,6 +199,20 @@ In Claude Code:
 /plugin install understand-arch@understand-arch
 /reload-plugins
 ```
+
+With only the basic install, every command works against the Mermaid fallback path for `/arch-diagram`. No Python, no `cairosvg`, no Bash required.
+
+### Recommended full install (enables SVG and PNG diagrams)
+
+Add on top of the basic install:
+
+- Python 3.8+
+- `pip install cairosvg`
+- Git Bash (Windows) or any POSIX shell (macOS / Linux ship with one)
+
+This unlocks the SVG and PNG output paths for `/arch-diagram` (Confluence, slide decks, design reviews). PlantUML output is plain text and needs nothing extra.
+
+### Verify
 
 After reloading, type:
 
@@ -254,10 +278,14 @@ your-project/
         │   └── arch-layer.json
         ├── wiki/
         │   ├── ARCHITECTURE.md
+        │   ├── 00-project-context.md
         │   ├── 01..14-*.md
         │   └── assets/diagrams/
         ├── rules/
         │   └── constraints/
+        ├── agent-context/
+        │   ├── AGENTS.md
+        │   └── CLAUDE.md
         ├── decisions/
         ├── change-requests/
         ├── improvements/

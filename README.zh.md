@@ -23,6 +23,8 @@
 知识库会从你日常的 commit、CR 和 ADR 自动学习，而不只是一次性 onboard。
 它也会从代码里识别 API 参数、数据库字段和外部依赖配置，让设计变更能直接引用结构化技术事实。
 
+为了让其他 AI 编码工具（Claude Code 自己、Cursor 等）拿到项目上下文，它会生成 `AGENTS.md` / `CLAUDE.md` 写到 `.understand-arch/{project}/agent-context/`。是否软链到仓库根由你决定 —— understand-arch 永远不会动你的根目录。
+
 简单说：它是一个帮你接手项目、理解架构、设计变更、做架构评审的 Claude Code 插件。
 
 ## 它能做什么
@@ -187,6 +189,14 @@
 
 ## 安装
 
+### 基础安装（除 SVG / PNG 出图外的所有能力）
+
+必须：
+
+- Claude Code
+- Node.js 18+ 和 `pnpm`
+- `git`
+
 在 Claude Code 中执行：
 
 ```text
@@ -194,6 +204,20 @@
 /plugin install understand-arch@understand-arch
 /reload-plugins
 ```
+
+只有基础安装时，所有命令都能跑；`/arch-diagram` 默认走 Mermaid 降级路径。**不需要** Python、`cairosvg` 或 Bash。
+
+### 推荐完整安装（解锁 SVG 和 PNG 出图）
+
+在基础安装之上再加：
+
+- Python 3.8+
+- `pip install cairosvg`
+- Git Bash（Windows） 或任意 POSIX shell（macOS / Linux 自带）
+
+完整安装后 `/arch-diagram` 才能产 SVG 和 PNG（用于 Confluence、汇报 PPT、设计评审）。PlantUML 路径只产文本源码，**不需要**额外依赖。
+
+### 验证
 
 重载后输入：
 
@@ -259,10 +283,14 @@ your-project/
         │   └── arch-layer.json
         ├── wiki/
         │   ├── ARCHITECTURE.md
+        │   ├── 00-project-context.md
         │   ├── 01..14-*.md
         │   └── assets/diagrams/
         ├── rules/
         │   └── constraints/
+        ├── agent-context/
+        │   ├── AGENTS.md
+        │   └── CLAUDE.md
         ├── decisions/
         ├── change-requests/
         ├── improvements/
