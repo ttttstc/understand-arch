@@ -264,7 +264,7 @@ capabilities:
 - v1.0 收敛:**capabilities 直接内嵌 baseline.yaml**,不再独立维护 `specs/capabilities.yaml` — 减少文件数 + 杜绝索引同步漂移。
 - 能力是长期事实(半年内变化不大)。onboard 首跑由 `arch-analyze` 按 `capabilities-rubric.md` 抽取候选,需要**人工 review** 后才正式落,后续 CR 引入新能力时增量更新。
 - `maturity: missing` 表示能力被识别但未实现,**必须配套 gaps 描述**(为何 missing + 业务影响)。
-- 抽取规则、判定标准、反模式见 `skills/arch-analyze/references/capabilities-rubric.md`。
+- 抽取规则、判定标准、反模式见 `internal/playbooks/analyze/references/capabilities-rubric.md`。
 
 ### `specs/quality.yaml`
 
@@ -615,7 +615,7 @@ Project Scanner
 - UA 不强依赖;不装时本套件能力不退化(走 standalone)
 - 与 fireworks-tech-graph 同等模式:**装了即用,不装降级**
 
-详见 `skills/arch-analyze/references/ua-graph-adapter.md`(15 段完整规约:启用条件 / 节点映射 / 边映射 / layers/tour 映射 / LLM 补语义层 / evidence_refs 处理 / 完整流程 / 多 agent 切换边缘 / 失败降级 / acceptance 影响)。
+详见 `internal/playbooks/analyze/references/ua-graph-adapter.md`(15 段完整规约:启用条件 / 节点映射 / 边映射 / layers/tour 映射 / LLM 补语义层 / evidence_refs 处理 / 完整流程 / 多 agent 切换边缘 / 失败降级 / acceptance 影响)。
 
 ### 多 agent 并行扫描(上下文溢出防护)
 
@@ -635,7 +635,7 @@ v1.0 必须支持大仓的多 agent 切片扫描,避免主上下文一次塞下�
 
 **并发上限**:同时活跃子任务 ≤5;主上下文 token 余量 <30% 时暂停 spawn。
 
-完整规约见 `skills/arch-analyze/references/subagent-orchestration.md`。
+完整规约见 `internal/playbooks/analyze/references/subagent-orchestration.md`。
 
 ### 增量更新
 

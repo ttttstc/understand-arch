@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { mkdtempSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { lintSkillText } from "../dispatch-lint.mjs";
+import { lintSkillText, lintSubagentReferences } from "../dispatch-lint.mjs";
 
 const repoRoot = process.cwd();
 
@@ -26,7 +28,7 @@ ${extra}
 
 describe("dispatch-lint", () => {
   it("accepts arch-analyze as the benchmark fixture", () => {
-    const text = readFileSync(path.join(repoRoot, "skills/arch-analyze/SKILL.md"), "utf8");
+    const text = readFileSync(path.join(repoRoot, "internal/playbooks/analyze/playbook.md"), "utf8");
     const result = lintSkillText("arch-analyze", text, { strict: true });
     expect(result.errors).toEqual([]);
   });
@@ -90,5 +92,33 @@ Send these N dispatches in a single message to run concurrently.
     const text = validSkill("Run the three reviews concurrently.\n");
     const result = lintSkillText("arch-wiki", text, { strict: true });
     expect(result.errors.join("\n")).toContain("single-message dispatch phrase");
+  });
+
+  it("rejects unresolved subagent_type references", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dispatch-lint-"));
+    const skillDir = path.join(root, "skills", "arch-demo");
+    const agentsDir = path.join(root, "agents");
+    mkdirSync(skillDir, { recursive: true });
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(path.join(skillDir, "SKILL.md"), "Use the Claude Code Task tool with `subagent_type=missing-agent`.\n");
+
+    const result = lintSubagentReferences({ repoRoot: root });
+    expect(result.flatMap((item) => item.errors).join("\n")).toContain("unresolved subagent_type=missing-agent");
+  });
+
+  it("accepts resolvable subagent_type references", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "dispatch-lint-"));
+    const skillDir = path.join(root, "skills", "arch-demo");
+    const playbookDir = path.join(root, "internal", "playbooks", "demo");
+    const agentsDir = path.join(root, "agents");
+    mkdirSync(skillDir, { recursive: true });
+    mkdirSync(playbookDir, { recursive: true });
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(path.join(skillDir, "SKILL.md"), "Use the Claude Code Task tool with `subagent_type=demo-agent`.\n");
+    writeFileSync(path.join(playbookDir, "playbook.md"), "Use `subagent_type: \"demo-agent\"` for review.\n");
+    writeFileSync(path.join(agentsDir, "demo-agent.md"), "---\nname: demo-agent\n---\n");
+
+    const result = lintSubagentReferences({ repoRoot: root });
+    expect(result.flatMap((item) => item.errors)).toEqual([]);
   });
 });

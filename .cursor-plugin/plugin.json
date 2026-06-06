@@ -2,7 +2,7 @@
   "name": "understand-arch",
   "displayName": "understand-arch",
   "description": "Architect-grade code and architecture analysis for any agentic runtime",
-  "version": "3.7.0-rc2",
+  "version": "3.8.0-rc1",
   "author": {
     "name": "ttttstc"
   },

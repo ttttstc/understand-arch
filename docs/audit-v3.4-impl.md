@@ -20,7 +20,7 @@ v3.4 全量实现完成。实现范围覆盖 T1-T4: cards 派生层、真增量 
 | cards summary | `agents/arch-card-summarizer.md` + `cards-summary-merge.mjs` | LLM 只产摘要,Node 只合并校验 |
 | 真增量 planner | `engine/arch/incremental-planner.mjs` | 装配 UA `isStale/getChangedFiles/analyzeChanges/classifyUpdate/buildFingerprintStore/mergeGraphUpdate` |
 | subset merge | `engine/arch/arch-layer-writer.mjs` | subset_mode 按节点 id 替换,其他保留 |
-| fingerprint 路径 | `skills/arch-analyze/build-fingerprints.mjs` | 写 `specs/repos/<repo_id>/.fingerprint.json`,保留旧路径兼容 |
+| fingerprint 路径 | `internal/playbooks/analyze/build-fingerprints.mjs` | 写 `specs/repos/<repo_id>/.fingerprint.json`,保留旧路径兼容 |
 | 决策回流 | `agents/arch-decision-extractor.md` + `decision-extractor-runner.mjs` | CR/ADR -> proposed constraint,source `cr-derived` |
 | history 考古 | `agents/arch-history-miner.md` + `history-miner-runner.mjs` | temporal coupling / hotspot / revert pattern |
 | 约束红线 | `constraint.schema.json` + `constraint-check.mjs` | `ai-mined/cr-derived` 不得 confirmed,状态保持 proposed |
@@ -79,7 +79,7 @@ rg -- '--incremental|--since|--full|/arch-cards|agent-cards|pinned\.json' README
 | 改 1 源文件 -> arch-layer.json diff ≤ 3 节点 | 2 | 通过 |
 | 改 1 源文件 -> cards/agent-cards.json diff ≤ 3 张卡 | 2 | 通过 |
 
-说明:此实测覆盖 `/arch-onboard` 默认增量路径依赖的确定性核心:每仓 fingerprint、planner、反向索引、subset merge、cards 重新派生。真实 Claude 会话中的 LLM 子集重推仍由 `skills/arch-enrich/SKILL.md` 调度 subagent,没有移入 Node。
+说明:此实测覆盖 `/arch-onboard` 默认增量路径依赖的确定性核心:每仓 fingerprint、planner、反向索引、subset merge、cards 重新派生。真实 Claude 会话中的 LLM 子集重推仍由 `internal/playbooks/enrich/SKILL.md` 调度 subagent,没有移入 Node。
 
 ## LLM 通道抽检
 

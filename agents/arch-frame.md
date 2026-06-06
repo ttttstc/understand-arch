@@ -1,7 +1,6 @@
 ---
 name: arch-frame
-description: Internal PRD hard gate for architecture design. Blocks under-specified requests before CR generation.
-argument-hint: "<prd-or-request>"
+description: Internal CR-design pre-grill hardener. Consumes pre-grill JSON, adds implementation framing, missing acceptance criteria, and blocking_unknown_count. Only invoked by arch-design.
 ---
 
 # arch-frame

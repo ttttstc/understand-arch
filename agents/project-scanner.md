@@ -54,7 +54,7 @@ Invoke the bundled scan script. It walks the project (preferring `git ls-files`,
 
 ```bash
 mkdir -p $ARCH_PROJECT_DIR/tmp
-node $PLUGIN_ROOT/skills/arch-analyze/scan-project.mjs \
+node $PLUGIN_ROOT/internal/playbooks/analyze/scan-project.mjs \
   "$PROJECT_ROOT" \
   "$ARCH_PROJECT_DIR/tmp/ua-scan-files.json"
 ```
@@ -111,7 +111,7 @@ If the script exits with a non-zero status, read stderr to diagnose. You have up
 
 ### Step C -- Import Resolution (bundled `extract-import-map.mjs`)
 
-After Step B has produced the file list, invoke the bundled `extract-import-map.mjs` script for deterministic import extraction across all supported code languages. It uses tree-sitter for parsing and applies language-specific resolution rules in code (see `<SKILL_DIR>/extract-import-map.mjs`).
+After Step B has produced the file list, invoke the bundled `extract-import-map.mjs` script for deterministic import extraction across all supported code languages. It uses tree-sitter for parsing and applies language-specific resolution rules in code (see `<PLAYBOOK_DIR>/extract-import-map.mjs`).
 
 **Do not** attempt to re-implement import patterns. Step B emits `path`/`language`/`fileCategory` for every file; this script consumes that list and produces the `importMap`.
 
@@ -133,7 +133,7 @@ ENDJSON
 Then run:
 
 ```bash
-node $PLUGIN_ROOT/skills/arch-analyze/extract-import-map.mjs \
+node $PLUGIN_ROOT/internal/playbooks/analyze/extract-import-map.mjs \
   $ARCH_PROJECT_DIR/tmp/ua-import-map-input.json \
   $ARCH_PROJECT_DIR/tmp/ua-import-map-output.json
 ```
@@ -155,7 +155,7 @@ The output JSON has shape:
 
 Read the output JSON and merge the `importMap` field directly into your final scan-result.json (under the same key — `importMap`). The format matches the project-scanner contract: every input file has an entry; non-code files have empty arrays; resolved internal paths only (external packages are dropped).
 
-**Capture stderr** when you run the bundled script. Any line starting with `Warning:` should be appended to phase warnings — the SKILL.md orchestrator captures these for the final report. The script also writes a one-line summary `extract-import-map: filesScanned=… filesWithImports=… totalEdges=…` on completion; you can ignore that line or surface it as informational.
+**Capture stderr** when you run the bundled script. Any line starting with `Warning:` should be appended to phase warnings — the playbook.md orchestrator captures these for the final report. The script also writes a one-line summary `extract-import-map: filesScanned=… filesWithImports=… totalEdges=…` on completion; you can ignore that line or surface it as informational.
 
 **Languages supported.** The bundled script natively handles import resolution for: TypeScript, JavaScript (including CJS `require()`), Python (relative + absolute + `__init__.py`), Go (go.mod prefix stripping), Rust (`use crate::`, `use super::`, `use self::`, and `mod x;` declarations), Java, Kotlin, C#, Ruby (`require` + `require_relative`), PHP (composer.json PSR-4 autoload), C, and C++ (`#include` with relative + include/ + src/ probes). Languages outside this set get empty arrays — there is no LLM-based fallback.
 

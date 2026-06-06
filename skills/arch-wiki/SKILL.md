@@ -162,6 +162,6 @@ If either reviewer returns `needs_revision`, `conditional` with high findings, o
 ## Failure Rules
 
 - Missing `arch-layer.json`: stop and ask caller to run `arch-enrich`.
-- Missing repo graph: stop and ask caller to run `/arch-analyze`.
+- Missing repo graph: stop and ask caller to run `/arch-onboard`.
 - Projection failure: rerender only affected pages once.
 - Review reject after retry: report findings and do not claim wiki is complete.

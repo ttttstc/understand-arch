@@ -1,7 +1,6 @@
 ---
 name: arch-adr
-description: Append-only ADR management and arch-layer architecture_decisions indexing.
-argument-hint: "<decision-title>"
+description: Internal ADR writer. Append-only ADR management plus arch-layer architecture_decisions indexing. Only invoked by arch-design when a long-term decision is detected.
 ---
 
 # arch-adr

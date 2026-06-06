@@ -20,7 +20,7 @@ describe("arch-analyze build-fingerprints", () => {
       gitCommitHash: "test-commit",
     }, null, 2), "utf-8");
 
-    const stdout = execFileSync("node", ["skills/arch-analyze/build-fingerprints.mjs", inputPath], {
+    const stdout = execFileSync("node", ["internal/playbooks/analyze/build-fingerprints.mjs", inputPath], {
       cwd: process.cwd(),
       env: {
         ...process.env,

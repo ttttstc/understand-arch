@@ -15,8 +15,8 @@ This prompt is hook-triggered and runs inside the current Claude session. It is 
 2. Read `specs/repos.json`, every `specs/repos/{repo}/meta.json`, and `specs/arch-layer.json`.
 3. Compare recorded git commit/fingerprint data with the current workspace.
 4. If only non-source files changed, update freshness metadata with a clear note and stop.
-5. If one repo changed structurally, invoke `/arch-analyze` for that repo so the inherited UA Phase 0-6 subagent pipeline refreshes its `knowledge-graph.json`.
-6. If cross-repo imports, API contracts, schemas, deployment config, ADRs, CRs, or rules changed, invoke `arch-enrich` so Phase 7-12 refreshes `arch-layer.json`.
+5. If one repo changed structurally, load `internal/playbooks/analyze/playbook.md` for that repo so the inherited UA Phase 0-6 subagent pipeline refreshes its `knowledge-graph.json`.
+6. If cross-repo imports, API contracts, schemas, deployment config, ADRs, CRs, or rules changed, load `internal/playbooks/enrich/playbook.md` so Phase 7-12 refreshes `arch-layer.json`.
 7. Run deterministic validators:
    - `node engine/arch/arch-layer-writer.mjs validate <project-root-or-output-dir>`
    - `node engine/arch/wiki-projection-check.mjs <arch-project-dir>`
@@ -27,6 +27,6 @@ This prompt is hook-triggered and runs inside the current Claude session. It is 
 ## Stop Conditions
 
 - Missing `.understand-arch/{project}` baseline: ask the user to run `/arch-onboard`.
-- Missing per-repo graph: run `/arch-analyze` before `arch-enrich`.
+- Missing per-repo graph: run `/arch-onboard` before incremental update.
 - Empty capabilities, quality attributes, or risks after enrichment: fail the update and report that the architecture layer is incomplete.
 - Any placeholder text in wiki output: fail the update and report the page path.

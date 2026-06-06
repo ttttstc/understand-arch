@@ -9,4 +9,4 @@ gates:
     check: dashboard serves specs/arch-layer.json and displays capability, quality, risk, and debt counts
   - id: no-legacy-command-copy
     severity: warn
-    check: user-facing dashboard messages mention /arch-analyze or /arch-enrich, not /understand
+    check: user-facing dashboard messages mention /arch-onboard, not internal analyze or enrich commands

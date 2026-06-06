@@ -113,7 +113,7 @@ export function formatExplainPrompt(ctx: ExplainContext): string {
       `The path "${ctx.path}" was not found in the knowledge graph for ${ctx.projectName}.`,
       ``,
       `Possible reasons:`,
-      `- The file hasn't been analyzed yet — try running /arch-analyze first`,
+      `- The file hasn't been analyzed yet — try running /arch-onboard first`,
       `- The path may be different in the graph — check the exact file path`,
       `- The file may have been deleted or renamed since the last analysis`,
     ].join("\n");

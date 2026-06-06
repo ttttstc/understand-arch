@@ -8,7 +8,7 @@
     {
       "name": "understand-arch",
       "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
-      "version": "3.7.0-rc2",
+      "version": "3.8.0-rc1",
       "source": "./",
       "author": {
         "name": "ttttstc"

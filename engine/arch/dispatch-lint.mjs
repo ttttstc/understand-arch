@@ -115,7 +115,7 @@ export function lintSkillText(skillName, text, options = {}) {
 
 export function lintSkillFile(filePath, options = {}) {
   const text = readFileSync(filePath, "utf8");
-  const skillName = path.basename(path.dirname(filePath));
+  const skillName = options.skillName ?? path.basename(path.dirname(filePath));
   return {
     filePath,
     ...lintSkillText(skillName, text, options),
@@ -133,6 +133,81 @@ export function lintAllSkills(options = {}) {
     results.push(lintSkillFile(skillPath, options));
   }
 
+  const playbooksDir = path.join(repoRoot, "internal", "playbooks");
+  if (existsSync(playbooksDir)) {
+    for (const entry of readdirSync(playbooksDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const playbookPath = path.join(playbooksDir, entry.name, "playbook.md");
+      if (!existsSync(playbookPath)) continue;
+      results.push(lintSkillFile(playbookPath, { ...options, skillName: `arch-${entry.name}` }));
+    }
+  }
+
+  return results;
+}
+
+function collectSkillAndPlaybookFiles(root = repoRoot) {
+  const files = [];
+  const skillsDir = path.join(root, "skills");
+  if (existsSync(skillsDir)) {
+    for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const skillPath = path.join(skillsDir, entry.name, "SKILL.md");
+      if (existsSync(skillPath)) files.push(skillPath);
+    }
+  }
+
+  const playbooksDir = path.join(root, "internal", "playbooks");
+  if (existsSync(playbooksDir)) {
+    for (const entry of readdirSync(playbooksDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const playbookPath = path.join(playbooksDir, entry.name, "playbook.md");
+      if (existsSync(playbookPath)) files.push(playbookPath);
+    }
+  }
+
+  return files;
+}
+
+function collectAgentNames(root = repoRoot) {
+  const agentsDir = path.join(root, "agents");
+  if (!existsSync(agentsDir)) return new Set();
+  return new Set(
+    readdirSync(agentsDir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+      .map((entry) => entry.name.replace(/\.md$/, "")),
+  );
+}
+
+export function lintSubagentReferences(options = {}) {
+  const root = options.repoRoot ?? repoRoot;
+  const files = options.files ?? collectSkillAndPlaybookFiles(root);
+  const agentNames = options.agentNames ?? collectAgentNames(root);
+  const results = [];
+
+  const patterns = [
+    /subagent_type\s*=\s*["'`]?([a-z][a-z0-9:-]*)/g,
+    /subagent_type\s*:\s*["'`]([a-z][a-z0-9:-]*)/g,
+  ];
+
+  for (const filePath of files) {
+    const text = readFileSync(filePath, "utf8");
+    const refs = new Set();
+    for (const pattern of patterns) {
+      for (const match of text.matchAll(pattern)) {
+        refs.add(match[1]);
+      }
+    }
+    const errors = [];
+    for (const ref of [...refs].sort()) {
+      const unqualified = ref.includes(":") ? ref.split(":").pop() : ref;
+      if (!agentNames.has(unqualified)) {
+        errors.push(`unresolved subagent_type=${ref}; expected agents/${unqualified}.md`);
+      }
+    }
+    results.push({ filePath, errors });
+  }
+
   return results;
 }
 
@@ -144,7 +219,13 @@ function formatResult(result) {
 export function runCli(argv = process.argv.slice(2)) {
   const strict = argv.includes("--strict");
   const results = lintAllSkills({ strict });
-  const errors = results.flatMap(formatResult);
+  const referenceResults = lintSubagentReferences();
+  const errors = [
+    ...results.flatMap(formatResult),
+    ...referenceResults.flatMap((result) =>
+      result.errors.map((error) => `${path.relative(repoRoot, result.filePath)}: ${error}`),
+    ),
+  ];
   const warnings = results.flatMap((result) =>
     result.warnings.map((warning) => `${path.relative(repoRoot, result.filePath)}: warning: ${warning}`),
   );
@@ -158,7 +239,7 @@ export function runCli(argv = process.argv.slice(2)) {
     return 1;
   }
 
-  console.log(`dispatch-lint ok (${results.length} skills checked, strict=${strict})`);
+  console.log(`dispatch-lint ok (${results.length} skills checked, ${referenceResults.length} reference files checked, strict=${strict})`);
   return 0;
 }
 

@@ -301,7 +301,7 @@ Reject placeholder prose. No tool/scan/phase/analyzer meta narrative.
 Return JSON mapping section numbers to markdown content.
 ```
 
-## arch-review / arch-senior-reviewer Dispatch(约束验收)
+## arch-senior-reviewer Dispatch(约束验收)
 
 Use the Claude Code Task tool with `subagent_type=arch-senior-reviewer`. Do not inline this phase. The user must see subagent activity in Claude Code.
 
