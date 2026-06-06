@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { inferArchDir } from "./project-paths.mjs";
 
 const TARGET_CR_SECTIONS = [
   /^#{1,6}\s*(4(?:\.6)?|四)[\s.、-]*(详细设计|约束符合性|设计)/,
@@ -27,14 +28,6 @@ function readJson(path, fallback = undefined) {
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
-}
-
-function inferArchDir(options = {}) {
-  if (options.archDir) return resolve(options.archDir);
-  if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
-  const projectRoot = resolve(options.projectRoot || process.cwd());
-  const projectId = options.projectId || process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  return join(projectRoot, ".understand-arch", projectId);
 }
 
 function normalizePath(value) {

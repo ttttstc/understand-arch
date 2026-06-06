@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { inferArchDir } from "./project-paths.mjs";
 import {
   PluginRegistry,
   TreeSitterPlugin,
@@ -33,14 +34,6 @@ function asArray(value) {
 
 function unique(values) {
   return [...new Set(values.filter((value) => value !== undefined && value !== null && String(value).trim() !== "").map(String))];
-}
-
-function inferArchDir(options = {}) {
-  if (options.archDir) return resolve(options.archDir);
-  if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
-  const projectRoot = resolve(options.projectRoot || process.cwd());
-  const projectId = options.projectId || process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  return join(projectRoot, ".understand-arch", projectId);
 }
 
 function resolveMaybe(base, value) {

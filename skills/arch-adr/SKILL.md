@@ -1,7 +1,7 @@
 ---
 name: arch-adr
 description: Append-only ADR management and arch-layer architecture_decisions indexing.
-argument-hint: ["<decision-title>"]
+argument-hint: "<decision-title>"
 ---
 
 # arch-adr

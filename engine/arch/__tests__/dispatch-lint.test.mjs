@@ -13,6 +13,12 @@ function validSkill(extra = "") {
 Use the Claude Code Task tool with \`subagent_type=arch-demo-agent\`.
 Do not inline this phase. The user must see subagent activity in Claude Code.
 
+**Runtime fallback**: If the current runtime does not expose \`Task\` or \`Agent\` tools, inline execution is permitted.
+
+- Open the response with one line: \`[runtime-fallback: inline subagent <name>]\`
+- Execute the phase logic in the main conversation
+- Skip parallel-dispatch instructions; treat them as sequential
+
 Use the Claude Code Task tool with \`subagent_type=arch-demo-agent\`. Do not inline this phase. The user must see subagent activity in Claude Code.
 ${extra}
 `;
@@ -39,6 +45,26 @@ Mode: demo.
     const result = lintSkillText("arch-enrich", text, { strict: true });
     expect(result.errors.join("\n")).toContain("Use the Claude Code Task tool");
     expect(result.errors.join("\n")).toContain("legacy dispatch wording");
+  });
+
+  it("rejects missing runtime fallback section", () => {
+    const text = `# /arch-demo
+
+## Subagent Dispatch Is Mandatory
+
+Use the Claude Code Task tool with \`subagent_type=arch-demo-agent\`.
+Do not inline this phase. The user must see subagent activity in Claude Code.
+Send these N dispatches in a single message to run concurrently.
+`;
+    const result = lintSkillText("arch-enrich", text, { strict: true });
+    expect(result.errors.join("\n")).toContain("Runtime fallback");
+    expect(result.errors.join("\n")).toContain("[runtime-fallback: inline subagent");
+  });
+
+  it("accepts a skill with the runtime fallback section", () => {
+    const text = validSkill("Send these N dispatches in a single message to run concurrently.\n");
+    const result = lintSkillText("arch-enrich", text, { strict: true });
+    expect(result.errors).toEqual([]);
   });
 
   it("rejects missing subagent_type", () => {

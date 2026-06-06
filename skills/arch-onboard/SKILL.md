@@ -1,7 +1,7 @@
 ---
 name: arch-onboard
 description: Onboard a single-repo or multi-repo system with the v3.0 pipeline, producing per-repo code graphs, arch-layer.json, wiki, agent-context, and dashboard inputs.
-argument-hint: ["[project-name] [--repo <path>]... [--enable-hooks] [--no-agent-context]"]
+argument-hint: "[project-name] [--repo <path>]... [--enable-hooks] [--no-agent-context]"
 ---
 
 # /arch-onboard
@@ -25,15 +25,23 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 
 1. Parse `$ARGUMENTS`.
 2. If the first non-flag argument is a name, use it as `ARCH_PROJECT_ID`.
-3. If no name is provided, use the current directory basename.
-4. Create:
+3. Resolve `WORKSPACE_ROOT` before creating any output. If the command is invoked from inside an existing `.understand-arch` tree, strip back to the outer repository root. This prevents repeated runs from creating `.understand-arch/.understand-arch/...`.
+4. If no name is provided, use the `WORKSPACE_ROOT` basename.
+5. Create:
 
 ```bash
-ARCH_PROJECT_ROOT="$PWD/.understand-arch/$ARCH_PROJECT_ID"
+WORKSPACE_ROOT="$(pwd -P)"
+case "$WORKSPACE_ROOT" in
+  */.understand-arch) WORKSPACE_ROOT="${WORKSPACE_ROOT%/.understand-arch}" ;;
+  */.understand-arch/*) WORKSPACE_ROOT="${WORKSPACE_ROOT%%/.understand-arch/*}" ;;
+esac
+
+ARCH_PROJECT_ID="${ARCH_PROJECT_ID:-$(basename "$WORKSPACE_ROOT")}"
+ARCH_PROJECT_ROOT="$WORKSPACE_ROOT/.understand-arch/$ARCH_PROJECT_ID"
 mkdir -p "$ARCH_PROJECT_ROOT/specs/repos" "$ARCH_PROJECT_ROOT/wiki" "$ARCH_PROJECT_ROOT/rules" "$ARCH_PROJECT_ROOT/decisions" "$ARCH_PROJECT_ROOT/change-requests" "$ARCH_PROJECT_ROOT/improvements"
 ```
 
-5. Write `state.yaml`:
+6. Write `state.yaml`:
 
 ```yaml
 version: 3.0.0-rc1
@@ -48,7 +56,7 @@ If `--enable-hooks` is present, set `hooks_enabled: true`.
 
 Support both forms:
 
-- No `--repo`: current directory is the only repo.
+- No `--repo`: `WORKSPACE_ROOT` is the only repo.
 - One or more `--repo <path>`: each path is a registered repo.
 
 For each repo:
@@ -123,7 +131,7 @@ After each dispatch, confirm:
 Run:
 
 ```bash
-ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/cross-repo-linker.mjs "$PWD"
+ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/cross-repo-linker.mjs "$WORKSPACE_ROOT"
 ```
 
 This writes `intermediate/cross-edges.json`. Do not merge the per-repo graphs.

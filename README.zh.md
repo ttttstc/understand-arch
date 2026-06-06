@@ -197,15 +197,40 @@
 - Node.js 18+ 和 `pnpm`
 - `git`
 
-在 Claude Code 中执行：
+先 clone 仓库，再用官方安装脚本：
+
+```bash
+git clone https://github.com/ttttstc/understand-arch.git
+cd understand-arch
+node scripts/install-claude-plugin.mjs
+```
+
+如果不指定版本，安装脚本会默认拉取 `origin/main`，并把它设成唯一激活版本。
+
+只有需要固定版本时，才显式指定：
+
+```bash
+node scripts/install-claude-plugin.mjs --ref v3.7.0-rc1
+node scripts/install-claude-plugin.mjs --ref 3c52f62152859604fab762a10523f2ce2d4a5eaf
+```
+
+然后在 Claude Code 里执行：
 
 ```text
-/plugin marketplace add https://github.com/ttttstc/understand-arch
-/plugin install understand-arch@understand-arch
 /reload-plugins
 ```
 
 只有基础安装时，所有命令都能跑；`/arch-diagram` 默认走 Mermaid 降级路径。**不需要** Python、`cairosvg` 或 Bash。
+
+### 其他 agentic runtime
+
+Codex、opencode、openclaw、VS Code Copilot 以及类似 runtime 可以使用跨 runtime 安装脚本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ttttstc/understand-arch/main/install.sh | bash -s codex
+```
+
+如果你使用的是其他入口，把 `codex` 换成 `opencode`、`openclaw` 或 `vscode`。Cursor 可以直接读取 `.cursor-plugin/plugin.json`。完整 runtime 说明见 [docs/runtimes/README.md](./docs/runtimes/README.md)。
 
 ### 推荐完整安装（解锁 SVG 和 PNG 出图）
 
@@ -238,10 +263,11 @@
 
 ### 看不到命令怎么办
 
-1. 先执行 `/reload-plugins`。
-2. 用 `/plugin list` 确认已经安装 `understand-arch`。
-3. 命令名使用短横线，比如 `/arch-onboard`，不是 `/arch:onboard`。
-4. 如果还看不到，重启 Claude Code 后再执行 `/reload-plugins`。
+1. 先在仓库里执行 `node scripts/doctor-plugin-install.mjs --strict`。
+2. 再执行 `/reload-plugins`。
+3. 用 `/arch-onboard` 验证。
+4. 用 `/plugin list` 确认已经安装 `understand-arch`。
+5. 如果 Claude 还显示旧命令，重启 Claude Code 后再执行 `/reload-plugins`。
 
 ## 第一次怎么用
 

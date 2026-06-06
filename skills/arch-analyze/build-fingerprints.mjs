@@ -26,6 +26,7 @@ import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolveWorkspaceRoot } from '../../engine/arch/project-paths.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // skills/arch-analyze/ -> plugin root is two dirs up
@@ -53,7 +54,8 @@ const {
 } = core;
 
 function archProjectDir(projectRoot) {
-  return process.env.ARCH_PROJECT_DIR || join(projectRoot, '.understand-arch', process.env.ARCH_PROJECT_ID || basename(projectRoot));
+  const root = resolveWorkspaceRoot(projectRoot);
+  return process.env.ARCH_PROJECT_DIR || join(root, '.understand-arch', process.env.ARCH_PROJECT_ID || basename(root));
 }
 
 function archProjectRoot(projectRoot) {

@@ -27,6 +27,11 @@ const REQUIRED_PHRASES = [
   "The user must see subagent activity in Claude Code",
 ];
 
+const RUNTIME_FALLBACK_PHRASES = [
+  "Runtime fallback",
+  "[runtime-fallback: inline subagent",
+];
+
 const PARALLEL_SKILLS = new Set([
   "arch-enrich",
   "arch-audit",
@@ -38,6 +43,10 @@ function stripFencedBlocks(text) {
   return text.replace(/```[\s\S]*?```/g, "");
 }
 
+function stripRuntimeFallback(text) {
+  return text.replace(/\*\*Runtime fallback\*\*:[\s\S]*?should not be used in Claude Code\.\s*/g, "");
+}
+
 function lineNumberFor(text, index) {
   return text.slice(0, index).split(/\r?\n/).length;
 }
@@ -47,6 +56,7 @@ export function lintSkillText(skillName, text, options = {}) {
   const errors = [];
   const warnings = [];
   const visibleText = stripFencedBlocks(text);
+  const dispatchText = stripRuntimeFallback(visibleText);
 
   if (EXEMPT_SKILLS.has(skillName)) {
     if (skillName === "arch-analyze" && !text.includes("Subagent Dispatch Is Mandatory")) {
@@ -59,6 +69,11 @@ export function lintSkillText(skillName, text, options = {}) {
     for (const phrase of REQUIRED_PHRASES) {
       if (!text.includes(phrase)) {
         errors.push(`missing required phrase: ${phrase}`);
+      }
+    }
+    for (const phrase of RUNTIME_FALLBACK_PHRASES) {
+      if (!text.includes(phrase)) {
+        errors.push(`missing runtime fallback phrase: ${phrase}`);
       }
     }
   }
@@ -83,7 +98,7 @@ export function lintSkillText(skillName, text, options = {}) {
     }
   }
 
-  if (/inline (simulate|simulation)|simulate .*inline|内嵌模拟|自行模拟/i.test(visibleText)) {
+  if (/inline (simulate|simulation)|simulate .*inline|内嵌模拟|自行模拟/i.test(dispatchText)) {
     errors.push("forbidden inline simulation wording found");
   }
 
@@ -91,7 +106,7 @@ export function lintSkillText(skillName, text, options = {}) {
     errors.push("missing parallel dispatch phrase: Send these N dispatches in a single message to run concurrently");
   }
 
-  if (strict && /concurrently|并行|parallel/i.test(visibleText) && !text.includes("Send these N dispatches in a single message to run concurrently")) {
+  if (strict && /concurrently|并行|parallel/i.test(dispatchText) && !text.includes("Send these N dispatches in a single message to run concurrently")) {
     errors.push("concurrent/parallel wording must use the required single-message dispatch phrase");
   }
 

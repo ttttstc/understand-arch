@@ -3,10 +3,11 @@
 // 校验 rules/constraints/ 下条目结构、证据回链、状态合法、ai-mined 不得 confirmed。
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { inferArchDir, resolveWorkspaceRoot } from "./project-paths.mjs";
 
-const projectRoot = resolve(process.argv[2] || ".");
+const projectRoot = resolveWorkspaceRoot(process.argv[2] || ".");
 const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
-const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
+const archDir = inferArchDir({ projectRoot, projectId });
 const conDir = join(archDir, "rules", "constraints");
 
 const VALID_LEVEL = new Set(["confirmed", "observed", "inferred", "uncertain", "conflicted"]);

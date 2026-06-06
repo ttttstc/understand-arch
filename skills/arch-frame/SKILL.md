@@ -1,7 +1,7 @@
 ---
 name: arch-frame
 description: Internal PRD hard gate for architecture design. Blocks under-specified requests before CR generation.
-argument-hint: ["<prd-or-request>"]
+argument-hint: "<prd-or-request>"
 ---
 
 # arch-frame

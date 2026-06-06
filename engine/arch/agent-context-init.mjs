@@ -1,15 +1,8 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, join, resolve, relative } from "node:path";
+import { basename, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-
-function inferArchDir(options = {}) {
-  if (options.archDir) return resolve(options.archDir);
-  if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
-  const projectRoot = resolve(options.projectRoot || process.cwd());
-  const projectId = options.projectId || process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  return join(projectRoot, ".understand-arch", projectId);
-}
+import { inferArchDir } from "./project-paths.mjs";
 
 function readJson(path, fallback) {
   if (!existsSync(path)) return fallback;

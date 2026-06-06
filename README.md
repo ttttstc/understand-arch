@@ -192,15 +192,40 @@ Required:
 - Node.js 18+ and `pnpm`
 - `git`
 
-In Claude Code:
+Clone the repository once, then install from the official script:
+
+```bash
+git clone https://github.com/ttttstc/understand-arch.git
+cd understand-arch
+node scripts/install-claude-plugin.mjs
+```
+
+If you do not specify a version, the installer pulls from `origin/main` and makes that the only active installed version.
+
+Pin a release, tag, or commit only when you need it:
+
+```bash
+node scripts/install-claude-plugin.mjs --ref v3.7.0-rc1
+node scripts/install-claude-plugin.mjs --ref 3c52f62152859604fab762a10523f2ce2d4a5eaf
+```
+
+Then reload Claude Code plugins:
 
 ```text
-/plugin marketplace add https://github.com/ttttstc/understand-arch
-/plugin install understand-arch@understand-arch
 /reload-plugins
 ```
 
 With only the basic install, every command works against the Mermaid fallback path for `/arch-diagram`. No Python, no `cairosvg`, no Bash required.
+
+### Other agentic runtimes
+
+For Codex, opencode, openclaw, VS Code Copilot, and similar runtimes, use the cross-runtime installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ttttstc/understand-arch/main/install.sh | bash -s codex
+```
+
+Use `opencode`, `openclaw`, or `vscode` instead of `codex` when that matches your runtime. Cursor can read `.cursor-plugin/plugin.json` directly. The full runtime guide is in [docs/runtimes/README.md](./docs/runtimes/README.md).
 
 ### Recommended full install (enables SVG and PNG diagrams)
 
@@ -233,10 +258,11 @@ You should see:
 
 ### If Commands Do Not Appear
 
-1. Run `/reload-plugins`.
-2. Run `/plugin list` and confirm `understand-arch` is installed.
-3. Use dash-style command names such as `/arch-onboard`, not `/arch:onboard`.
-4. Restart Claude Code and run `/reload-plugins` again.
+1. Run `node scripts/doctor-plugin-install.mjs --strict` from this repository.
+2. Run `/reload-plugins`.
+3. Verify with `/arch-onboard`.
+4. Run `/plugin list` and confirm `understand-arch` is installed.
+5. Restart Claude Code and run `/reload-plugins` again if Claude still shows stale commands.
 
 ## First Run
 

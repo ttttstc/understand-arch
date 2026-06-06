@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sourceHashForCard } from "./cards-deriver.mjs";
+import { inferArchDir } from "./project-paths.mjs";
 
 function readJson(path, fallback = undefined) {
   if (!existsSync(path)) return fallback;
@@ -11,14 +12,6 @@ function readJson(path, fallback = undefined) {
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
-}
-
-function inferArchDir(options = {}) {
-  if (options.archDir) return resolve(options.archDir);
-  if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
-  const projectRoot = resolve(options.projectRoot || process.cwd());
-  const projectId = options.projectId || process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  return join(projectRoot, ".understand-arch", projectId);
 }
 
 function resolveMaybe(base, value) {

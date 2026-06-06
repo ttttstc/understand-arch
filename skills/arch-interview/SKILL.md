@@ -1,7 +1,7 @@
 ---
 name: arch-interview
 description: Interview senior engineers to recover implicit project knowledge — the "why" behind anomalies that code archaeology cannot explain. Reads onboard-produced suspicious findings, grills experts one question at a time, and produces proposed constraints for human confirmation.
-argument-hint: ["[--scenario=domain|dependency|history|customization|risk|ops|testing] [arch-project-dir]"]
+argument-hint: "[--scenario=domain|dependency|history|customization|risk|ops|testing] [arch-project-dir]"
 ---
 
 # /arch-interview
@@ -16,7 +16,15 @@ argument-hint: ["[--scenario=domain|dependency|history|customization|risk|ops|te
 
 This skill is an orchestrator. It must Use the Claude Code Task tool for the semantic question-preparation phase of the interview loop.
 
-For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-interview cannot satisfy v3.5 because LLM phases would run inline."
+For every LLM phase, prefer the Claude Code Task tool with the named `subagent_type` whenever the runtime exposes it.
+**Runtime fallback**: If the current runtime does not expose `Task` or `Agent` tools (for example, Codex CLI, opencode, Cursor, or Copilot), inline execution is permitted. In this case:
+
+- Open the response with one line: `[runtime-fallback: inline subagent <name>]`
+- Execute the phase logic in the main conversation
+- Skip parallel-dispatch instructions; treat them as sequential
+- All deterministic Node tools and JSON merge rules still apply unchanged
+
+The `Task` path remains preferred whenever the runtime supports it; the fallback exists for cross-runtime portability and should not be used in Claude Code.
 
 Do not inline this phase. The user must see subagent activity in Claude Code. The main conversation may ask and receive the human interview answer, but anomaly interpretation and recommended answer drafting must stay in a subagent.
 

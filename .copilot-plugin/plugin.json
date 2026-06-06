@@ -1,0 +1,14 @@
+{
+  "name": "understand-arch",
+  "description": "Architect-grade code and architecture analysis for any agentic runtime",
+  "version": "3.7.0-rc1",
+  "author": {
+    "name": "ttttstc"
+  },
+  "homepage": "https://github.com/ttttstc/understand-arch",
+  "repository": "https://github.com/ttttstc/understand-arch",
+  "license": "MIT",
+  "keywords": ["codebase-analysis", "knowledge-graph", "architecture", "onboarding", "dashboard"],
+  "skills": "./skills/",
+  "agents": "./agents/"
+}

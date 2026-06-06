@@ -1,7 +1,7 @@
 ---
 name: arch-wiki
 description: Render ARCHITECTURE.md plus the v3.0 14-page architecture wiki and review projection completeness.
-argument-hint: ["[audience=cto|newcomer|pm|architect] [arch-project-dir]"]
+argument-hint: "[audience=cto|newcomer|pm|architect] [arch-project-dir]"
 ---
 
 # /arch-wiki
@@ -12,7 +12,15 @@ Render and review the human-readable architecture wiki. The main product is `ARC
 
 This skill is an orchestrator. It must use the Claude Code Task tool for semantic wiki review and audience refinement phases.
 
-For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-wiki cannot satisfy v3.5 because LLM phases would run inline."
+For every LLM phase, prefer the Claude Code Task tool with the named `subagent_type` whenever the runtime exposes it.
+**Runtime fallback**: If the current runtime does not expose `Task` or `Agent` tools (for example, Codex CLI, opencode, Cursor, or Copilot), inline execution is permitted. In this case:
+
+- Open the response with one line: `[runtime-fallback: inline subagent <name>]`
+- Execute the phase logic in the main conversation
+- Skip parallel-dispatch instructions; treat them as sequential
+- All deterministic Node tools and JSON merge rules still apply unchanged
+
+The `Task` path remains preferred whenever the runtime supports it; the fallback exists for cross-runtime portability and should not be used in Claude Code.
 
 Do not inline this phase. The user must see subagent activity in Claude Code. Rendering remains deterministic in `render-wiki.mjs`; subagents may review or refine source gaps only.
 

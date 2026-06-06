@@ -1,7 +1,7 @@
 ---
 name: arch-design
 description: Turn a PRD or change request into CR-OPTION.md plus a 14-section CR.md with impact analysis, option selection, and senior architect review.
-argument-hint: ["<prd-or-request>"]
+argument-hint: "<prd-or-request>"
 ---
 
 # /arch-design
@@ -12,7 +12,15 @@ Use this when the user asks for implementation design, PRD review, impact analys
 
 This skill is an orchestrator. It must use the Claude Code Task tool for every semantic design phase.
 
-For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-design cannot satisfy v3.5 because LLM phases would run inline."
+For every LLM phase, prefer the Claude Code Task tool with the named `subagent_type` whenever the runtime exposes it.
+**Runtime fallback**: If the current runtime does not expose `Task` or `Agent` tools (for example, Codex CLI, opencode, Cursor, or Copilot), inline execution is permitted. In this case:
+
+- Open the response with one line: `[runtime-fallback: inline subagent <name>]`
+- Execute the phase logic in the main conversation
+- Skip parallel-dispatch instructions; treat them as sequential
+- All deterministic Node tools and JSON merge rules still apply unchanged
+
+The `Task` path remains preferred whenever the runtime supports it; the fallback exists for cross-runtime portability and should not be used in Claude Code.
 
 Do not inline this phase. The user must see subagent activity in Claude Code. Deterministic CR file editing and validation stay in `cr-md-editor.mjs`.
 

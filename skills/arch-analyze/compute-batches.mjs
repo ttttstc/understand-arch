@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { resolveWorkspaceRoot } from '../../engine/arch/project-paths.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const PLUGIN_ROOT = resolve(dirname(__filename), '../..');
@@ -30,7 +31,8 @@ try {
 const { TreeSitterPlugin, PluginRegistry, builtinLanguageConfigs, registerAllParsers } = core;
 
 function archProjectDir(projectRoot) {
-  return process.env.ARCH_PROJECT_DIR || join(projectRoot, '.understand-arch', process.env.ARCH_PROJECT_ID || basename(projectRoot));
+  const root = resolveWorkspaceRoot(projectRoot);
+  return process.env.ARCH_PROJECT_DIR || join(root, '.understand-arch', process.env.ARCH_PROJECT_ID || basename(root));
 }
 
 import Graph from 'graphology';

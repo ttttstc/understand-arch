@@ -1,7 +1,7 @@
 ---
 name: arch-analyze
 description: Internal v3.0 code graph analysis. Inherits the Understand-Anything Phase 0-6 subagent dispatch pipeline and writes the code fact graph for understand-arch.
-argument-hint: ["[path] [--full|--enable-hooks|--disable-hooks|--review|--language <lang>]"]
+argument-hint: "[path] [--full|--enable-hooks|--disable-hooks|--review|--language <lang>]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(node:*), Bash(python:*), Bash(git:*), Task, Agent
 ---
 
@@ -74,6 +74,15 @@ Determine whether to run a full analysis or incremental update.
      - Verify the resolved path exists and is a directory (run `test -d <path>`). If it does not exist or is not a directory, report an error to the user and **STOP**.
      - Set `PROJECT_ROOT` to the resolved absolute path.
    - If no directory path argument is found, set `PROJECT_ROOT` to the current working directory.
+   - **Output-root guard.** If `PROJECT_ROOT` is inside an existing `.understand-arch` output tree, strip it back to the outer repository root before computing `ARCH_PROJECT_ROOT`. Re-running analysis from the generated wiki/specs directory must update the root `.understand-arch/<project>` directory, never create `.understand-arch/.understand-arch/...`.
+
+     ```bash
+     case "$PROJECT_ROOT" in
+       */.understand-arch) PROJECT_ROOT="${PROJECT_ROOT%/.understand-arch}" ;;
+       */.understand-arch/*) PROJECT_ROOT="${PROJECT_ROOT%%/.understand-arch/*}" ;;
+     esac
+     ```
+
    - **Worktree redirect.** If `PROJECT_ROOT` is inside a git worktree (not the main checkout), redirect output to the main repository root. Worktrees managed by Claude Code are ephemeral — `.understand-arch/` written there is destroyed when the session ends, taking the knowledge graph with it (issue #133). Detect a worktree by comparing `git rev-parse --git-dir` against `git rev-parse --git-common-dir`; in a normal checkout or submodule they resolve to the same path, in a worktree they differ and the parent of `--git-common-dir` is the main repo root.
 
      ```bash

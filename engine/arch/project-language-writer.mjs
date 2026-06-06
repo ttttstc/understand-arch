@@ -2,6 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inferArchDir, resolveWorkspaceRoot } from "./project-paths.mjs";
 
 function readJson(path) {
   try {
@@ -71,9 +72,9 @@ ${table(["不推荐", "推荐", "原因"], forbiddenMixups, (row) => [row.avoid,
 }
 
 function main() {
-  const projectRoot = resolve(process.argv[2] || ".");
+  const projectRoot = resolveWorkspaceRoot(process.argv[2] || ".");
   const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
+  const archDir = inferArchDir({ projectRoot, projectId });
   const interDir = join(archDir, "intermediate");
   const rulesDir = join(archDir, "rules");
   const outputPath = join(rulesDir, "project-language.md");

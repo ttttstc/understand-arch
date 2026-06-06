@@ -10,6 +10,7 @@ import {
 import { createHash } from "node:crypto";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inferArchDir } from "./project-paths.mjs";
 
 export const CARD_TYPES = [
   "ComponentCard",
@@ -69,14 +70,6 @@ function slug(value) {
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
-}
-
-function inferArchDir(options = {}) {
-  if (options.archDir) return resolve(options.archDir);
-  if (process.env.ARCH_PROJECT_ROOT) return resolve(process.env.ARCH_PROJECT_ROOT);
-  const projectRoot = resolve(options.projectRoot || process.cwd());
-  const projectId = options.projectId || process.env.ARCH_PROJECT_ID || basename(projectRoot);
-  return join(projectRoot, ".understand-arch", projectId);
 }
 
 function loadGraphs(archDir, archLayer) {

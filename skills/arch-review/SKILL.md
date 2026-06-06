@@ -1,7 +1,7 @@
 ---
 name: arch-review
 description: Internal CR.md and architecture artifact review, dispatching arch-senior-reviewer.
-argument-hint: ["<CR.md|arch-layer.json|wiki-dir>"]
+argument-hint: "<CR.md|arch-layer.json|wiki-dir>"
 ---
 
 # arch-review

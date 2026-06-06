@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { inferArchDir, resolveWorkspaceRoot } from "./project-paths.mjs";
 
 const command = process.argv[2] || "init";
-const projectRoot = resolve(process.argv[3] || ".");
+const projectRoot = resolveWorkspaceRoot(process.argv[3] || ".");
 const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
-const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
+const archDir = inferArchDir({ projectRoot, projectId });
 const layerPath = process.argv[4] ? resolve(process.argv[4]) : join(archDir, "specs", "arch-layer.json");
 
 function emptyLayer() {

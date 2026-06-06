@@ -1,7 +1,7 @@
 ---
 name: arch-diagram
 description: 基于 graph 与 arch-layer 生成 Mermaid、SVG、PNG 或 PlantUML 架构图,默认引导用户选择出图风格。
-argument-hint: ["[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [--profile=web|middleware|pipeline|agent|multi-repo]"]
+argument-hint: "[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [--profile=web|middleware|pipeline|agent|multi-repo]"
 ---
 
 # /arch-diagram
@@ -12,7 +12,15 @@ argument-hint: ["[type] [arch-project-dir] [--format=svg|png|plantuml|mermaid] [
 
 This skill is an orchestrator. It must use the Claude Code Task tool for semantic diagram grouping and fireworks JSON translation.
 
-For every LLM phase, use the Claude Code Task tool with the named `subagent_type`. If the Task tool is unavailable, stop and report: "Claude Code subagent tool is unavailable; arch-diagram cannot satisfy v3.5 because LLM phases would run inline."
+For every LLM phase, prefer the Claude Code Task tool with the named `subagent_type` whenever the runtime exposes it.
+**Runtime fallback**: If the current runtime does not expose `Task` or `Agent` tools (for example, Codex CLI, opencode, Cursor, or Copilot), inline execution is permitted. In this case:
+
+- Open the response with one line: `[runtime-fallback: inline subagent <name>]`
+- Execute the phase logic in the main conversation
+- Skip parallel-dispatch instructions; treat them as sequential
+- All deterministic Node tools and JSON merge rules still apply unchanged
+
+The `Task` path remains preferred whenever the runtime supports it; the fallback exists for cross-runtime portability and should not be used in Claude Code.
 
 Do not inline this phase. The user must see subagent activity in Claude Code. `diagram-dispatch.mjs` remains deterministic and must not translate architecture semantics into JSON.
 

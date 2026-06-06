@@ -3,11 +3,12 @@
 // 铁律:不做任何 LLM 推断,只做结构化读写 + 合并保护。
 // 合并保护:已 confirmed/adjusted/rejected 的人工决策条目永不被覆盖。
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join } from "node:path";
+import { inferArchDir, resolveWorkspaceRoot } from "./project-paths.mjs";
 
-const projectRoot = resolve(process.argv[2] || ".");
+const projectRoot = resolveWorkspaceRoot(process.argv[2] || ".");
 const projectId = process.env.ARCH_PROJECT_ID || basename(projectRoot);
-const archDir = process.env.ARCH_PROJECT_ROOT || join(projectRoot, ".understand-arch", projectId);
+const archDir = inferArchDir({ projectRoot, projectId });
 const interDir = join(archDir, "intermediate");
 const conDir = join(archDir, "rules", "constraints");
 
