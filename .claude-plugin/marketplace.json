@@ -1,5 +1,18 @@
 {
   "name": "understand-arch",
   "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
-  "version": "3.7.0-rc1"
+  "owner": {
+    "name": "ttttstc"
+  },
+  "plugins": [
+    {
+      "name": "understand-arch",
+      "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
+      "version": "3.7.0-rc2",
+      "source": "./",
+      "author": {
+        "name": "ttttstc"
+      }
+    }
+  ]
 }

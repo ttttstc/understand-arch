@@ -205,7 +205,7 @@ If you do not specify a version, the installer pulls from `origin/main` and make
 Pin a release, tag, or commit only when you need it:
 
 ```bash
-node scripts/install-claude-plugin.mjs --ref v3.7.0-rc1
+node scripts/install-claude-plugin.mjs --ref v3.7.0-rc2
 node scripts/install-claude-plugin.mjs --ref 3c52f62152859604fab762a10523f2ce2d4a5eaf
 ```
 

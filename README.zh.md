@@ -210,7 +210,7 @@ node scripts/install-claude-plugin.mjs
 只有需要固定版本时，才显式指定：
 
 ```bash
-node scripts/install-claude-plugin.mjs --ref v3.7.0-rc1
+node scripts/install-claude-plugin.mjs --ref v3.7.0-rc2
 node scripts/install-claude-plugin.mjs --ref 3c52f62152859604fab762a10523f2ce2d4a5eaf
 ```
 

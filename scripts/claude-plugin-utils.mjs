@@ -67,7 +67,7 @@ export function printInstallUsage() {
   console.log("Default ref: main");
   console.log("Examples:");
   console.log("  node scripts/install-claude-plugin.mjs");
-  console.log("  node scripts/install-claude-plugin.mjs --ref v3.6.0-rc1");
+  console.log("  node scripts/install-claude-plugin.mjs --ref v3.7.0-rc2");
   console.log("  node scripts/install-claude-plugin.mjs --ref HEAD");
 }
 

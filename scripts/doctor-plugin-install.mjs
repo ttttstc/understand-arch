@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import {
   PLUGIN_ID,
   PLUGIN_KEY,
@@ -13,7 +14,20 @@ import {
   parseArgs,
   printDoctorUsage,
   readJson,
+  tryRun,
 } from "./claude-plugin-utils.mjs";
+
+function claudePluginList() {
+  if (process.platform === "win32") {
+    const result = spawnSync("cmd.exe", ["/d", "/s", "/c", "claude plugin list"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    if (result.error || result.status !== 0) return null;
+    return result.stdout?.trim() ?? "";
+  }
+  return tryRun("claude", ["plugin", "list"]);
+}
 
 function collectChecks() {
   const checks = [];
@@ -62,6 +76,16 @@ function collectChecks() {
   if (!fs.existsSync(marketplaceRoot)) {
     warnings.push(`marketplace snapshot missing: ${marketplaceRoot}`);
   } else {
+    const marketplaceCatalog = readJson(path.join(marketplaceRoot, ".claude-plugin", "marketplace.json"), null);
+    const catalogPlugin = marketplaceCatalog?.plugins?.find?.((plugin) => plugin?.name === PLUGIN_ID);
+    if (!catalogPlugin) {
+      errors.push(`marketplace catalog does not list plugin ${PLUGIN_ID}: ${path.join(marketplaceRoot, ".claude-plugin", "marketplace.json")}`);
+    } else if (catalogPlugin.source !== "./") {
+      errors.push(`marketplace catalog source must be './' for ${PLUGIN_ID}, got ${catalogPlugin.source}`);
+    } else {
+      checks.push(formatStatus("marketplace catalog", "ok", `${PLUGIN_ID} -> ${catalogPlugin.source}`));
+    }
+
     const marketplaceManifest = readJson(path.join(marketplaceRoot, ".claude-plugin", "plugin.json"), null);
     if (!marketplaceManifest?.version) {
       warnings.push(`marketplace manifest missing or unreadable under ${marketplaceRoot}`);
@@ -111,6 +135,27 @@ function collectChecks() {
         errors.push(`argument-hint must be a string, not a YAML array: ${invalidHints.join(", ")}`);
       } else {
         checks.push(formatStatus("skill frontmatter", "ok", "argument-hint strings"));
+      }
+    }
+  }
+
+  const pluginList = claudePluginList();
+  if (!pluginList) {
+    warnings.push("could not run `claude plugin list`; install files were checked but Claude runtime status was not verified");
+  } else {
+    const lines = pluginList.split(/\r?\n/);
+    const marker = `> ${PLUGIN_KEY}`;
+    const index = lines.findIndex((line) => line.includes(marker));
+    if (index === -1) {
+      errors.push(`claude plugin list does not include ${PLUGIN_KEY}`);
+    } else {
+      const block = lines.slice(index, index + 6).join("\n");
+      if (/failed to load/i.test(block)) {
+        errors.push(`Claude runtime reports failed plugin load:\n${block}`);
+      } else if (!/Status:\s*.*enabled/i.test(block)) {
+        warnings.push(`Claude runtime does not report enabled status for ${PLUGIN_KEY}:\n${block}`);
+      } else {
+        checks.push(formatStatus("claude runtime", "ok", `${PLUGIN_KEY} enabled`));
       }
     }
   }
