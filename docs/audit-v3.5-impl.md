@@ -15,7 +15,7 @@ v3.5 T1 的实现范围已完成:7 个用户入口 SKILL 的 dispatch 段统一�
 
 | 项目 | 文件 | 验收 |
 |---|---|---|
-| arch-enrich dispatch 规范化 | `skills/arch-enrich/SKILL.md` | Phase 7/8/9/9.5/9.6/10/11/11.5/12 均显式 Task;Phase 9.5 双 miner 单消息并发 |
+| arch-enrich dispatch 规范化 | `internal/playbooks/enrich/SKILL.md` | Phase 7/8/9/9.5/9.6/10/11/11.5/12 均显式 Task;Phase 9.5 双 miner 单消息并发 |
 | arch-audit dispatch 规范化 | `skills/arch-audit/SKILL.md` | senior-reviewer、decision-extractor、5b 三项检查规范化;5b 单消息并发 |
 | arch-design dispatch 规范化 | `skills/arch-design/SKILL.md` | pre-grill/frame/impact/CR-OPTION/interface/solution/senior 均显式 Task;CR-OPTION A/B/C 三路并发 |
 | arch-interview dispatch 规范化 | `skills/arch-interview/SKILL.md` | 主访谈循环的问题准备阶段显式 Task |
@@ -39,7 +39,7 @@ v3.5 T1 的实现范围已完成:7 个用户入口 SKILL 的 dispatch 段统一�
 |---|---|---|
 | `node engine/arch/dispatch-lint.mjs --strict` | exit 0 | `dispatch-lint ok (13 skills checked, strict=true)` |
 | `rg -n "Subagent Dispatch Is Mandatory" <7 SKILL.md>` | exit 0 | 7 个目标 SKILL 全部命中 |
-| `rg -n "Send these N dispatches in a single message" skills/arch-enrich/SKILL.md skills/arch-audit/SKILL.md skills/arch-design/SKILL.md skills/arch-wiki/SKILL.md` | exit 0 | 4 个并行场景命中;design 在 workflow 和详细模板各出现一次 |
+| `rg -n "Send these N dispatches in a single message" internal/playbooks/enrich/SKILL.md skills/arch-audit/SKILL.md skills/arch-design/SKILL.md skills/arch-wiki/SKILL.md` | exit 0 | 4 个并行场景命中;design 在 workflow 和详细模板各出现一次 |
 | `git diff -- README.md README.zh.md` | exit 0 | 空输出,README 双语未改 |
 | `pnpm arch:test` | exit 0 | 11 个测试文件,32 个 case 全绿 |
 | `npm run verify` | exit 0 | dispatch lint、arch/core/dashboard 测试与 build 全通过 |
@@ -102,7 +102,7 @@ Typola 复验计数:
 
 ## 回归保护
 
-- 未修改 `skills/arch-analyze/SKILL.md`;它仍是 UA 范式标杆。
+- 未修改 `internal/playbooks/analyze/SKILL.md`;它仍是 UA 范式标杆。
 - 未修改 `agents/*.md`。
 - 未修改 `internal/schemas/*.json`。
 - 未修改 README 双语。

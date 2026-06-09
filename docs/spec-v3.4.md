@@ -67,7 +67,7 @@ Qoder 核心理念是「两步凝练 + 双轮自迭代」:原始信号编译成 
 
 | UA 增量能力 | 代码位置 | 架构层调用 |
 |---|---|---|
-| `buildFingerprintStore`(产基线) | `engine/core/src/fingerprint.ts` | ✅ 唯一接入:`skills/arch-analyze/build-fingerprints.mjs` 调,产 `fingerprints.json` |
+| `buildFingerprintStore`(产基线) | `engine/core/src/fingerprint.ts` | ✅ 唯一接入:`internal/playbooks/analyze/build-fingerprints.mjs` 调,产 `fingerprints.json` |
 | `isStale` / `getChangedFiles`(git diff 找改动) | `engine/core/src/staleness.ts` | ❌ 零调用 |
 | `classifyUpdate`(SKIP / PARTIAL_UPDATE / ARCHITECTURE_UPDATE / FULL_UPDATE 4 档) | `engine/core/src/change-classifier.ts` | ❌ 零调用 |
 | `mergeGraphUpdate`(增量合并节点) | `engine/core/src/staleness.ts` | ❌ 零调用 |
@@ -290,7 +290,7 @@ source: cr-derived         # 新增,与 ai-mined / interview / human 并列
 
 #### 5.3.1 接入点
 
-`skills/arch-enrich/SKILL.md` Phase 9.5 CONSTRAINT-MINE 当前调 `arch-constraint-miner`;v3.4 改为**并列调用** `arch-constraint-miner` + `arch-history-miner`,产出合并写盘。
+`internal/playbooks/enrich/SKILL.md` Phase 9.5 CONSTRAINT-MINE 当前调 `arch-constraint-miner`;v3.4 改为**并列调用** `arch-constraint-miner` + `arch-history-miner`,产出合并写盘。
 
 #### 5.3.2 三类产出
 
@@ -437,7 +437,7 @@ LLM phase 拿到 subset 时,只对该子集 emit 新值,其他保持 `previous_a
 - `engine/arch/constraint-check.mjs`:VALID_SOURCE 加 `cr-derived`,if/then 规则:cr-derived 同 ai-mined 不得 confirmed
 - `engine/arch/arch-layer-writer.mjs`:支持 subset_mode 合并(按节点 id 替换)
 - `skills/arch-onboard/SKILL.md`:加默认增量调度 + 4 档执行 + 高阶参数(`--full` / `--since` / `--incremental` 仅 `--help` 暴露)
-- `skills/arch-enrich/SKILL.md`:Phase 9.5 并列调用 constraint-miner + history-miner;各 phase 支持 subset_mode 透传
+- `internal/playbooks/enrich/SKILL.md`:Phase 9.5 并列调用 constraint-miner + history-miner;各 phase 支持 subset_mode 透传
 - `skills/arch-audit/SKILL.md`:加步骤「cards-check」+「decision-extractor 兜底扫合入 main 的 CR/ADR」+ 报告增段「自上次 audit 以来新增 proposed(N 条来自 CR / M 条来自 history)」
 - `skills/arch-design/SKILL.md`:impact / solution 引用 cards 优先;senior 校验 card_id 引用合法
 - `skills/arch-wiki/SKILL.md`:wiki 渲染保持不动(cards 不入 wiki)

@@ -10,10 +10,10 @@ Run the complete understand-arch v3.0 onboarding flow. Treat a single repo as a 
 
 ## Contract
 
-- Dispatch `/arch-analyze` for every repo. That skill owns Phase 0-6 and inherits the UA scanner orchestration.
+- Read `internal/playbooks/analyze/playbook.md` for every repo and execute Phase 0-6 in the current session. That playbook owns the inherited UA scanner orchestration.
 - Keep each repo graph independent at `specs/repos/<repo_id>/knowledge-graph.json`.
 - Use `engine/arch/cross-repo-linker.mjs` only for deterministic cross-repo edges.
-- Dispatch `arch-enrich` for Phase 7-13.
+- Read `internal/playbooks/enrich/playbook.md` for Phase 7-13 and execute its architecture-layer enrichment contract in the current session.
 - Dispatch `arch-wiki` for `ARCHITECTURE.md` plus the 14-page human projection.
 - Fail if any of `arch-layer.architecture_style`, `arch-layer.component_profiles`, `arch-layer.capabilities`, `arch-layer.quality_attributes`, or `arch-layer.risks` is empty after enrichment.
 - Write `eval-report.json` and include its trust label in the final report.
@@ -95,14 +95,14 @@ ARCH_PROJECT_ROOT="$ARCH_PROJECT_ROOT" node <PLUGIN_ROOT>/engine/arch/incrementa
 
 3. Save the JSON output to `intermediate/incremental-plan.json`.
 4. Apply the planner action:
-   - `SKIP`: do not dispatch `/arch-analyze` or `arch-enrich`; run cards derivation, cards summary if needed, cards-check, eval, and final report.
-   - `PARTIAL_UPDATE`: dispatch `/arch-analyze` only for `files_to_reanalyze` when the analyzer supports file-scoped rerun; otherwise rerun the affected repo graph and preserve per-repo boundaries. Then call `arch-enrich` with subset mode using `affected_arch_nodes`.
-   - `ARCHITECTURE_UPDATE`: rerun repo graph and full `arch-enrich`.
+   - `SKIP`: do not execute the analyze or enrich playbooks; run cards derivation, cards summary if needed, cards-check, eval, and final report.
+   - `PARTIAL_UPDATE`: execute the analyze playbook only for `files_to_reanalyze` when the analyzer supports file-scoped rerun; otherwise rerun the affected repo graph and preserve per-repo boundaries. Then execute the enrich playbook with subset mode using `affected_arch_nodes`.
+   - `ARCHITECTURE_UPDATE`: rerun repo graph and the full enrich playbook.
    - `FULL_UPDATE`: run the existing full flow and tell the user the change set was large enough to justify a full rebuild.
 
 The planner is the only place that calls UA staleness, changed-file, fingerprint, and classifier primitives. Do not reimplement those decisions in this skill.
 
-For every repo entry, dispatch `/arch-analyze` with environment:
+For every repo entry, read `<PLUGIN_ROOT>/internal/playbooks/analyze/playbook.md` and execute Phase 0-6 with environment:
 
 ```bash
 ARCH_PROJECT_ID="<project-id>"
@@ -113,7 +113,7 @@ ARCH_PROJECT_ROOT="<workspace>/.understand-arch/<project-id>"
 Prompt:
 
 ```text
-Run /arch-analyze for repo <repo_id> at <path>.
+Run the analyze playbook for repo <repo_id> at <path>.
 Preserve the inherited UA Phase 0-6 pipeline.
 Write the graph to <ARCH_PROJECT_ROOT>/specs/repos/<repo_id>/knowledge-graph.json.
 Prefix node ids with <repo_id>:: when writing the final graph.
@@ -138,10 +138,10 @@ This writes `intermediate/cross-edges.json`. Do not merge the per-repo graphs.
 
 ## Phase C - Architecture Layer
 
-Dispatch `arch-enrich`:
+Read `<PLUGIN_ROOT>/internal/playbooks/enrich/playbook.md` and execute it:
 
 ```text
-Run arch-enrich for <ARCH_PROJECT_ROOT>.
+Run the enrich playbook for <ARCH_PROJECT_ROOT>.
 Use specs/repos.json and every per-repo graph.
 Consume intermediate/cross-edges.json.
 Produce specs/arch-layer.json.
@@ -217,6 +217,8 @@ Report:
 
 ## Task Calling Convention
 
-`arch-onboard` is only an orchestrator. When it invokes `/arch-analyze`, `arch-enrich`, or `arch-wiki`, it must preserve their own Task-based subagent dispatch contracts instead of compressing those phases into the main conversation or a script.
+`arch-onboard` is only an orchestrator. When it loads the analyze and enrich playbooks, or invokes `arch-wiki`, it must preserve their own Task-based subagent dispatch contracts instead of compressing those phases into a script.
 
-Use the Claude Code Task tool for skill handoff when the runtime exposes skill execution through Task. Do not inline this phase. The user must see subagent activity in Claude Code for `/arch-analyze` Phase 0-6 and `arch-enrich` Phase 7-13. If the Task tool is unavailable, stop and report that v3.5 requires visible Claude Code subagent activity.
+For internal phase playbooks (analyze, enrich), use the Read tool to load the playbook body, then execute its phase dispatch contract in the current session. Do not attempt Task dispatch against playbook names; they are not registered subagents.
+
+Use the Claude Code Task tool for the semantic subagents named by the playbooks and by `arch-wiki` when the runtime exposes skill execution through Task. Do not inline this phase. The user must see subagent activity in Claude Code for Phase 0-6 file and graph analysis and Phase 7-13 architecture enrichment. If the Task tool is unavailable, stop and report that v3.5 requires visible Claude Code subagent activity.

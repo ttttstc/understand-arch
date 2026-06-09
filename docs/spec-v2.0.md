@@ -590,7 +590,7 @@ interface ScanMeta {
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ 1. Orchestrator (skills/arch-analyze/SKILL.md)                     │  编排层
+│ 1. Orchestrator (internal/playbooks/analyze/SKILL.md)                     │  编排层
 │    - Phase 0-8: Pre-flight → Scan → Batch → Analyze → Assemble →   │
 │      Structure → Domain → Quality → Review                         │
 │    - 增量更新决策、subdomain 合并、worktree 处理                    │
@@ -623,7 +623,7 @@ interface ScanMeta {
 
 | UA 资产 | v2.0 归宿 | 说明 |
 |---|---|---|
-| `skills/understand/SKILL.md` (844 行,7 phases) | `skills/arch-analyze/SKILL.md`(扩展为 Phase 0-8 含跨仓 FINALIZE) | 改写编排逻辑,产物对齐 v2.0 graph |
+| `skills/understand/SKILL.md` (844 行,7 phases) | `internal/playbooks/analyze/SKILL.md`(扩展为 Phase 0-8 含跨仓 FINALIZE) | 改写编排逻辑,产物对齐 v2.0 graph |
 | `skills/understand/*.mjs` 工具脚本 | `engine/tools/*.mjs` | 直接搬,改 import path |
 | `skills/understand/*.py` 合并脚本 | `engine/tools/*.py` | 直接搬 |
 | `agents/project-scanner.md` | `agents/arch-project-scanner.md` | 改 prompt 产 v2.0 字段 |
@@ -770,7 +770,7 @@ understand-arch/
 
 - `engine/NOTICE` 保留 UA MIT copyright 文本(`Copyright (c) 2026 Yuxiang Lin`)
 - `agents/arch-*.md` 每个文件顶部 frontmatter 加 `based_on: agents/<original>.md (from understand-anything, MIT)`
-- `skills/arch-analyze/SKILL.md` 顶部加 `based_on: skills/understand/SKILL.md (from understand-anything, MIT)`
+- `internal/playbooks/analyze/SKILL.md` 顶部加 `based_on: skills/understand/SKILL.md (from understand-anything, MIT)`
 - `engine/package.json` 加 `"based-on": "@understand-anything/core (MIT, Yuxiang Lin 2026)"`
 - README 致谢段说明 fork 关系
 
@@ -956,7 +956,7 @@ packages:
 
 | UA skill | 用途 | v2.0 处置 |
 |---|---|---|
-| `understand` (主扫描) | 7 phases 扫描 | ✅ 复刻为 `skills/arch-analyze/SKILL.md`,v2.0 扩展为 Phase 0-8(加 Phase 0 多仓 pre-flight + Phase 8 跨仓 FINALIZE) |
+| `understand` (主扫描) | 7 phases 扫描 | ✅ 复刻为 `internal/playbooks/analyze/SKILL.md`,v2.0 扩展为 Phase 0-8(加 Phase 0 多仓 pre-flight + Phase 8 跨仓 FINALIZE) |
 | `understand-onboard` | 新人 onboarding 视图(graph 外的引导) | ❌ 不复刻 — 我们 `wiki/15-onboarding.md` + arch-wiki 已 cover |
 | `understand-explain` | 解释单个节点/路径 | ❌ 不复刻 — wiki 已分层呈现 |
 | `understand-chat` | RAG 对话 | ❌ v2.0 不做,v2.1 候选 |
@@ -1132,13 +1132,13 @@ Phase 8 用 3 个 subagent,但**项目级 1 次**,M 预算够。
 
 #### 3.15.9 调度器实现
 
-调度器是 `skills/arch-analyze/SKILL.md` 编排逻辑的一部分:
+调度器是 `internal/playbooks/analyze/SKILL.md` 编排逻辑的一部分:
 
 - **方式 A(推荐)**:bash + 命名管道做 worker pool,符合 Claude Code Skill 的"声明式 prompt + bash 调用"风格
 - **方式 B**:`engine/bin/scheduler.js` 作为独立调度器进程,被 SKILL.md 调起
 - **方式 C**:由 LLM 在 SKILL.md prompt 内手动控制并发 dispatch(灵活但不稳定)
 
-Phase 2 实施时按需选择(详见 `skills/arch-analyze/references/scheduler-playbook.md`)。
+Phase 2 实施时按需选择(详见 `internal/playbooks/analyze/references/scheduler-playbook.md`)。
 
 ### 3.16 UA `src/*-builder.ts` 处置
 
@@ -2436,7 +2436,7 @@ internal/schemas/
 |---|---|---|
 | 0 | spec-v2.0 outline + 完整 spec(含多仓 + arch-design 重写) | ✅ |
 | 1 | Fork UA + license check (MIT) | ✅ |
-| 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + skills/arch-analyze/SKILL.md(多仓 Phase 0-8 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
+| 2 | Fork engine 三层全集 + 多仓改造:engine/ + agents/arch-*.md + internal/playbooks/analyze/SKILL.md(多仓 Phase 0-8 编排) + monorepo 架子 + 搬 UA 测试 | 待开 |
 | 3 | **9 个 subagent**:① 改造 4 复刻(project-scanner / file-analyzer / architecture-analyzer / domain-analyzer)适配 v2.0 字段 + repo_id 前缀;② 扩展 1 个 arch-graph-reviewer(多 phase mode);③ 新写 4 个(arch-quality-analyzer / arch-impact-analyzer / arch-solution-designer / **arch-senior-reviewer**) | 待开 |
 | 4 | 扩展 engine/src/extensions/:arch-schema.ts(分仓 + cross-repo) + arch-validator.ts(referential integrity 跨仓校验)+ output-writer.ts(写 repos/*/graph.json + cross-repo.json) | 待开 |
 | 5 | 重写其它 8 个 skill:**arch-onboard(含多仓引导式生成 repos.yaml)** / arch-design(单文件 CR.md 14 段) / arch-audit / arch-wiki(14 页含 pending-changes) / arch-diagram(占位) / arch-frame / arch-adr / arch-review | 待开 |
@@ -2474,7 +2474,7 @@ Phase 1 license check (✅ 已完成)
 Phase 2 Fork UA 三层 + monorepo 架子
   ├ engine/(packages/core fork + tools fork)
   ├ agents/arch-*.md(占位文件,内容空)
-  ├ skills/arch-analyze/SKILL.md(占位)
+  ├ internal/playbooks/analyze/SKILL.md(占位)
   ├ package.json + pnpm-workspace.yaml + tsconfig.base.json
   └ 搬 UA __tests__/
   ↓

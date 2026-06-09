@@ -146,7 +146,7 @@ function readSourceFile(url: URL) {
 
   const graphFile = findGraphFile("knowledge-graph.json");
   if (!graphFile) {
-    return rejectFileRequest("No knowledge graph found. Run /arch-analyze first.", 404);
+    return rejectFileRequest("No knowledge graph found. Run /arch-onboard first.", 404);
   }
 
   const projectRoot = projectRootFromGraphFile(graphFile);
@@ -371,7 +371,7 @@ export default defineConfig({
           res.statusCode = 404;
           if (pathname === "/knowledge-graph.json") {
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "No knowledge graph found. Run /arch-analyze first." }));
+            res.end(JSON.stringify({ error: "No knowledge graph found. Run /arch-onboard first." }));
           } else {
             res.end();
           }

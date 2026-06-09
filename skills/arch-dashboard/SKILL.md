@@ -64,6 +64,6 @@ Tell the user:
 
 ## Failure Rules
 
-- If graph is missing, ask user to run `/arch-analyze` or `/arch-onboard`.
+- If graph is missing, ask user to run `/arch-onboard`.
 - If arch-layer is missing, ask user to run `arch-enrich`.
 - Do not synthesize dashboard data.

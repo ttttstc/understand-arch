@@ -22,8 +22,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// skills/arch-analyze/ -> plugin root is two dirs up
-const pluginRoot = resolve(__dirname, '../..');
+// internal/playbooks/analyze/ -> plugin root is three dirs up
+const pluginRoot = resolve(__dirname, '../../..');
 const require = createRequire(resolve(pluginRoot, 'package.json'));
 
 // ---------------------------------------------------------------------------

@@ -490,7 +490,7 @@ Codex 会自动 dispatch 对应 skill。8 个 skill 名字:
 
 | 文件 | 改造范围 |
 |---|---|
-| `skills/arch-enrich/SKILL.md` ~ `skills/arch-improve/SKILL.md`(7 个) | 头部加 `Runtime fallback` 段;phase dispatch 句不变 |
+| `internal/playbooks/enrich/SKILL.md` ~ `skills/arch-improve/SKILL.md`(7 个) | 头部加 `Runtime fallback` 段;phase dispatch 句不变 |
 | `engine/arch/dispatch-lint.mjs` | 加 R7:校验 `Runtime fallback` 段存在 |
 | `engine/arch/__tests__/dispatch-lint.test.mjs` | 加 case:fixture 无 fallback 段 → fail |
 | `.claude-plugin/plugin.json` / `marketplace.json` / `package.json` | 版本 → `3.7.0-rc1` |

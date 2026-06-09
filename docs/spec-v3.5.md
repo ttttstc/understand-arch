@@ -1,7 +1,7 @@
 # understand-arch v3.5 Spec(真并行 Subagent 调度规范化)
 
 > Version: 3.5 · Status: Draft · 基于:`docs/spec-v3.4.md`(增量 delta,不重写 v3.0/v3.1/v3.2/v3.3/v3.4)
-> 主题:把所有 SKILL 的「Dispatch xxx」自然语言指令统一改写为真 `Task` 工具调用 + 显式并行编排,复用 UA 范式(`skills/arch-analyze/SKILL.md`)。
+> 主题:把所有 SKILL 的「Dispatch xxx」自然语言指令统一改写为真 `Task` 工具调用 + 显式并行编排,复用 UA 范式(`internal/playbooks/analyze/SKILL.md`)。
 
 ---
 
@@ -15,7 +15,7 @@ v3.0 ~ v3.4 在底层、规格、出图、CR 质量、知识自迭代五个维�
 > 2. **没有真正的并行**(本可并行的 phase 全部串行)
 > 3. **主对话 token 累积**(没有上下文隔离,长会话 token 爆炸)
 
-`skills/arch-analyze/SKILL.md` 已经是「正确范式」(第 45-63 / 331-333 行),明示「Use the Claude Code `Task` tool / Run X concurrently / Do not inline」。Claude 看到这种指令格式就会**真调 Task 工具**,UI 出现嵌套窗口,token 隔离。
+`internal/playbooks/analyze/SKILL.md` 已经是「正确范式」(第 45-63 / 331-333 行),明示「Use the Claude Code `Task` tool / Run X concurrently / Do not inline」。Claude 看到这种指令格式就会**真调 Task 工具**,UI 出现嵌套窗口,token 隔离。
 
 v3.5 不动 schema、不动 agents、不动 engine、不动产物结构,**只把 7 个 SKILL 的 dispatch 段措辞规范化为 UA 范式**,并明确若干**真并行机会**作为硬指标。
 
@@ -47,8 +47,8 @@ v3.5 继承以下铁律:
 
 | SKILL | dispatch 写法 | Claude 实际行为 |
 |---|---|---|
-| `skills/arch-analyze/SKILL.md`(继承 UA) | **明示** Task / concurrent / Do not inline(第 45-63 / 331-333 行) | ✅ 真 Task 调用,5 个 file-analyzer 并发,UI 可见 |
-| `skills/arch-enrich/SKILL.md`(我们写的) | 第 56-58 行 Contract 段说了「Use Task or Agent」,但 Phase 7/8/9/9.5/9.6/11/12 的每个 dispatch 只写「Dispatch arch-xxx-analyzer with this template:」 | ⚠️ 内嵌模拟,无嵌套窗口,串行 |
+| `internal/playbooks/analyze/SKILL.md`(继承 UA) | **明示** Task / concurrent / Do not inline(第 45-63 / 331-333 行) | ✅ 真 Task 调用,5 个 file-analyzer 并发,UI 可见 |
+| `internal/playbooks/enrich/SKILL.md`(我们写的) | 第 56-58 行 Contract 段说了「Use Task or Agent」,但 Phase 7/8/9/9.5/9.6/11/12 的每个 dispatch 只写「Dispatch arch-xxx-analyzer with this template:」 | ⚠️ 内嵌模拟,无嵌套窗口,串行 |
 | `skills/arch-audit/SKILL.md` | 同上模糊 dispatch | ⚠️ 内嵌模拟 |
 | `skills/arch-design/SKILL.md` | 同上模糊 dispatch;`pre-grill` + impact + solution + senior 全部串行 | ⚠️ 内嵌模拟 |
 | `skills/arch-onboard/SKILL.md` | 编排 analyze + enrich,自身不直接 dispatch subagent | n/a |
@@ -61,7 +61,7 @@ v3.5 继承以下铁律:
 
 ### 2.2 标杆复用
 
-`skills/arch-analyze/SKILL.md` 第 45-63 / 331-333 行的指令模式作为本轮**唯一参考模板**:
+`internal/playbooks/analyze/SKILL.md` 第 45-63 / 331-333 行的指令模式作为本轮**唯一参考模板**:
 
 ```text
 ## Subagent Dispatch Is Mandatory
@@ -320,7 +320,7 @@ node engine/arch/dispatch-lint.mjs --strict   # 任何违规 exit 1
 - 任何 `agents/*.md`(已是 subagent prompt)
 - 任何 `engine/*.mjs`(确定性工具)
 - 任何 `internal/schemas/*.json`
-- `skills/arch-analyze/SKILL.md`(UA 范式,本身就是标杆)
+- `internal/playbooks/analyze/SKILL.md`(UA 范式,本身就是标杆)
 - `skills/arch-dashboard/SKILL.md`(无 LLM phase)
 - `skills/arch-onboard/SKILL.md` 主体逻辑(仅在末尾加 Task 调用约定声明,确保它对 analyze / enrich 的调用也走 Task)
 - `vendor/fireworks-tech-graph/*`(upstream 文件)
@@ -341,7 +341,7 @@ node engine/arch/dispatch-lint.mjs --strict   # 任何违规 exit 1
 
 | 文件 | 改造范围 |
 |---|---|
-| `skills/arch-enrich/SKILL.md` | Phase 7 / 8 / 9 / **9.5(双 miner 并行硬指标)** / 9.6 / 11 / 12 全部规范化 |
+| `internal/playbooks/enrich/SKILL.md` | Phase 7 / 8 / 9 / **9.5(双 miner 并行硬指标)** / 9.6 / 11 / 12 全部规范化 |
 | `skills/arch-audit/SKILL.md` | senior-reviewer + 兜底 extractor + cards-check 段规范化;**5b 三大 check 并行硬指标** |
 | `skills/arch-design/SKILL.md` | pre-grill / impact-analyzer / solution-designer / senior-reviewer 全部规范化;**CR-OPTION 3 候选并行硬指标** |
 | `skills/arch-interview/SKILL.md` | 主访谈循环 dispatch 规范化 |
@@ -357,7 +357,7 @@ node engine/arch/dispatch-lint.mjs --strict   # 任何违规 exit 1
 - 任何 `agents/*.md`
 - 任何 `engine/*.mjs`(除新增 dispatch-lint)
 - 任何 `internal/schemas/*.json`
-- `skills/arch-analyze/SKILL.md`(UA 范式标杆)
+- `internal/playbooks/analyze/SKILL.md`(UA 范式标杆)
 - `skills/arch-dashboard/SKILL.md`
 - `vendor/*`
 - `README.md` / `README.zh.md`(无用户感知变化)

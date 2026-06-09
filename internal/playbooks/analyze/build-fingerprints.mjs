@@ -3,7 +3,7 @@
  * build-fingerprints.mjs
  *
  * Builds the structural-fingerprint baseline used by auto-update's
- * incremental change detection. Runs once per /arch-analyze full rebuild
+ * incremental change detection. Runs once per analyze playbook full rebuild
  * (Phase 7 step 2.5), generating the per-repo fingerprint baseline consumed
  * by understand-arch v3.4 incremental planning.
  *
@@ -26,11 +26,11 @@ import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolveWorkspaceRoot } from '../../engine/arch/project-paths.mjs';
+import { resolveWorkspaceRoot } from '../../../engine/arch/project-paths.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// skills/arch-analyze/ -> plugin root is two dirs up
-const pluginRoot = resolve(__dirname, '../..');
+// internal/playbooks/analyze/ -> plugin root is three dirs up
+const pluginRoot = resolve(__dirname, '../../..');
 const require = createRequire(resolve(pluginRoot, 'package.json'));
 
 // ---------------------------------------------------------------------------

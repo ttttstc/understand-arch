@@ -1,5 +1,48 @@
 {
   "name": "understand-arch",
+  "displayName": "understand-arch",
   "description": "Architect-grade code and architecture analysis on top of the understand-arch scanner",
-  "version": "3.7.0-rc2"
+  "version": "3.8.0-rc1",
+  "author": {
+    "name": "ttttstc"
+  },
+  "homepage": "https://github.com/ttttstc/understand-arch",
+  "repository": "https://github.com/ttttstc/understand-arch",
+  "license": "MIT",
+  "keywords": [
+    "codebase-analysis",
+    "knowledge-graph",
+    "architecture",
+    "onboarding",
+    "dashboard"
+  ],
+  "skills": "./skills/",
+  "agents": [
+    "./agents/arch-adr.md",
+    "./agents/arch-capability-analyzer.md",
+    "./agents/arch-card-summarizer.md",
+    "./agents/arch-constraint-miner.md",
+    "./agents/arch-decision-extractor.md",
+    "./agents/arch-frame.md",
+    "./agents/arch-history-miner.md",
+    "./agents/arch-impact-analyzer.md",
+    "./agents/arch-improvement-analyzer.md",
+    "./agents/arch-interface-designer.md",
+    "./agents/arch-narrative-analyzer.md",
+    "./agents/arch-option-designer.md",
+    "./agents/arch-pre-grill.md",
+    "./agents/arch-project-language-analyzer.md",
+    "./agents/arch-quality-analyzer.md",
+    "./agents/arch-senior-reviewer.md",
+    "./agents/arch-solution-designer.md",
+    "./agents/arch-suspicious-recheck.md",
+    "./agents/architecture-analyzer.md",
+    "./agents/assemble-reviewer.md",
+    "./agents/domain-analyzer.md",
+    "./agents/file-analyzer.md",
+    "./agents/graph-reviewer.md",
+    "./agents/project-scanner.md",
+    "./agents/tour-builder.md",
+    "./agents/wiki-reviewer.md"
+  ]
 }

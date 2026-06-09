@@ -10,7 +10,7 @@ export default function ArchitectureLayerView() {
   if (!archLayer) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-root">
-        <p className="text-sm text-text-muted">No architecture layer found. Run /arch-enrich first.</p>
+        <p className="text-sm text-text-muted">No architecture layer found. Run /arch-onboard first.</p>
       </div>
     );
   }

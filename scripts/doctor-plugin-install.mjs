@@ -29,6 +29,67 @@ function claudePluginList() {
   return tryRun("claude", ["plugin", "list"]);
 }
 
+function parseFrontmatterName(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  const name = match[1].match(/^name:\s*["']?([^"'\r\n]+)["']?\s*$/m);
+  return name?.[1]?.trim() ?? null;
+}
+
+function validateSkillDiscovery(installPath, manifest, strict) {
+  const checks = [];
+  const errors = [];
+  const warnings = [];
+  const skillsField = manifest?.skills;
+
+  if (!skillsField) {
+    errors.push("plugin manifest missing `skills` field");
+    return { checks, errors, warnings };
+  }
+
+  const skillsDir = path.resolve(installPath, skillsField);
+  if (!fs.existsSync(skillsDir)) {
+    errors.push(`skills directory from manifest does not exist: ${skillsDir}`);
+    return { checks, errors, warnings };
+  }
+
+  const discovered = fs
+    .readdirSync(skillsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((skillName) => fs.existsSync(path.join(skillsDir, skillName, "SKILL.md")))
+    .sort();
+
+  const missingNames = [];
+  const nameMismatches = [];
+  for (const skillName of discovered) {
+    const skillPath = path.join(skillsDir, skillName, "SKILL.md");
+    const frontmatterName = parseFrontmatterName(fs.readFileSync(skillPath, "utf8"));
+    if (!frontmatterName) {
+      missingNames.push(skillName);
+    } else if (frontmatterName !== skillName) {
+      nameMismatches.push(`${skillName} has name=${frontmatterName}`);
+    }
+  }
+
+  if (missingNames.length > 0) {
+    errors.push(`skill frontmatter missing name: ${missingNames.join(", ")}`);
+  }
+  if (nameMismatches.length > 0) {
+    errors.push(`skill frontmatter name mismatch: ${nameMismatches.join("; ")}`);
+  }
+  if (strict && discovered.length !== 8) {
+    errors.push(`strict skill discovery expected 8 skills, found ${discovered.length}: ${discovered.join(", ")}`);
+  }
+  if (errors.length === 0) {
+    checks.push(formatStatus("skill discovery", "ok", `${discovered.length} skills: ${discovered.join(", ")}`));
+  } else if (discovered.length > 0) {
+    warnings.push(`discovered skills before validation failure: ${discovered.join(", ")}`);
+  }
+
+  return { checks, errors, warnings };
+}
+
 function collectChecks() {
   const checks = [];
   const errors = [];
@@ -118,7 +179,14 @@ function collectChecks() {
 
   const installedEntry = installedEntries[0];
   if (installedEntry?.installPath && fs.existsSync(installedEntry.installPath)) {
-    const skillsDir = path.join(installedEntry.installPath, "skills");
+    const manifestPath = path.join(installedEntry.installPath, ".claude-plugin", "plugin.json");
+    const installedManifest = readJson(manifestPath, {});
+    const skillDiscovery = validateSkillDiscovery(installedEntry.installPath, installedManifest, true);
+    checks.push(...skillDiscovery.checks);
+    errors.push(...skillDiscovery.errors);
+    warnings.push(...skillDiscovery.warnings);
+
+    const skillsDir = path.resolve(installedEntry.installPath, installedManifest?.skills ?? "skills");
     if (fs.existsSync(skillsDir)) {
       const invalidHints = [];
       for (const skillName of fs.readdirSync(skillsDir)) {

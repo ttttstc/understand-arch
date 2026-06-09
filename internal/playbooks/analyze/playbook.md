@@ -5,7 +5,7 @@ argument-hint: "[path] [--full|--enable-hooks|--disable-hooks|--review|--languag
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(node:*), Bash(python:*), Bash(git:*), Task, Agent
 ---
 
-# /arch-analyze
+# analyze playbook
 
 Analyze one repository and produce a `knowledge-graph.json` file for the code fact layer. This skill intentionally inherits the Understand-Anything scanner orchestration: project-scanner, compute-batches, parallel file-analyzer, merge-batch-graphs, assemble-reviewer, architecture-analyzer, domain-analyzer, and graph-reviewer. Do not move these LLM phases into a Node or Python script.
 
@@ -120,22 +120,17 @@ Determine whether to run a full analysis or incremental update.
      All subsequent Phase 0-6 intermediate outputs must use `$ARCH_PROJECT_DIR`, not a bare `.understand-arch` directory. This keeps the user's project root intrusion to one directory while still supporting multi-repo projects and the v3 path contract.
 1.5. **Ensure the plugin is built.** Later phases invoke Node scripts that import `@understand-arch/core`. On a fresh install `engine/core/dist/` does not exist yet — build once.
 
-   **Important:** do **not** assume the plugin root is simply two directories above the skill path string. In many installations `~/.agents/skills/arch-analyze` is a symlink into the real plugin checkout. Prefer runtime-provided plugin roots first (for Claude), then fall back to universal symlinks, skill symlink resolution, and common clone-based install paths.
+   **Important:** do **not** assume the plugin root from a user runtime's playbook directory. This file is an internal playbook loaded by `arch-onboard`, so prefer runtime-provided plugin roots first, then fall back to the standard understand-arch checkout and symlink locations.
 
    Resolve the plugin root like this:
 
    ```bash
-   SKILL_REAL=$(realpath ~/.agents/skills/arch-analyze 2>/dev/null || readlink -f ~/.agents/skills/arch-analyze 2>/dev/null || echo "")
-   SELF_RELATIVE=$([ -n "$SKILL_REAL" ] && cd "$SKILL_REAL/../.." 2>/dev/null && pwd || echo "")
-   COPILOT_SKILL_REAL=$(realpath ~/.copilot/skills/arch-analyze 2>/dev/null || readlink -f ~/.copilot/skills/arch-analyze 2>/dev/null || echo "")
-   COPILOT_SELF_RELATIVE=$([ -n "$COPILOT_SKILL_REAL" ] && cd "$COPILOT_SKILL_REAL/../.." 2>/dev/null && pwd || echo "")
-
    PLUGIN_ROOT=""
    for candidate in \
      "${CLAUDE_PLUGIN_ROOT}" \
+     "${UNDERSTAND_ARCH_PLUGIN_ROOT}" \
      "$HOME/.understand-arch" \
-     "$SELF_RELATIVE" \
-     "$COPILOT_SELF_RELATIVE" \
+     "$HOME/.understand-arch/repo" \
      "$HOME/.codex/understand-arch/understand-arch" \
      "$HOME/.opencode/understand-arch/understand-arch" \
      "$HOME/.pi/understand-arch/understand-arch" \
@@ -150,9 +145,9 @@ Determine whether to run a full analysis or incremental update.
      echo "Error: Cannot find the understand-arch plugin root."
      echo "Checked:"
      echo "  - ${CLAUDE_PLUGIN_ROOT:-<unset CLAUDE_PLUGIN_ROOT>}"
+     echo "  - ${UNDERSTAND_ARCH_PLUGIN_ROOT:-<unset UNDERSTAND_ARCH_PLUGIN_ROOT>}"
      echo "  - $HOME/.understand-arch"
-     echo "  - ${SELF_RELATIVE:-<unresolved path derived from ~/.agents/skills/arch-analyze>}"
-     echo "  - ${COPILOT_SELF_RELATIVE:-<unresolved path derived from ~/.copilot/skills/arch-analyze>}"
+     echo "  - $HOME/.understand-arch/repo"
      echo "  - $HOME/.codex/understand-arch/understand-arch"
      echo "  - $HOME/.opencode/understand-arch/understand-arch"
      echo "  - $HOME/.pi/understand-arch/understand-arch"
@@ -166,7 +161,7 @@ Determine whether to run a full analysis or incremental update.
    fi
    ```
 
-   If `pnpm` is missing, report to the user: "Install Node.js ≥ 22 and pnpm ≥ 10, then re-run `/arch-analyze`."
+   If `pnpm` is missing, report to the user: "Install Node.js ≥ 22 and pnpm ≥ 10, then re-run `the analyze playbook`."
 
 2. Get the current git commit hash:
    ```bash
@@ -200,9 +195,9 @@ Determine whether to run a full analysis or incremental update.
       ```
 
  4. **Check for subdomain knowledge graphs to merge:**
-   List all `*knowledge-graph*.json` files in `$ARCH_PROJECT_DIR/` **excluding** `knowledge-graph.json` itself (e.g. `frontend-knowledge-graph.json`, `backend-knowledge-graph.json`). If any subdomain graphs exist, run the merge script bundled with this skill (located next to this SKILL.md file — use the skill directory path, not the project root):
+   List all `*knowledge-graph*.json` files in `$ARCH_PROJECT_DIR/` **excluding** `knowledge-graph.json` itself (e.g. `frontend-knowledge-graph.json`, `backend-knowledge-graph.json`). If any subdomain graphs exist, run the merge script bundled with this playbook (located next to this playbook.md file — use the playbook directory path, not the project root):
    ```bash
-   python <SKILL_DIR>/merge-subdomain-graphs.py $PROJECT_ROOT
+   python <PLAYBOOK_DIR>/merge-subdomain-graphs.py $PROJECT_ROOT
    ```
    The script discovers subdomain graphs, loads the existing `knowledge-graph.json` as a base (if present), and merges everything into `knowledge-graph.json` (deduplicating nodes and edges). Report the merge summary to the user, then continue with the merged graph.
 
@@ -318,7 +313,7 @@ Report: `[Phase 1.5/7] Computing semantic batches...`
 
 Run the bundled batching script:
 ```bash
-node <SKILL_DIR>/compute-batches.mjs $PROJECT_ROOT
+node <PLAYBOOK_DIR>/compute-batches.mjs $PROJECT_ROOT
 ```
 
 Reads `.understand-arch/intermediate/scan-result.json`, writes `.understand-arch/intermediate/batches.json`.
@@ -355,7 +350,7 @@ Dispatch prompt template (fill in batch-specific values from `batches.json[i]`):
 > Project: `<projectName>`
 > Languages: `<languages>`
 > Batch: `<batchIndex>/<totalBatches>`
-> Skill directory (for bundled scripts): `<SKILL_DIR>`
+> playbook directory (for bundled scripts): `<PLAYBOOK_DIR>`
 > Output: write to `$ARCH_PROJECT_DIR/intermediate/batch-<batchIndex>.json` (single-file mode) OR `batch-<batchIndex>-part-<k>.json` (split mode, per Step B of your output protocol).
 >
 > Pre-resolved import data for this batch (use directly — do NOT re-resolve imports from source):
@@ -377,9 +372,9 @@ Dispatch prompt template (fill in batch-specific values from `batches.json[i]`):
 
 After ALL batches complete, report to the user: `Phase 2 complete. All <totalBatches> batches analyzed.`
 
-Run the merge-and-normalize script bundled with this skill (located next to this SKILL.md file — use the skill directory path, not the project root):
+Run the merge-and-normalize script bundled with this playbook (located next to this playbook.md file — use the playbook directory path, not the project root):
 ```bash
-python <SKILL_DIR>/merge-batch-graphs.py $PROJECT_ROOT
+python <PLAYBOOK_DIR>/merge-batch-graphs.py $PROJECT_ROOT
 ```
 
 This script reads all `batch-*.json` files (including `batch-<i>-part-<k>.json` produced by file-analyzers that split their output) from `$ARCH_PROJECT_DIR/intermediate/`, then in one pass:
@@ -406,7 +401,7 @@ git diff <lastCommitHash>..HEAD --name-only > $ARCH_PROJECT_DIR/tmp/changed-file
 
 Run compute-batches with `--changed-files`:
 ```bash
-node <SKILL_DIR>/compute-batches.mjs $PROJECT_ROOT \
+node <PLAYBOOK_DIR>/compute-batches.mjs $PROJECT_ROOT \
   --changed-files=$ARCH_PROJECT_DIR/tmp/changed-files.txt
 ```
 
@@ -420,7 +415,7 @@ After batches complete:
 3. Write the pruned existing nodes/edges as `batch-existing.json` in the intermediate directory
 4. Run the same merge script — it will combine `batch-existing.json` with the fresh `batch-*.json` files:
    ```bash
-   python <SKILL_DIR>/merge-batch-graphs.py $PROJECT_ROOT
+   python <PLAYBOOK_DIR>/merge-batch-graphs.py $PROJECT_ROOT
    ```
 
 ---
@@ -458,9 +453,9 @@ Report to the user: `[Phase 4/7] Identifying architectural layers...`
 
 **Build the combined prompt template:**
  1. Use the `architecture-analyzer` agent definition (at `agents/architecture-analyzer.md`) via `Task`/`Agent` with `subagent_type: "architecture-analyzer"` (or `understand-arch:architecture-analyzer`).
- 2. **Language context injection:** For each language detected in Phase 1 (e.g., `python`, `markdown`, `dockerfile`, `yaml`, `sql`, `terraform`, `graphql`, `protobuf`, `shell`, `html`, `css`), read the file at `./languages/<language-id>.md` (e.g., `./languages/python.md`, `./languages/dockerfile.md`) and append its content after the base template under a `## Language Context` header. If the file does not exist for a detected language, skip it silently and continue. These files are in the `languages/` subdirectory next to this SKILL.md file. **Include non-code language snippets** — they provide edge patterns and summary styles for non-code files.
- 3. **Framework addendum injection:** For each framework detected in Phase 1 (e.g., `Django`), read the file at `./frameworks/<framework-id-lowercase>.md` (e.g., `./frameworks/django.md`) and append its full content after the language context. If the file does not exist for a detected framework, skip it silently and continue. These files are in the `frameworks/` subdirectory next to this SKILL.md file.
- 4. **Output locale injection:** If `$OUTPUT_LANGUAGE` is NOT `en` (English), read the locale guidance file at `./locales/<language-code>.md` (e.g., `./locales/zh.md`, `./locales/ja.md`, `./locales/ko.md`) and append its content after the framework addendums under a `## Output Language Guidelines` header. This provides language-specific guidance for tag naming conventions, summary style, and layer name translations. If the locale file does not exist for the specified language, skip silently — the `$LANGUAGE_DIRECTIVE` still applies. These files are in the `locales/` subdirectory next to this SKILL.md file.
+ 2. **Language context injection:** For each language detected in Phase 1 (e.g., `python`, `markdown`, `dockerfile`, `yaml`, `sql`, `terraform`, `graphql`, `protobuf`, `shell`, `html`, `css`), read the file at `./languages/<language-id>.md` (e.g., `./languages/python.md`, `./languages/dockerfile.md`) and append its content after the base template under a `## Language Context` header. If the file does not exist for a detected language, skip it silently and continue. These files are in the `languages/` subdirectory next to this playbook.md file. **Include non-code language snippets** — they provide edge patterns and summary styles for non-code files.
+ 3. **Framework addendum injection:** For each framework detected in Phase 1 (e.g., `Django`), read the file at `./frameworks/<framework-id-lowercase>.md` (e.g., `./frameworks/django.md`) and append its full content after the language context. If the file does not exist for a detected framework, skip it silently and continue. These files are in the `frameworks/` subdirectory next to this playbook.md file.
+ 4. **Output locale injection:** If `$OUTPUT_LANGUAGE` is NOT `en` (English), read the locale guidance file at `./locales/<language-code>.md` (e.g., `./locales/zh.md`, `./locales/ja.md`, `./locales/ko.md`) and append its content after the framework addendums under a `## Output Language Guidelines` header. This provides language-specific guidance for tag naming conventions, summary style, and layer name translations. If the locale file does not exist for the specified language, skip silently — the `$LANGUAGE_DIRECTIVE` still applies. These files are in the `locales/` subdirectory next to this playbook.md file.
 
 Append the language/framework context and the following additional context to the agent's prompt:
 
@@ -790,9 +785,9 @@ Report to the user: `[Phase 6.5/6] Saving code fact graph...`
    EOF
    ```
 
-   Then invoke the bundled script (located next to this SKILL.md):
+   Then invoke the bundled script (located next to this playbook.md):
    ```bash
-   node <SKILL_DIR>/build-fingerprints.mjs \
+   node <PLAYBOOK_DIR>/build-fingerprints.mjs \
      $ARCH_PROJECT_DIR/intermediate/fingerprint-input.json
    ```
 

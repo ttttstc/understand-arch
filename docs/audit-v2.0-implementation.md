@@ -69,7 +69,7 @@ codex 完成了**~40%** 的 v2.0 工作量:
 #### P0-2: Phase 编号错位
 
 **spec 引用**: §3.7 标准 Phase 0-8
-**现状**(skills/arch-analyze/SKILL.md + phase-pipeline.md):
+**现状**(internal/playbooks/analyze/SKILL.md + phase-pipeline.md):
 ```
 codex 编号:0 PREPARE / 1 SCAN / 2 BATCH / 3 ANALYZE / 4 ASSEMBLE /
             5 STRUCTURE / 6 DOMAIN / 7 QUALITY / 8 FINALIZE
